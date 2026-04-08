@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /dashboard.html
+Disallow: /discography.html
+Disallow: /sales.html
+Disallow: /library.html

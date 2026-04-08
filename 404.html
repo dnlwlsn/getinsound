@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found | Insound</title>
+    <meta name="description" content="The page you're looking for doesn't exist.">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="tailwind.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        .float { animation: float 4s ease-in-out infinite; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+    <div style="position:fixed;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 20%,rgba(234,88,12,0.06),transparent);pointer-events:none;"></div>
+
+    <div class="float mb-8">
+        <svg width="80" height="80" fill="none" viewBox="0 0 80 80">
+            <rect width="80" height="80" rx="20" fill="#18181b"/>
+            <path d="M28 58V31l30-7v27" stroke="#ea580c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="22" cy="58" r="7" fill="#ea580c"/>
+            <circle cx="52" cy="51" r="7" fill="#ea580c"/>
+        </svg>
+    </div>
+
+    <p class="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">404</p>
+    <h1 class="text-4xl font-black mb-3">Nothing playing here.</h1>
+    <p class="text-zinc-500 font-medium mb-10 max-w-xs">This track doesn't exist. Head back and find something worth your money.</p>
+
+    <div class="flex flex-col sm:flex-row gap-3">
+        <a href="index.html" class="bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">
+            Back to Home
+        </a>
+        <a href="explore.html" class="bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors">
+            Explore Music
+        </a>
+    </div>
+</body>
+</html>
