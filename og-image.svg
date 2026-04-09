@@ -45,8 +45,8 @@
   <text x="330" y="490" font-family="system-ui, sans-serif" font-size="40" font-weight="800" fill="#f97316" letter-spacing="-1">£0</text>
   <text x="330" y="520" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#52525b" letter-spacing="2">MONTHLY FEE</text>
 
-  <text x="530" y="490" font-family="system-ui, sans-serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="-1">Minutes</text>
-  <text x="530" y="520" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#52525b" letter-spacing="2">TO GO LIVE</text>
+  <text x="530" y="490" font-family="system-ui, sans-serif" font-size="40" font-weight="800" fill="#f97316" letter-spacing="-1">1,000</text>
+  <text x="530" y="520" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#52525b" letter-spacing="2">FOUNDING SPACES</text>
 
   <text x="790" y="490" font-family="system-ui, sans-serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="-1">100%</text>
   <text x="790" y="520" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#52525b" letter-spacing="2">YOUR MASTERS</text>

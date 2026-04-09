@@ -4,15 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Insound — Music That Pays Artists</title>
-    <meta name="description" content="The music platform where artists keep 90% of every sale. No labels, no middlemen. Get early access.">
+    <meta name="description" content="The music platform where artists keep 90% of every sale. No labels, no middlemen. Join the waitlist.">
     <meta property="og:title" content="Insound — Music That Pays Artists">
     <meta property="og:description" content="Upload your music. Keep 90%. Own your masters. No monthly fee. Join the waitlist.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://getinsound.com/og-image.svg">
+    <meta property="og:url" content="https://getinsound.com">
+    <meta property="og:image" content="https://getinsound.com/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://getinsound.com/og-image.svg">
+    <meta name="twitter:title" content="Insound — Music That Pays Artists">
+    <meta name="twitter:description" content="Upload your music. Keep 90%. Own your masters. No monthly fee. Join the waitlist.">
+    <meta name="twitter:image" content="https://getinsound.com/og-image.png">
+    <link rel="canonical" href="https://getinsound.com/">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="tailwind.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,6 +119,48 @@
         /* Punchline box */
         .punchline { background: var(--card-bg); transition: background 0.3s ease; }
 
+        /* Earnings calculator slider */
+        .calc-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            background: linear-gradient(to right, #ea580c calc(var(--fill, 18.4%)), var(--line-color) calc(var(--fill, 18.4%)));
+        }
+        .calc-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ea580c;
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(234,88,12,0.15);
+            transition: box-shadow 0.15s ease, transform 0.15s ease;
+        }
+        .calc-slider::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 7px rgba(234,88,12,0.22);
+            transform: scale(1.08);
+        }
+        .calc-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ea580c;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Slot machine animation */
+        .slot-char { display: inline-block; opacity: 0; }
+        @keyframes slotIn {
+            0%   { transform: translateY(-1.4em); opacity: 0; }
+            65%  { transform: translateY(0.1em); opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .slot-char.slot-active { animation: slotIn 0.38s cubic-bezier(0.22,1,0.36,1) forwards; }
+
         /* Light: hero emphasis */
         [data-theme="light"] .hero-emphasis { color: #18181b; }
         [data-theme="light"] .hero-dot { color: rgba(0,0,0,0.18); }
@@ -155,49 +201,51 @@
                 </svg>
             </button>
             <a href="#signup" class="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
-                Get early access
+                Join the waitlist
             </a>
         </div>
     </div>
 </nav>
 
 <!-- ── HERO ─────────────────────────────────────────────────────── -->
-<header class="relative min-h-screen flex items-center justify-center px-6 pt-32 pb-20 overflow-hidden">
+<header class="relative min-h-screen flex items-center justify-center px-6 pb-20 overflow-hidden" style="padding-top:8rem">
 
     <!-- Radial glows -->
     <div class="absolute inset-0 pointer-events-none">
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full" style="background:radial-gradient(ellipse,rgba(234,88,12,0.1) 0%,transparent 70%);"></div>
-        <div class="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full" style="background:radial-gradient(ellipse,rgba(234,88,12,0.05) 0%,transparent 70%);"></div>
+        <div class="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full" style="background:radial-gradient(ellipse,rgba(234,88,12,0.06) 0%,transparent 70%);"></div>
     </div>
 
-    <div class="relative z-10 max-w-3xl mx-auto text-center">
+    <!-- Hero text -->
+    <div class="relative z-10 mx-auto text-center" style="max-width:64rem">
 
-        <!-- Live badge -->
+        <!-- Badge -->
         <div class="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
             <span class="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot"></span>
-            Early access open
+            Waitlist open
         </div>
 
         <!-- Headline -->
-        <h1 class="font-display text-[clamp(3.5rem,10vw,7rem)] font-bold tracking-[-0.04em] leading-[0.88] mb-8">
+        <h1 class="font-display font-bold mb-8" style="font-size:clamp(3.5rem,6vw,5.5rem);letter-spacing:-0.04em;line-height:0.88">
             Music that<br><span class="text-orange-500">pays artists.</span>
         </h1>
 
         <!-- Sub -->
-        <p class="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-xl mx-auto mb-12 font-medium">
+        <p class="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-xl mx-auto mb-5 font-medium">
             Upload your music. Keep <strong class="text-white font-bold">90%</strong> of every sale.
-            Own your masters. No monthly fee. No middlemen.
+            No monthly fee. No middlemen.
         </p>
+        <p class="t-muted text-sm max-w-md mx-auto mb-12">We're building this now. Founding artists get first access.</p>
 
         <!-- Signup form -->
         <div id="signup" class="max-w-md mx-auto">
             <div id="heroForm" class="flex flex-col sm:flex-row gap-3">
-                <input type="email" id="heroEmail" placeholder="your@email.com"
+                <input type="email" id="heroEmail" placeholder="your@email.com" autocomplete="email"
                     onkeydown="if(event.key==='Enter')submitHero()"
                     class="flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border border-transparent rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all">
                 <button onclick="submitHero()"
                     class="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap">
-                    Get early access →
+                    Join the waitlist →
                 </button>
             </div>
             <div id="heroSuccess" class="hidden">
@@ -233,8 +281,8 @@
                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Monthly fee, ever</p>
             </div>
             <div class="reveal reveal-delay-2">
-                <p class="font-display text-4xl font-bold text-white tracking-tight">Minutes</p>
-                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">To go live</p>
+                <p class="font-display text-4xl font-bold text-orange-500 tracking-tight" id="spacesLeft">1,000</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Founding spaces left</p>
             </div>
             <div class="reveal reveal-delay-3">
                 <p class="font-display text-4xl font-bold text-white tracking-tight">100%</p>
@@ -245,53 +293,146 @@
     <div class="line"></div>
 </section>
 
+<!-- ── THE COST ───────────────────────────────────────────────────── -->
+<section class="py-28 md:py-36">
+    <div class="max-w-5xl mx-auto px-6 md:px-14">
+
+        <div class="text-center mb-12 reveal">
+            <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">The real cost of being independent</span>
+            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">You already pay<br>for everything.</h2>
+        </div>
+
+        <!-- Receipt card -->
+        <div class="reveal punchline ring-1 ring-white/[0.05] rounded-3xl overflow-hidden">
+            <div class="px-8 pt-8 pb-2">
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] t-faint mb-6">Before a single fan hears your music</p>
+                <div class="space-y-0" id="receiptCard">
+                    <div class="flex justify-between items-center py-4 border-b" style="border-color:var(--line-color)">
+                        <span class="t-muted font-medium">Rehearsal space</span>
+                        <span class="slot-money text-orange-500/60 font-bold text-sm"><span class="slot-char">£</span><span class="slot-char">£</span><span class="slot-char">£</span></span>
+                    </div>
+                    <div class="flex justify-between items-center py-4 border-b" style="border-color:var(--line-color)">
+                        <span class="t-muted font-medium">Travel costs</span>
+                        <span class="slot-money text-orange-500/60 font-bold text-sm"><span class="slot-char">£</span><span class="slot-char">£</span><span class="slot-char">£</span></span>
+                    </div>
+                    <div class="flex justify-between items-center py-4 border-b" style="border-color:var(--line-color)">
+                        <span class="t-muted font-medium">Equipment</span>
+                        <span class="slot-money text-orange-500/60 font-bold text-sm"><span class="slot-char">£</span><span class="slot-char">£</span><span class="slot-char">£</span></span>
+                    </div>
+                    <div class="flex justify-between items-center py-4 border-b" style="border-color:var(--line-color)">
+                        <span class="t-muted font-medium">Recording studio time</span>
+                        <span class="slot-money text-orange-500/60 font-bold text-sm"><span class="slot-char">£</span><span class="slot-char">£</span><span class="slot-char">£</span></span>
+                    </div>
+                    <div class="flex justify-between items-center py-4 border-b" style="border-color:var(--line-color)">
+                        <span class="t-muted font-medium">Mixing &amp; mastering</span>
+                        <span class="slot-money text-orange-500/60 font-bold text-sm"><span class="slot-char">£</span><span class="slot-char">£</span><span class="slot-char">£</span></span>
+                    </div>
+                    <div class="flex justify-between items-center py-4 border-b" style="border-color:var(--line-color)">
+                        <span class="t-muted font-medium">Publishing fees <span class="t-faint text-xs">(DistroKid, CD Baby, TuneCore…)</span></span>
+                        <span class="slot-money text-orange-500/60 font-bold text-sm"><span class="slot-char">£</span><span class="slot-char">£</span><span class="slot-char">£</span></span>
+                    </div>
+                    <div class="flex justify-between items-center py-4" style="border-color:var(--line-color)">
+                        <span class="t-muted font-medium">Pay to play <span class="t-faint text-xs">(sometimes)</span></span>
+                        <span class="slot-money text-orange-500/60 font-bold text-sm"><span class="slot-char">£</span><span class="slot-char">£</span><span class="slot-char">£</span></span>
+                    </div>
+                </div>
+            </div>
+            <!-- Free line -->
+            <div class="mt-2 mx-0 bg-orange-600/8 border-t border-orange-600/15 px-8 py-6 flex justify-between items-center">
+                <div>
+                    <p class="text-white font-bold">Publishing your music on Insound</p>
+                    <p class="text-[11px] t-faint mt-1">We keep 10% per sale — for development, storage, and coffee. That's it.</p>
+                </div>
+                <span class="text-orange-400 font-display font-bold text-2xl tracking-tight ml-6 flex-shrink-0">£0 to publish</span>
+            </div>
+        </div>
+
+    </div>
+</section>
+<div class="line"></div>
+
 <!-- ── THE MATH ──────────────────────────────────────────────────── -->
 <section id="the-math" class="py-28 md:py-36">
-    <div class="max-w-4xl mx-auto px-6 md:px-14">
+    <div class="max-w-5xl mx-auto px-6 md:px-14">
 
         <div class="text-center mb-16 reveal">
             <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">The honest truth</span>
-            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Streaming is broken.<br>Here's the maths.</h2>
-            <p class="text-zinc-500 text-lg max-w-lg mx-auto">What does a fan spending £10 on your music actually mean?</p>
+            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Here's what you keep.</h2>
+            <p class="text-zinc-500 text-lg max-w-lg mx-auto">A fan spends £10 on your music. How much reaches you?</p>
         </div>
 
-        <!-- Two columns -->
-        <div class="grid md:grid-cols-2 gap-4 mb-10 reveal">
+        <!-- Three columns -->
+        <div class="grid md:grid-cols-3 gap-4 mb-10 reveal">
 
-            <div class="col-bad border rounded-3xl p-8">
-                <div class="flex items-center gap-3 mb-8">
-                    <div class="w-9 h-9 rounded-xl bg-red-500/10 ring-1 ring-red-500/10 flex items-center justify-center">
+            <!-- Streaming -->
+            <div class="col-bad border rounded-3xl p-7">
+                <div class="flex items-center gap-3 mb-7">
+                    <div class="w-9 h-9 rounded-xl bg-red-500/10 ring-1 ring-red-500/10 flex items-center justify-center flex-shrink-0">
                         <svg width="14" height="14" fill="none" stroke="#ef4444" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </div>
                     <div>
-                        <p class="font-bold text-red-400 text-sm">Streaming platforms</p>
+                        <p class="font-bold text-red-400 text-sm">Streaming</p>
                         <p class="text-[10px] text-zinc-600 font-medium uppercase tracking-widest">Spotify, Apple Music…</p>
                     </div>
                 </div>
-                <div class="space-y-5">
-                    <div class="flex justify-between items-center border-b border-zinc-900 pb-5">
-                        <p class="text-sm text-zinc-500">Fan spends £10/month</p>
-                        <p class="font-bold text-white text-sm">£10 to the platform</p>
+                <div class="space-y-4">
+                    <div class="border-b border-zinc-900 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">Artist cut</p>
+                        <p class="font-bold text-red-400 text-sm">~£0.003 per stream</p>
                     </div>
-                    <div class="flex justify-between items-center border-b border-zinc-900 pb-5">
-                        <p class="text-sm text-zinc-500">Artist earns per stream</p>
-                        <p class="font-bold text-red-400 text-sm">£0.003</p>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-zinc-900 pb-5">
-                        <p class="text-sm text-zinc-500">Streams to earn £1,000</p>
+                    <div class="border-b border-zinc-900 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">To earn £1,000</p>
                         <p class="font-bold text-red-400 text-sm">333,333 streams</p>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <p class="text-sm text-zinc-500">Fan owns afterwards</p>
-                        <p class="font-bold text-red-400 text-sm">Nothing</p>
+                    <div class="border-b border-zinc-900 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">Revenue threshold</p>
+                        <p class="font-bold text-red-400 text-sm">Algorithms decide</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-zinc-600 mb-1">Platform future</p>
+                        <p class="font-bold text-red-400 text-sm">Shareholder-driven</p>
                     </div>
                 </div>
             </div>
 
-            <div class="col-good border rounded-3xl p-8 relative">
-                <div class="absolute top-5 right-5 bg-orange-600 text-black text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Better for everyone</div>
-                <div class="flex items-center gap-3 mb-8">
-                    <div class="w-9 h-9 rounded-xl bg-orange-600/15 ring-1 ring-orange-600/10 flex items-center justify-center">
+            <!-- Bandcamp -->
+            <div class="border border-zinc-800 rounded-3xl p-7" style="background:rgba(255,255,255,0.02)">
+                <div class="flex items-center gap-3 mb-7">
+                    <div class="w-9 h-9 rounded-xl bg-zinc-800 ring-1 ring-zinc-700 flex items-center justify-center flex-shrink-0">
+                        <svg width="14" height="14" fill="none" stroke="#a1a1aa" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/><path d="M12 2v20"/></svg>
+                    </div>
+                    <div>
+                        <p class="font-bold text-zinc-400 text-sm">Bandcamp</p>
+                        <p class="text-[10px] text-zinc-600 font-medium uppercase tracking-widest">& similar stores</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="border-b border-zinc-900 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">Artist cut</p>
+                        <p class="font-bold text-zinc-400 text-sm">85% (+ payment fees)</p>
+                    </div>
+                    <div class="border-b border-zinc-900 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">To earn £1,000</p>
+                        <p class="font-bold text-zinc-400 text-sm">~118 sales</p>
+                    </div>
+                    <div class="border-b border-zinc-900 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">Revenue threshold</p>
+                        <p class="font-bold text-zinc-400 text-sm">85% until you hit $5k in sales — most artists never do</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-zinc-600 mb-1">Platform future</p>
+                        <p class="font-bold text-zinc-400 text-sm">Sold twice since 2022</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insound -->
+            <div class="col-good border rounded-3xl p-7 relative">
+                <div class="flex justify-end mb-5">
+                    <div class="bg-orange-600 text-black text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Best for artists</div>
+                </div>
+                <div class="flex items-center gap-3 mb-7">
+                    <div class="w-9 h-9 rounded-xl bg-orange-600/15 ring-1 ring-orange-600/10 flex items-center justify-center flex-shrink-0">
                         <svg width="14" height="14" fill="none" stroke="#ea580c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                     <div>
@@ -299,22 +440,22 @@
                         <p class="text-[10px] text-zinc-600 font-medium uppercase tracking-widest">Direct artist support</p>
                     </div>
                 </div>
-                <div class="space-y-5">
-                    <div class="flex justify-between items-center border-b border-zinc-900/60 pb-5">
-                        <p class="text-sm text-zinc-500">Fan buys one track</p>
-                        <p class="font-bold text-white text-sm">£9 total</p>
+                <div class="space-y-4">
+                    <div class="border-b border-zinc-900/60 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">Artist cut</p>
+                        <p class="font-bold text-orange-400 text-sm">90% — always</p>
                     </div>
-                    <div class="flex justify-between items-center border-b border-zinc-900/60 pb-5">
-                        <p class="text-sm text-zinc-500">Artist receives</p>
-                        <p class="font-bold text-orange-400 text-sm">£8.10 (90%)</p>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-zinc-900/60 pb-5">
-                        <p class="text-sm text-zinc-500">Sales to earn £1,000</p>
+                    <div class="border-b border-zinc-900/60 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">To earn £1,000</p>
                         <p class="font-bold text-orange-400 text-sm">~112 sales</p>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <p class="text-sm text-zinc-500">Fan owns afterwards</p>
-                        <p class="font-bold text-orange-400 text-sm">Lossless WAV. Theirs forever.</p>
+                    <div class="border-b border-zinc-900/60 pb-4">
+                        <p class="text-[11px] text-zinc-600 mb-1">Revenue threshold</p>
+                        <p class="font-bold text-orange-400 text-sm">None. 90% from day 1.</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-zinc-600 mb-1">Platform future</p>
+                        <p class="font-bold text-orange-400 text-sm">Artist-first. That's the whole point.</p>
                     </div>
                 </div>
             </div>
@@ -323,10 +464,15 @@
         <!-- Punchline -->
         <div class="punchline ring-1 ring-white/[0.05] rounded-2xl p-8 text-center reveal">
             <p class="text-zinc-400 mb-6">To earn <strong class="text-white">£1,000</strong> from fans spending the same amount:</p>
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-14">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
                 <div class="text-center">
                     <p class="font-display text-4xl md:text-5xl font-bold text-red-400">333,333</p>
                     <p class="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">streams on Spotify</p>
+                </div>
+                <p class="font-display text-2xl text-zinc-700 font-bold italic">vs</p>
+                <div class="text-center">
+                    <p class="font-display text-4xl md:text-5xl font-bold text-zinc-500">~118</p>
+                    <p class="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">sales on Bandcamp</p>
                 </div>
                 <p class="font-display text-2xl text-zinc-700 font-bold italic">vs</p>
                 <div class="text-center">
@@ -339,12 +485,78 @@
     </div>
 </section>
 
+<!-- ── CALCULATOR ────────────────────────────────────────────────── -->
+<section class="pb-28">
+    <div class="max-w-5xl mx-auto px-6 md:px-14">
+        <div class="reveal punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:p-10">
+
+            <div class="text-center mb-8">
+                <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-4">Run your numbers</span>
+                <h3 class="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em]">What would you actually earn?</h3>
+            </div>
+
+            <!-- Price slider -->
+            <div class="mb-10">
+                <div class="flex justify-between items-end mb-4">
+                    <p class="text-sm font-semibold t-muted">Price per release</p>
+                    <p id="calcPriceLabel" class="font-display text-4xl font-bold text-orange-500 tracking-tight">£10</p>
+                </div>
+                <input id="calcSlider" type="range" min="1" max="50" value="10" class="calc-slider w-full">
+                <div class="flex justify-between text-[10px] t-faint mt-2 font-medium">
+                    <span>£1 minimum</span><span>£50</span>
+                </div>
+            </div>
+
+            <!-- Per-sale results -->
+            <div class="grid grid-cols-3 gap-3 mb-8">
+                <div class="rounded-2xl p-4 text-center bg-red-500/5 ring-1 ring-red-500/10">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.15em] text-red-400/60 mb-3">Streaming</p>
+                    <p class="font-display text-xl font-bold text-red-400" id="calcStreamingStreams">3,000</p>
+                    <p class="text-[10px] t-faint mt-1 leading-snug">streams to match<br>one sale</p>
+                </div>
+                <div class="rounded-2xl p-4 text-center ring-1" style="background:rgba(255,255,255,0.02);--tw-ring-color:rgba(255,255,255,0.06)">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.15em] t-faint mb-3">Bandcamp</p>
+                    <p class="font-display text-xl font-bold t-subtle" id="calcBandcampPer">£8.50</p>
+                    <p class="text-[10px] t-faint mt-1 leading-snug">per sale<br>(after fees)</p>
+                </div>
+                <div class="rounded-2xl p-4 text-center bg-orange-600/5 ring-1 ring-orange-600/10">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.15em] text-orange-400/60 mb-3">Insound</p>
+                    <p class="font-display text-xl font-bold text-orange-400" id="calcInsoundPer">£9.00</p>
+                    <p class="text-[10px] t-faint mt-1 leading-snug">per sale,<br>always</p>
+                </div>
+            </div>
+
+            <!-- Dynamic punchline -->
+            <div class="border-t pt-6 text-center" style="border-color:var(--line-color)">
+                <p class="t-muted text-sm mb-4">To earn <strong class="text-white font-bold">£1,000</strong> at this price:</p>
+                <div class="flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
+                    <div class="text-center">
+                        <p class="font-display text-2xl font-bold text-red-400">333,333</p>
+                        <p class="text-[9px] font-bold uppercase tracking-widest t-faint mt-1">streams</p>
+                    </div>
+                    <p class="font-display text-lg t-faint font-bold">vs</p>
+                    <div class="text-center">
+                        <p class="font-display text-2xl font-bold t-subtle" id="calcBandcampSales">~118</p>
+                        <p class="text-[9px] font-bold uppercase tracking-widest t-faint mt-1">Bandcamp sales</p>
+                    </div>
+                    <p class="font-display text-lg t-faint font-bold">vs</p>
+                    <div class="text-center">
+                        <p class="font-display text-2xl font-bold text-orange-500" id="calcInsoundSales">112</p>
+                        <p class="text-[9px] font-bold uppercase tracking-widest t-faint mt-1">Insound sales</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- ── HOW IT WORKS ──────────────────────────────────────────────── -->
+<div class="line"></div>
 <section id="how-it-works" class="py-28 md:py-36 relative">
-    <div class="line"></div>
-    <div class="max-w-4xl mx-auto px-6 md:px-14 pt-20">
+    <div class="max-w-4xl mx-auto px-6 md:px-14">
 
         <div class="text-center mb-16 reveal">
+            <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">How it works</span>
             <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em]">Up and running<br>in minutes.</h2>
         </div>
 
@@ -358,25 +570,49 @@
                 <p class="text-zinc-500 text-sm leading-relaxed">WAV, FLAC, AIFF or MP3. Your artist page goes live instantly — share the link anywhere.</p>
             </div>
 
-            <div class="reveal reveal-delay-1 bg-zinc-950 ring-1 ring-white/[0.05] rounded-3xl p-8">
+            <div class="reveal reveal-delay-1 card ring-1 ring-white/[0.05] rounded-3xl p-8">
                 <div class="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
-                    <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    <span class="text-orange-500 font-bold text-base leading-none">£</span>
                 </div>
                 <p class="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 2</p>
                 <h3 class="font-display text-xl font-bold tracking-tight mb-3">Set your price</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum 50p, no ceiling. Fans pay directly — no subscriptions, no algorithms.</p>
+                <p class="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum £1, no ceiling. Fans pay directly — no subscriptions, no algorithms.</p>
             </div>
 
-            <div class="reveal reveal-delay-2 bg-zinc-950 ring-1 ring-white/[0.05] rounded-3xl p-8">
+            <div class="reveal reveal-delay-2 card ring-1 ring-white/[0.05] rounded-3xl p-8">
                 <div class="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
                     <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                 </div>
                 <p class="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 3</p>
                 <h3 class="font-display text-xl font-bold tracking-tight mb-3">Get paid</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed">90% hits your balance the moment a sale completes. Withdraw anytime. No thresholds, no delays, no surprises.</p>
+                <p class="text-zinc-500 text-sm leading-relaxed">90% of every sale goes straight to you, the moment it completes. Withdraw anytime. No thresholds, no delays, no surprises.</p>
             </div>
         </div>
 
+        <!-- Step 4 - full width -->
+        <div class="reveal mt-6 card ring-1 ring-white/[0.05] rounded-3xl p-8 flex flex-col sm:flex-row items-start gap-6">
+            <div class="w-10 h-10 flex-shrink-0 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center">
+                <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <div>
+                <p class="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 4</p>
+                <h3 class="font-display text-xl font-bold tracking-tight mb-3">Get discovered</h3>
+                <p class="text-zinc-500 text-sm leading-relaxed max-w-xl">Your artist page is public from the moment you upload. Fans browse Insound, find your music, and buy direct — no algorithm deciding who gets heard. You build the audience. You own the relationship.</p>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- ── TRUST ─────────────────────────────────────────────────────── -->
+<section class="pb-16">
+    <div class="max-w-5xl mx-auto px-6 md:px-14">
+        <div class="reveal punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:p-12">
+            <h3 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Built different.</h3>
+            <p class="t-muted text-base leading-relaxed mb-5">Every platform starts with the same promise. Then they raise money, answer to investors, and the terms quietly change. We've watched it happen to Bandcamp twice in three years.</p>
+            <p class="text-white font-medium leading-relaxed mb-5">We're building Insound independently, without outside pressure to compromise on artist rates. 90% to artists isn't a launch offer — it's the whole model, permanently. We keep 10% to cover development, storage, and the team. That's it. No hidden fees, no rate changes, no small print.</p>
+            <p class="t-muted text-base leading-relaxed">Sign up now and your 90% starts from your first sale. No thresholds, no waiting, no asterisks.</p>
+        </div>
     </div>
 </section>
 
@@ -387,22 +623,22 @@
         <div class="reveal">
             <div class="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
                 <span class="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot"></span>
-                Early access open
+                Waitlist open
             </div>
-            <h2 class="font-display text-4xl md:text-6xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">Be first<br>in line.</h2>
+            <h2 class="font-display text-4xl md:text-6xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">Your music.<br>Your money.</h2>
             <p class="text-zinc-400 text-lg leading-relaxed mb-10 max-w-sm mx-auto">
-                Register your interest and get priority access, a founding member badge, and your 90% rate locked in forever.
+                Sign up now and get first access when we launch. 90% is the model — not a launch offer. Your rate starts from your first sale. No thresholds. No asterisks.
             </p>
         </div>
 
         <div class="reveal reveal-delay-1">
             <div id="bottomForm" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4">
-                <input type="email" id="bottomEmail" placeholder="your@email.com"
+                <input type="email" id="bottomEmail" placeholder="your@email.com" autocomplete="email"
                     onkeydown="if(event.key==='Enter')submitBottom()"
                     class="flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border border-transparent rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all">
                 <button onclick="submitBottom()"
                     class="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap">
-                    Register →
+                    Join the waitlist →
                 </button>
             </div>
             <div id="bottomSuccess" class="hidden mb-4">
@@ -423,7 +659,7 @@
 <footer class="border-t border-zinc-900/80 py-12">
     <div class="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
         <span class="font-display text-lg font-bold text-orange-500 tracking-tight">insound<span class="text-white/25">.</span></span>
-        <p class="text-zinc-700 text-[11px] font-medium">© 2026 Insound Music Ltd &nbsp;·&nbsp; <a href="privacy.html" class="hover:text-zinc-500 transition-colors">Privacy Policy</a></p>
+        <p class="text-zinc-700 text-[11px] font-medium">© 2026 Insound &nbsp;·&nbsp; <a href="privacy.html" class="hover:text-zinc-500 transition-colors">Privacy Policy</a></p>
     </div>
 </footer>
 
@@ -469,7 +705,7 @@ function submitHero() {
     const email = emailEl.value.trim();
     if (!email || !/\S+@\S+\.\S+/.test(email)) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); return; }
     const btn = document.querySelector('#heroForm button');
-    postToFormspree(email, btn, 'Get early access →', () => {
+    postToFormspree(email, btn, 'Join the waitlist →', () => {
         document.getElementById('heroForm').classList.add('hidden');
         document.getElementById('heroSuccess').classList.remove('hidden');
         document.getElementById('bottomForm').classList.add('hidden');
@@ -483,7 +719,7 @@ function submitBottom() {
     const email = emailEl.value.trim();
     if (!email || !/\S+@\S+\.\S+/.test(email)) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); return; }
     const btn = document.querySelector('#bottomForm button');
-    postToFormspree(email, btn, 'Register →', () => {
+    postToFormspree(email, btn, 'Join waitlist →', () => {
         document.getElementById('bottomForm').classList.add('hidden');
         document.getElementById('bottomSuccess').classList.remove('hidden');
         document.getElementById('heroForm').classList.add('hidden');
@@ -505,6 +741,71 @@ function toggleTheme() {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     document.getElementById('iconSun').classList.toggle('hidden', isLight);
     document.getElementById('iconMoon').classList.toggle('hidden', !isLight);
+})();
+
+// ── Local currency detection ───────────────────────────────────
+(function() {
+    const localeMap = {
+        'en-US':'USD','en-CA':'CAD','en-AU':'AUD','en-NZ':'NZD',
+        'ja':'JPY','ko':'KRW','zh':'CNY','hi':'INR','pt-BR':'BRL',
+        'sv':'SEK','no':'NOK','da':'DKK','pl':'PLN','tr':'TRY',
+        'de':'EUR','fr':'EUR','it':'EUR','es':'EUR','nl':'EUR',
+        'pt':'EUR','fi':'EUR','el':'EUR','sk':'EUR','sl':'EUR'
+    };
+    const locale = navigator.language || 'en-GB';
+    const lang = locale.split('-')[0];
+    const code = localeMap[locale] || localeMap[lang] || 'GBP';
+    let sym = '£';
+    try {
+        sym = (0).toLocaleString(locale, {style:'currency',currency:code,maximumFractionDigits:0})
+               .replace(/[\d\s.,]/g,'').trim() || '£';
+    } catch(e) {}
+    window._currSym = sym;
+    // Update all currency labels
+    ['calcPriceLabel','calcBandcampPer','calcInsoundPer'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = el.textContent.replace('£', sym);
+    });
+    document.querySelectorAll('.calc-slider-min').forEach(el => {
+        el.textContent = el.textContent.replace('£', sym);
+    });
+})();
+
+// ── Earnings calculator ───────────────────────────────────────
+(function() {
+    const slider = document.getElementById('calcSlider');
+    if (!slider) return;
+    function sym() { return window._currSym || '£'; }
+    function updateCalc() {
+        const price = parseInt(slider.value);
+        slider.style.setProperty('--fill', ((price - 1) / 49 * 100).toFixed(1) + '%');
+        document.getElementById('calcPriceLabel').textContent = sym() + price;
+        document.getElementById('calcBandcampPer').textContent = sym() + (price * 0.85).toFixed(2);
+        document.getElementById('calcInsoundPer').textContent = sym() + (price * 0.90).toFixed(2);
+        document.getElementById('calcStreamingStreams').textContent = Math.round(price * 0.90 / 0.003).toLocaleString();
+        document.getElementById('calcBandcampSales').textContent = '~' + Math.ceil(1000 / (price * 0.85));
+        document.getElementById('calcInsoundSales').textContent = Math.ceil(1000 / (price * 0.90));
+    }
+    slider.addEventListener('input', updateCalc);
+    updateCalc();
+})();
+
+// ── Slot machine trigger (receipt card) ───────────────────────
+(function() {
+    const card = document.getElementById('receiptCard');
+    if (!card) return;
+    let fired = false;
+    const obs = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && !fired) {
+            fired = true;
+            card.querySelectorAll('.slot-char').forEach((el, i) => {
+                el.style.animationDelay = (i * 0.06) + 's';
+                el.classList.add('slot-active');
+            });
+            obs.disconnect();
+        }
+    }, { threshold: 0.3 });
+    obs.observe(card);
 })();
 
 // ── Already signed up ─────────────────────────────────────────
