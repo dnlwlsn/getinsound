@@ -3,853 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insound | Music That Pays Artists</title>
-    <meta name="description" content="The music platform where artists keep 90% of every sale. No labels, no middlemen — just music and the money it deserves.">
-    <meta property="og:title" content="Insound | Music That Pays Artists">
-    <meta property="og:description" content="The music platform where artists keep 90% of every sale. No labels, no middlemen — just music and the money it deserves.">
+    <title>Insound — Music That Pays Artists</title>
+    <meta name="description" content="The music platform where artists keep 90% of every sale. No labels, no middlemen. Get early access.">
+    <meta property="og:title" content="Insound — Music That Pays Artists">
+    <meta property="og:description" content="Upload your music. Keep 90%. Own your masters. No monthly fee. Join the waitlist.">
     <meta property="og:type" content="website">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="tailwind.css">
-    <link rel="dns-prefetch" href="//picsum.photos">
-    <link rel="dns-prefetch" href="//api.dicebear.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; }
-        body { background-color: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
-        .emerald-gradient { background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); }
-        .glass { background: rgba(9,9,11,0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-        .glow { box-shadow: 0 0 100px rgba(234,88,12,0.14); }
+        :root { --ease-spring: cubic-bezier(0.32,0.72,0,1); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #050505;
+            color: #e4e4e7;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; }
 
-        @keyframes float { 0%,100% { transform:translateY(0) rotate(2deg); } 50% { transform:translateY(-12px) rotate(2deg); } }
-        .float { animation: float 7s ease-in-out infinite; }
+        /* Grain */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 99;
+            pointer-events: none;
+            opacity: 0.022;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 180px;
+        }
 
-        @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:.35; } }
-        .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+        /* Scroll reveal */
+        .reveal { opacity: 0; transform: translateY(2rem); filter: blur(6px); transition: opacity 0.8s var(--ease-spring), transform 0.8s var(--ease-spring), filter 0.8s var(--ease-spring); }
+        .reveal.is-visible { opacity: 1; transform: none; filter: none; }
+        .reveal-delay-1 { transition-delay: 0.08s; }
+        .reveal-delay-2 { transition-delay: 0.16s; }
+        .reveal-delay-3 { transition-delay: 0.24s; }
 
-        @keyframes slide-in-up { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-        .slide-in-up { animation: slide-in-up .4s ease both; }
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .pulse-dot { animation: pulse-dot 2.2s ease-in-out infinite; }
 
-        @keyframes ticker-in { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
-        @keyframes ticker-out { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(16px); } }
-        .ticker-in { animation: ticker-in .3s ease both; }
-        .ticker-out { animation: ticker-out .3s ease both; }
+        /* Divider lines */
+        .line { height: 1px; background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent); }
 
-        .strikethrough { position:relative; }
-        .strikethrough::after { content:''; position:absolute; left:0; top:50%; width:100%; height:2px; background:#ef4444; transform:rotate(-2deg); }
+        /* Comparison cols */
+        .col-bad  { background: rgba(239,68,68,0.03);  border-color: rgba(239,68,68,0.12); }
+        .col-good { background: rgba(234,88,12,0.04); border-color: rgba(234,88,12,0.14); }
 
-        .compare-col-bad { background: rgba(239,68,68,.04); border-color: rgba(239,68,68,.15); }
-        .compare-col-good { background: rgba(234,88,12,.06); border-color: rgba(234,88,12,.2); }
+        /* Form input */
+        input[type=email]:focus { outline: none; border-color: #ea580c; }
     </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 glass border-b border-zinc-900/80">
-    <a href="index.html" class="text-2xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</a>
-    <div class="hidden md:flex gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-        <a href="#how-it-works" class="hover:text-orange-500 transition-colors">How It Works</a>
-        <a href="explore.html" class="hover:text-orange-500 transition-colors">Explore</a>
-        <a href="#features" class="hover:text-orange-500 transition-colors">Features</a>
-        <a href="why-us.html" class="hover:text-orange-500 transition-colors">Why Insound</a>
-    </div>
-    <div class="flex gap-3 items-center">
-        <a href="auth.html" class="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block">Sign In</a>
-        <a href="auth.html" class="bg-orange-600 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">Get Started</a>
+<!-- ── NAV ─────────────────────────────────────────────────────── -->
+<nav class="fixed top-0 left-0 right-0 z-50 flex justify-center pt-5 px-4" style="pointer-events:none">
+    <div class="flex items-center justify-between w-full max-w-4xl rounded-full px-5 py-3 ring-1 ring-white/[0.06] shadow-[0_8px_40px_rgba(0,0,0,0.5)]"
+         style="background:rgba(5,5,5,0.75);backdrop-filter:blur(24px);pointer-events:auto">
+        <span class="font-display text-lg font-bold text-orange-500 tracking-tight">insound<span class="text-white/25">.</span></span>
+        <a href="#signup" class="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
+            Get early access
+        </a>
     </div>
 </nav>
 
-<!-- HERO -->
-<header class="relative min-h-screen flex items-center pt-24 overflow-hidden">
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_70%_-10%,rgba(234,88,12,0.1),transparent)]"></div>
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_20%_80%,rgba(234,88,12,0.04),transparent)]"></div>
+<!-- ── HERO ─────────────────────────────────────────────────────── -->
+<header class="relative min-h-screen flex items-center justify-center px-6 pt-32 pb-20 overflow-hidden">
 
-    <div class="max-w-7xl mx-auto px-6 md:px-14 relative z-10 grid lg:grid-cols-2 gap-16 items-center w-full">
-        <div>
-            <span class="inline-flex items-center gap-2.5 bg-orange-600/10 text-orange-500 text-[10px] font-black px-4 py-2 rounded-full border border-orange-600/20 mb-8 uppercase tracking-widest">
-                <span class="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot"></span>
-                90% to artists &nbsp;·&nbsp; No monthly fee
-            </span>
-            <h1 class="text-[clamp(4rem,10vw,7rem)] font-black tracking-tighter leading-[0.85] mb-8">
-                Direct<br/>Artist<br/><span class="text-orange-600">Support.</span>
-            </h1>
-            <p class="text-zinc-400 text-lg md:text-xl max-w-lg mb-10 leading-relaxed font-medium">
-                Streaming pays fractions of a penny. We pay you directly. Upload for free, keep your rights, and get <strong class="text-white">90% of every sale</strong> — straight to your balance.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 mb-10">
-                <a href="auth.html" class="emerald-gradient text-black font-black px-10 py-5 rounded-2xl text-center shadow-xl shadow-orange-600/25 hover:scale-[1.02] transition-transform text-sm uppercase tracking-wider">Start Selling Today</a>
-                <a href="explore.html" class="bg-zinc-900 border border-zinc-800 text-white font-bold px-10 py-5 rounded-2xl text-center hover:bg-zinc-800 hover:border-zinc-700 transition text-sm">Browse Music →</a>
-            </div>
-            <p class="text-zinc-600 text-xs font-bold uppercase tracking-widest">Free forever &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Up in minutes</p>
-            <p class="mt-4 text-zinc-600 text-xs">Not ready yet? <a href="#register-interest" class="text-orange-500 font-black hover:text-orange-400 transition-colors">Register your interest →</a></p>
-        </div>
-
-        <!-- Hero card -->
-        <div class="hidden lg:block relative">
-            <div class="float glow">
-                <div class="bg-zinc-900/90 border border-zinc-800 p-7 rounded-[2.5rem] shadow-2xl backdrop-blur-sm">
-                    <div class="relative overflow-hidden rounded-2xl mb-5 aspect-square">
-                        <img src="https://picsum.photos/seed/mus1/600/600" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" alt="Northern Soul by YOUTH" loading="lazy">
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-5">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full bg-orange-500 pulse-dot"></div>
-                                <span class="text-[10px] font-black text-orange-500 uppercase tracking-widest">Now trending</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between mb-5">
-                        <div>
-                            <p class="text-xl font-black leading-tight">Northern Soul</p>
-                            <p class="text-orange-600 font-bold text-xs uppercase tracking-widest mt-1">YOUTH · Manchester</p>
-                        </div>
-                        <a href="player.html?id=1&title=Northern+Soul&artist=YOUTH&price=9.00&img=https://picsum.photos/seed/mus1/600/600" class="bg-orange-600 hover:bg-orange-500 transition-colors p-4 rounded-2xl text-black shadow-lg shadow-orange-600/30 flex-shrink-0">
-                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        </a>
-                    </div>
-                    <div class="bg-black/40 rounded-2xl p-4 border border-zinc-800">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Artist earned this month</span>
-                            <span class="text-orange-600 font-black">£2,340</span>
-                        </div>
-                        <!-- Mini bar chart -->
-                        <div class="flex items-end gap-1 h-8">
-                            <div class="flex-1 bg-zinc-700/50 rounded-sm" style="height:40%"></div>
-                            <div class="flex-1 bg-zinc-700/50 rounded-sm" style="height:60%"></div>
-                            <div class="flex-1 bg-zinc-700/50 rounded-sm" style="height:45%"></div>
-                            <div class="flex-1 bg-zinc-700/50 rounded-sm" style="height:70%"></div>
-                            <div class="flex-1 bg-zinc-700/50 rounded-sm" style="height:55%"></div>
-                            <div class="flex-1 bg-orange-600 rounded-sm" style="height:100%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Live sale notification -->
-            <div id="liveSale" class="absolute -bottom-4 -left-8 bg-zinc-900 border border-zinc-700 rounded-2xl px-5 py-3.5 shadow-2xl flex items-center gap-3 ticker-in min-w-[220px]">
-                <div class="w-8 h-8 rounded-xl bg-orange-600/20 flex items-center justify-center flex-shrink-0">
-                    <svg width="14" height="14" fill="#ea580c" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l7.78 7.78 7.78-7.78a5.5 5.5 0 000-7.78z"/></svg>
-                </div>
-                <div>
-                    <p id="liveSaleText" class="text-xs font-black text-white">James just bought <span class="text-orange-500">Indie Summer</span></p>
-                    <p class="text-[10px] text-zinc-500 font-bold">2 secs ago · £9.00 to artist</p>
-                </div>
-            </div>
-        </div>
+    <!-- Radial glows -->
+    <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full" style="background:radial-gradient(ellipse,rgba(234,88,12,0.1) 0%,transparent 70%);"></div>
+        <div class="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full" style="background:radial-gradient(ellipse,rgba(234,88,12,0.05) 0%,transparent 70%);"></div>
     </div>
 
-    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-40">
-        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+    <div class="relative z-10 max-w-3xl mx-auto text-center">
+
+        <!-- Live badge -->
+        <div class="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
+            <span class="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot"></span>
+            Early access open
+        </div>
+
+        <!-- Headline -->
+        <h1 class="font-display text-[clamp(3.5rem,10vw,7rem)] font-bold tracking-[-0.04em] leading-[0.88] mb-8">
+            Music that<br><span class="text-orange-500">pays artists.</span>
+        </h1>
+
+        <!-- Sub -->
+        <p class="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-xl mx-auto mb-12 font-medium">
+            Upload your music. Keep <strong class="text-white font-bold">90%</strong> of every sale.
+            Own your masters. No monthly fee. No middlemen.
+        </p>
+
+        <!-- Signup form -->
+        <div id="signup" class="max-w-md mx-auto">
+            <div id="heroForm" class="flex flex-col sm:flex-row gap-3">
+                <input type="email" id="heroEmail" placeholder="your@email.com"
+                    onkeydown="if(event.key==='Enter')submitHero()"
+                    class="flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border border-transparent rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all">
+                <button onclick="submitHero()"
+                    class="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap">
+                    Get early access →
+                </button>
+            </div>
+            <div id="heroSuccess" class="hidden">
+                <div class="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
+                    <svg width="16" height="16" fill="none" stroke="#ea580c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="text-orange-400 font-bold text-sm">You're on the list. We'll be in touch.</span>
+                </div>
+            </div>
+            <p class="text-zinc-700 text-xs mt-4 font-medium">
+                No spam, ever &nbsp;·&nbsp; Unsubscribe anytime &nbsp;·&nbsp; <a href="privacy.html" class="hover:text-zinc-500 transition-colors">Privacy Policy</a>
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-25">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" class="animate-bounce"><path d="M19 9l-7 7-7-7"/></svg>
     </div>
 </header>
 
-<!-- STATS STRIP -->
-<section class="border-y border-zinc-900 bg-zinc-950 py-12" id="statsStrip">
-    <div class="max-w-7xl mx-auto px-6 md:px-14">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-                <p class="text-3xl md:text-4xl font-black text-white">90%</p>
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mt-2">Revenue to You</p>
+<!-- ── STATS ─────────────────────────────────────────────────────── -->
+<section class="relative py-16">
+    <div class="line"></div>
+    <div class="max-w-4xl mx-auto px-6 md:px-14 py-14">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
+            <div class="reveal">
+                <p class="font-display text-4xl font-bold text-white tracking-tight">90%</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Revenue to you</p>
             </div>
-            <div>
-                <p class="text-3xl md:text-4xl font-black text-orange-600">£0</p>
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mt-2">Monthly Fee, Ever</p>
+            <div class="reveal reveal-delay-1">
+                <p class="font-display text-4xl font-bold text-orange-500 tracking-tight">£0</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Monthly fee, ever</p>
             </div>
-            <div>
-                <p class="text-3xl md:text-4xl font-black text-white">Minutes</p>
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mt-2">To Go Live</p>
+            <div class="reveal reveal-delay-2">
+                <p class="font-display text-4xl font-bold text-white tracking-tight">Minutes</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">To go live</p>
             </div>
-            <div>
-                <p class="text-3xl md:text-4xl font-black text-white">100%</p>
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mt-2">Your Masters, Always</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- MISSION -->
-<section class="py-28">
-    <div class="max-w-7xl mx-auto px-6 md:px-14">
-        <div class="grid md:grid-cols-3 gap-12 lg:gap-20">
-            <div class="space-y-5">
-                <div class="h-0.5 w-12 bg-orange-600"></div>
-                <h3 class="text-2xl font-black">Take back control.</h3>
-                <p class="text-zinc-500 leading-relaxed">Your music shouldn't be gated by gatekeepers. Insound gives every independent artist the same tools the industry pays millions for — free.</p>
-            </div>
-            <div class="space-y-5">
-                <div class="h-0.5 w-12 bg-orange-600"></div>
-                <h3 class="text-2xl font-black">100% Ownership.</h3>
-                <p class="text-zinc-500 leading-relaxed">You own your masters. Always. We never take a licensing stake, sync your music without permission, or add your work to third-party platforms without your say.</p>
-            </div>
-            <div class="space-y-5">
-                <div class="h-0.5 w-12 bg-orange-600"></div>
-                <h3 class="text-2xl font-black">Direct Revenue.</h3>
-                <p class="text-zinc-500 leading-relaxed">We take a flat 10% to keep the lights on. The rest hits your balance the moment a sale completes. No delays, no thresholds, no surprises.</p>
+            <div class="reveal reveal-delay-3">
+                <p class="font-display text-4xl font-bold text-white tracking-tight">100%</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Your masters, always</p>
             </div>
         </div>
     </div>
+    <div class="line"></div>
 </section>
 
-<!-- THE COMPARISON (conversion centrepiece) -->
-<section id="compare" class="py-28 bg-zinc-950 border-y border-zinc-900">
-    <div class="max-w-5xl mx-auto px-6 md:px-14">
-        <div class="text-center mb-16">
-            <p class="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4">The honest truth</p>
-            <h2 class="text-4xl md:text-5xl font-black tracking-tighter mb-4">Streaming is broken.<br/>Here's the maths.</h2>
-            <p class="text-zinc-400 text-lg max-w-xl mx-auto">What does a fan spending £10 on your music actually mean — on Spotify vs on Insound?</p>
+<!-- ── THE MATH ──────────────────────────────────────────────────── -->
+<section id="the-math" class="py-28 md:py-36">
+    <div class="max-w-4xl mx-auto px-6 md:px-14">
+
+        <div class="text-center mb-16 reveal">
+            <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">The honest truth</span>
+            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Streaming is broken.<br>Here's the maths.</h2>
+            <p class="text-zinc-500 text-lg max-w-lg mx-auto">What does a fan spending £10 on your music actually mean?</p>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-5 mb-12">
-            <!-- Spotify col -->
-            <div class="compare-col-bad border rounded-3xl p-8 md:p-10">
+        <!-- Two columns -->
+        <div class="grid md:grid-cols-2 gap-4 mb-10 reveal">
+
+            <div class="col-bad border rounded-3xl p-8">
                 <div class="flex items-center gap-3 mb-8">
-                    <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                        <svg width="18" height="18" fill="#ef4444" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    <div class="w-9 h-9 rounded-xl bg-red-500/10 ring-1 ring-red-500/10 flex items-center justify-center">
+                        <svg width="14" height="14" fill="none" stroke="#ef4444" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </div>
                     <div>
-                        <p class="font-black text-red-400">Streaming Platforms</p>
-                        <p class="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Spotify, Apple Music, etc.</p>
+                        <p class="font-bold text-red-400 text-sm">Streaming platforms</p>
+                        <p class="text-[10px] text-zinc-600 font-medium uppercase tracking-widest">Spotify, Apple Music…</p>
                     </div>
                 </div>
                 <div class="space-y-5">
-                    <div class="flex justify-between items-start border-b border-zinc-800/60 pb-5">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">Fan spends £10/month on Premium</p>
-                        <p class="font-black text-white text-right">£10.00<br/><span class="text-[10px] text-zinc-600 font-bold">to the platform</span></p>
+                    <div class="flex justify-between items-center border-b border-zinc-900 pb-5">
+                        <p class="text-sm text-zinc-500">Fan spends £10/month</p>
+                        <p class="font-bold text-white text-sm">£10 to the platform</p>
                     </div>
-                    <div class="flex justify-between items-start border-b border-zinc-800/60 pb-5">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">Per stream payout to artist</p>
-                        <p class="font-black text-red-400 text-right">£0.003<br/><span class="text-[10px] text-zinc-600 font-bold">per play</span></p>
+                    <div class="flex justify-between items-center border-b border-zinc-900 pb-5">
+                        <p class="text-sm text-zinc-500">Artist earns per stream</p>
+                        <p class="font-bold text-red-400 text-sm">£0.003</p>
                     </div>
-                    <div class="flex justify-between items-start border-b border-zinc-800/60 pb-5">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">Streams needed to earn £1,000</p>
-                        <p class="font-black text-red-400 text-right">333,333<br/><span class="text-[10px] text-zinc-600 font-bold">streams</span></p>
+                    <div class="flex justify-between items-center border-b border-zinc-900 pb-5">
+                        <p class="text-sm text-zinc-500">Streams to earn £1,000</p>
+                        <p class="font-bold text-red-400 text-sm">333,333 streams</p>
                     </div>
-                    <div class="flex justify-between items-start">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">What the fan owns after</p>
-                        <p class="font-black text-red-400 text-right">Nothing.<br/><span class="text-[10px] text-zinc-600 font-bold">rented, not owned</span></p>
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm text-zinc-500">Fan owns afterwards</p>
+                        <p class="font-bold text-red-400 text-sm">Nothing</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Insound col -->
-            <div class="compare-col-good border rounded-3xl p-8 md:p-10 relative overflow-hidden">
-                <div class="absolute top-5 right-5 bg-orange-600 text-black text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Better for everyone</div>
+            <div class="col-good border rounded-3xl p-8 relative">
+                <div class="absolute top-5 right-5 bg-orange-600 text-black text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Better for everyone</div>
                 <div class="flex items-center gap-3 mb-8">
-                    <div class="w-10 h-10 rounded-xl bg-orange-600/15 flex items-center justify-center">
-                        <svg width="18" height="18" fill="#ea580c" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                    <div class="w-9 h-9 rounded-xl bg-orange-600/15 ring-1 ring-orange-600/10 flex items-center justify-center">
+                        <svg width="14" height="14" fill="none" stroke="#ea580c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                     <div>
-                        <p class="font-black text-orange-500">insound.</p>
-                        <p class="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Direct artist support</p>
+                        <p class="font-bold text-orange-400 text-sm">insound.</p>
+                        <p class="text-[10px] text-zinc-600 font-medium uppercase tracking-widest">Direct artist support</p>
                     </div>
                 </div>
                 <div class="space-y-5">
-                    <div class="flex justify-between items-start border-b border-zinc-800/60 pb-5">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">Fan buys one track for £9</p>
-                        <p class="font-black text-white text-right">£9.00<br/><span class="text-[10px] text-zinc-600 font-bold">total spend</span></p>
+                    <div class="flex justify-between items-center border-b border-zinc-900/60 pb-5">
+                        <p class="text-sm text-zinc-500">Fan buys one track</p>
+                        <p class="font-bold text-white text-sm">£9 total</p>
                     </div>
-                    <div class="flex justify-between items-start border-b border-zinc-800/60 pb-5">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">Artist receives per sale</p>
-                        <p class="font-black text-orange-500 text-right">£8.10<br/><span class="text-[10px] text-zinc-600 font-bold">90% of sale</span></p>
+                    <div class="flex justify-between items-center border-b border-zinc-900/60 pb-5">
+                        <p class="text-sm text-zinc-500">Artist receives</p>
+                        <p class="font-bold text-orange-400 text-sm">£8.10 (90%)</p>
                     </div>
-                    <div class="flex justify-between items-start border-b border-zinc-800/60 pb-5">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">Sales needed to earn £1,000</p>
-                        <p class="font-black text-orange-500 text-right">~112<br/><span class="text-[10px] text-zinc-600 font-bold">sales</span></p>
+                    <div class="flex justify-between items-center border-b border-zinc-900/60 pb-5">
+                        <p class="text-sm text-zinc-500">Sales to earn £1,000</p>
+                        <p class="font-bold text-orange-400 text-sm">~112 sales</p>
                     </div>
-                    <div class="flex justify-between items-start">
-                        <p class="text-sm text-zinc-400 font-medium max-w-[55%]">What the fan owns after</p>
-                        <p class="font-black text-orange-500 text-right">Lossless WAV.<br/><span class="text-[10px] text-zinc-600 font-bold">permanently theirs</span></p>
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm text-zinc-500">Fan owns afterwards</p>
+                        <p class="font-bold text-orange-400 text-sm">Lossless WAV. Theirs forever.</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Summary punch line -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center">
-            <p class="text-zinc-400 text-lg mb-2">To earn <strong class="text-white">£1,000</strong> from fans spending the same amount:</p>
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-10 mt-6">
+        <!-- Punchline -->
+        <div class="bg-zinc-950 ring-1 ring-white/[0.05] rounded-2xl p-8 text-center reveal">
+            <p class="text-zinc-400 mb-6">To earn <strong class="text-white">£1,000</strong> from fans spending the same amount:</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-14">
                 <div class="text-center">
-                    <p class="text-4xl font-black text-red-400">333,333</p>
-                    <p class="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">streams on Spotify</p>
+                    <p class="font-display text-4xl md:text-5xl font-bold text-red-400">333,333</p>
+                    <p class="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">streams on Spotify</p>
                 </div>
-                <div class="text-zinc-600 font-black text-2xl italic">vs</div>
+                <p class="font-display text-2xl text-zinc-700 font-bold italic">vs</p>
                 <div class="text-center">
-                    <p class="text-4xl font-black text-orange-500">112</p>
-                    <p class="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">sales on Insound</p>
+                    <p class="font-display text-4xl md:text-5xl font-bold text-orange-500">112</p>
+                    <p class="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">sales on Insound</p>
                 </div>
             </div>
         </div>
-        <div class="text-center mt-10">
-            <a href="auth.html" class="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-black font-black px-8 py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors shadow-lg shadow-orange-600/20">
-                Start earning 90% today
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </a>
-            <p class="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mt-4">Free to join · No credit card</p>
-        </div>
+
     </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section id="how-it-works" class="py-28">
-    <div class="max-w-7xl mx-auto px-6 md:px-14">
-        <div class="text-center mb-20">
-            <p class="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4">For Artists</p>
-            <h2 class="text-4xl md:text-5xl font-black tracking-tighter">Up and running in minutes.</h2>
-        </div>
-        <div class="grid md:grid-cols-3 gap-6 relative">
-            <div class="hidden md:block absolute top-14 left-[calc(33%+1rem)] right-[calc(33%+1rem)] h-px bg-gradient-to-r from-orange-600/20 via-zinc-700 to-orange-600/20"></div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-10 text-center hover:border-orange-600/30 transition-all hover:-translate-y-1 duration-300">
-                <div class="w-14 h-14 rounded-2xl bg-orange-600/10 border border-orange-600/20 flex items-center justify-center mx-auto mb-6 text-2xl font-black text-orange-600">1</div>
-                <h3 class="text-xl font-black mb-3">Upload Your Music</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed">WAV, FLAC, MP3 — all supported. Set your own price, or let fans pay what they feel it's worth.</p>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-10 text-center hover:border-orange-600/30 transition-all hover:-translate-y-1 duration-300">
-                <div class="w-14 h-14 rounded-2xl bg-orange-600/10 border border-orange-600/20 flex items-center justify-center mx-auto mb-6 text-2xl font-black text-orange-600">2</div>
-                <h3 class="text-xl font-black mb-3">Share Your Page</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed">Your artist page goes live instantly. Drop the link in your bio, newsletter, stories — anywhere your fans are.</p>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-10 text-center hover:border-orange-600/30 transition-all hover:-translate-y-1 duration-300">
-                <div class="w-14 h-14 rounded-2xl bg-orange-600/10 border border-orange-600/20 flex items-center justify-center mx-auto mb-6 text-2xl font-black text-orange-600">3</div>
-                <h3 class="text-xl font-black mb-3">Get Paid</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed">90% of every sale lands in your balance the moment it completes. Withdraw to your bank whenever you want.</p>
-            </div>
-        </div>
-    </div>
-</section>
+<!-- ── HOW IT WORKS ──────────────────────────────────────────────── -->
+<section id="how-it-works" class="py-28 md:py-36 relative">
+    <div class="line"></div>
+    <div class="max-w-4xl mx-auto px-6 md:px-14 pt-20">
 
-<!-- FEATURES -->
-<section id="features" class="py-28 bg-zinc-950 border-y border-zinc-900">
-    <div class="max-w-7xl mx-auto px-6 md:px-14">
-        <div class="bg-zinc-900 rounded-[2.5rem] p-10 md:p-16 border border-zinc-800 relative overflow-hidden">
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(234,88,12,0.07),transparent_60%)]"></div>
-            <div class="relative z-10 grid md:grid-cols-2 gap-16 items-start">
-                <div>
-                    <p class="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4">What You Get</p>
-                    <h2 class="text-4xl font-black tracking-tighter mb-10">Professional tools.<br/><span class="text-orange-600">No label required.</span></h2>
-                    <ul class="space-y-7">
-                        <li class="flex items-start gap-4">
-                            <div class="bg-orange-600/15 p-2.5 rounded-xl text-orange-600 flex-shrink-0 mt-0.5">
-                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-white mb-1">Lossless Audio Downloads</p>
-                                <p class="text-sm text-zinc-500 leading-relaxed">Fans download studio-quality WAV and FLAC files. Not a compressed stream — their own copy, forever.</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-4">
-                            <div class="bg-orange-600/15 p-2.5 rounded-xl text-orange-600 flex-shrink-0 mt-0.5">
-                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-white mb-1">Real-Time Analytics</p>
-                                <p class="text-sm text-zinc-500 leading-relaxed">See who's listening, where they're from, and what's selling — as it happens. No waiting for monthly reports.</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-4">
-                            <div class="bg-orange-600/15 p-2.5 rounded-xl text-orange-600 flex-shrink-0 mt-0.5">
-                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-white mb-1">Instant Payouts</p>
-                                <p class="text-sm text-zinc-500 leading-relaxed">Your balance updates in real-time. No monthly cycles, no £50 minimums, no delays. It's your money.</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-4">
-                            <div class="bg-orange-600/15 p-2.5 rounded-xl text-orange-600 flex-shrink-0 mt-0.5">
-                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-white mb-1">Flexible Pricing</p>
-                                <p class="text-sm text-zinc-500 leading-relaxed">Fixed price, minimum price, or "pay what you want." Offer a discount to your mailing list. Your release, your rules.</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-black/60 p-7 rounded-3xl border border-zinc-800 text-center">
-                            <p class="text-4xl font-black text-orange-600 mb-1">90%</p>
-                            <p class="text-[10px] font-black uppercase tracking-widest text-zinc-500">Your Cut</p>
-                        </div>
-                        <div class="bg-black/60 p-7 rounded-3xl border border-zinc-800 text-center">
-                            <p class="text-4xl font-black text-white mb-1">£0</p>
-                            <p class="text-[10px] font-black uppercase tracking-widest text-zinc-500">Monthly Fee</p>
-                        </div>
-                    </div>
-                    <!-- Live payout feed -->
-                    <div class="bg-black/60 rounded-3xl border border-zinc-800 overflow-hidden">
-                        <div class="p-5 border-b border-zinc-800 flex items-center justify-between">
-                            <p class="text-[10px] font-black uppercase tracking-widest text-zinc-500">Live Payouts</p>
-                            <span class="flex items-center gap-1.5 text-[10px] font-black text-orange-500 uppercase tracking-widest">
-                                <span class="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot"></span>
-                                Live
-                            </span>
-                        </div>
-                        <div id="payoutFeed" class="p-4 space-y-2 h-44 overflow-hidden relative">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="text-center mb-16 reveal">
+            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em]">Up and running<br>in minutes.</h2>
         </div>
-    </div>
-</section>
 
-<!-- TESTIMONIALS -->
-<section class="py-28">
-    <div class="max-w-7xl mx-auto px-6 md:px-14">
-        <div class="text-center mb-16">
-            <p class="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4">From the Artists</p>
-            <h2 class="text-4xl font-black tracking-tighter">They left the label.<br/>They didn't look back.</h2>
-        </div>
         <div class="grid md:grid-cols-3 gap-6">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 hover:border-zinc-700 transition-colors flex flex-col">
-                <div class="flex gap-1 mb-5">
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <div class="reveal bg-zinc-950 ring-1 ring-white/[0.05] rounded-3xl p-8">
+                <div class="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
+                    <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 </div>
-                <svg width="28" height="20" viewBox="0 0 28 20" fill="none" class="text-orange-600/40 mb-6 flex-shrink-0">
-                    <path d="M0 20V12.667C0 5.481 4.148 1.074 12.444 0L13.333 2c-3.63.667-5.926 2.63-6.889 5.889H9.778V20H0zm14.667 0V12.667C14.667 5.481 18.815 1.074 27.111 0L28 2c-3.63.667-5.926 2.63-6.889 5.889H24.444V20H14.667z" fill="currentColor"/>
-                </svg>
-                <p class="text-zinc-200 leading-relaxed flex-1 mb-7">I made my rent in the first month. My fans know that 90p in every pound goes directly to me — not to a streaming giant. That transparency changes how they buy.</p>
-                <div class="flex items-center gap-3 pt-5 border-t border-zinc-800">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=youth1" class="w-10 h-10 rounded-full bg-zinc-800 flex-shrink-0" alt="Artist avatar" loading="lazy">
-                    <div>
-                        <p class="font-black text-sm flex items-center gap-1.5">YOUTH <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" fill="none" stroke="#ea580c" stroke-width="2"/></svg></p>
-                        <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Manchester · Indie</p>
-                    </div>
-                </div>
+                <p class="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 1</p>
+                <h3 class="font-display text-xl font-bold tracking-tight mb-3">Upload your music</h3>
+                <p class="text-zinc-500 text-sm leading-relaxed">WAV, FLAC, AIFF or MP3. Your artist page goes live instantly — share the link anywhere.</p>
             </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 hover:border-zinc-700 transition-colors flex flex-col">
-                <div class="flex gap-1 mb-5">
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+
+            <div class="reveal reveal-delay-1 bg-zinc-950 ring-1 ring-white/[0.05] rounded-3xl p-8">
+                <div class="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
+                    <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                 </div>
-                <svg width="28" height="20" viewBox="0 0 28 20" fill="none" class="text-orange-600/40 mb-6 flex-shrink-0">
-                    <path d="M0 20V12.667C0 5.481 4.148 1.074 12.444 0L13.333 2c-3.63.667-5.926 2.63-6.889 5.889H9.778V20H0zm14.667 0V12.667C14.667 5.481 18.815 1.074 27.111 0L28 2c-3.63.667-5.926 2.63-6.889 5.889H24.444V20H14.667z" fill="currentColor"/>
-                </svg>
-                <p class="text-zinc-200 leading-relaxed flex-1 mb-7">Released our debut EP here, sold 200 copies in the first week. Zero label involvement. The analytics alone are worth it — I finally understand who my audience actually is.</p>
-                <div class="flex items-center gap-3 pt-5 border-t border-zinc-800">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=glass2" class="w-10 h-10 rounded-full bg-zinc-800 flex-shrink-0" alt="Artist avatar" loading="lazy">
-                    <div>
-                        <p class="font-black text-sm flex items-center gap-1.5">The Glass Echo <svg width="12" height="12" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></p>
-                        <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">London · Indie</p>
-                    </div>
-                </div>
+                <p class="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 2</p>
+                <h3 class="font-display text-xl font-bold tracking-tight mb-3">Set your price</h3>
+                <p class="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum 50p, no ceiling. Fans pay directly — no subscriptions, no algorithms.</p>
             </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 hover:border-zinc-700 transition-colors flex flex-col">
-                <div class="flex gap-1 mb-5">
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    <svg width="12" height="12" fill="#ea580c" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+
+            <div class="reveal reveal-delay-2 bg-zinc-950 ring-1 ring-white/[0.05] rounded-3xl p-8">
+                <div class="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
+                    <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                 </div>
-                <svg width="28" height="20" viewBox="0 0 28 20" fill="none" class="text-orange-600/40 mb-6 flex-shrink-0">
-                    <path d="M0 20V12.667C0 5.481 4.148 1.074 12.444 0L13.333 2c-3.63.667-5.926 2.63-6.889 5.889H9.778V20H0zm14.667 0V12.667C14.667 5.481 18.815 1.074 27.111 0L28 2c-3.63.667-5.926 2.63-6.889 5.889H24.444V20H14.667z" fill="currentColor"/>
-                </svg>
-                <p class="text-zinc-200 leading-relaxed flex-1 mb-7">I deleted Distrokid the same week I joined. The difference isn't just the money — it's that I actually talk to the people who buy my music. That connection is priceless.</p>
-                <div class="flex items-center gap-3 pt-5 border-t border-zinc-800">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=neonv" class="w-10 h-10 rounded-full bg-zinc-800 flex-shrink-0" alt="Artist avatar" loading="lazy">
-                    <div>
-                        <p class="font-black text-sm flex items-center gap-1.5">Neon Velour <svg width="12" height="12" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></p>
-                        <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Bristol · Electronic</p>
-                    </div>
-                </div>
+                <p class="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 3</p>
+                <h3 class="font-display text-xl font-bold tracking-tight mb-3">Get paid</h3>
+                <p class="text-zinc-500 text-sm leading-relaxed">90% hits your balance the moment a sale completes. Withdraw anytime. No thresholds, no delays, no surprises.</p>
             </div>
         </div>
+
     </div>
 </section>
 
-<!-- FEATURED TRACKS -->
-<section class="py-28 bg-zinc-950 border-y border-zinc-900">
-    <div class="max-w-7xl mx-auto px-6 md:px-14">
-        <div class="flex items-end justify-between mb-12">
-            <div>
-                <p class="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4">On the Store Right Now</p>
-                <h2 class="text-4xl font-black tracking-tighter">Hear it for yourself.</h2>
-            </div>
-            <a href="explore.html" class="text-sm font-black text-zinc-500 hover:text-orange-500 uppercase tracking-widest transition-colors hidden md:block">Browse all →</a>
-        </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <a href="player.html?id=0&title=Indie+Summer&artist=YOUTH&price=9.00&img=https://picsum.photos/seed/mus0/400/400" class="group bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-orange-600/30 transition-all hover:-translate-y-1 duration-300">
-                <div class="aspect-square relative overflow-hidden">
-                    <img src="https://picsum.photos/seed/mus0/400/400" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="Album artwork" loading="lazy">
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div class="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-xl">
-                            <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" class="text-black ml-1"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                    <div class="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">New</div>
-                </div>
-                <div class="p-4">
-                    <p class="font-black truncate">Indie Summer</p>
-                    <p class="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-0.5">YOUTH · Manchester</p>
-                    <p class="text-orange-600 font-black text-sm mt-2">£9.00</p>
-                </div>
-            </a>
-            <a href="player.html?id=2&title=Electric+Love&artist=Neon+Velour&price=7.50&img=https://picsum.photos/seed/mus2/400/400" class="group bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-orange-600/30 transition-all hover:-translate-y-1 duration-300">
-                <div class="aspect-square relative overflow-hidden">
-                    <img src="https://picsum.photos/seed/mus2/400/400" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="Album artwork" loading="lazy">
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div class="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-xl">
-                            <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" class="text-black ml-1"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-4">
-                    <p class="font-black truncate">Electric Love</p>
-                    <p class="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-0.5">Neon Velour · Bristol</p>
-                    <p class="text-orange-600 font-black text-sm mt-2">£7.50</p>
-                </div>
-            </a>
-            <a href="player.html?id=4&title=Golden+Hour&artist=Luna+Park&price=6.50&img=https://picsum.photos/seed/mus4/400/400" class="group bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-orange-600/30 transition-all hover:-translate-y-1 duration-300">
-                <div class="aspect-square relative overflow-hidden">
-                    <img src="https://picsum.photos/seed/mus4/400/400" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="Album artwork" loading="lazy">
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div class="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-xl">
-                            <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" class="text-black ml-1"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-4">
-                    <p class="font-black truncate">Golden Hour</p>
-                    <p class="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-0.5">Luna Park · Edinburgh</p>
-                    <p class="text-orange-600 font-black text-sm mt-2">£6.50</p>
-                </div>
-            </a>
-            <a href="player.html?id=5&title=Binary+Dreams&artist=Digital+Ghost&price=8.50&img=https://picsum.photos/seed/mus5/400/400" class="group bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-orange-600/30 transition-all hover:-translate-y-1 duration-300">
-                <div class="aspect-square relative overflow-hidden">
-                    <img src="https://picsum.photos/seed/mus5/400/400" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="Album artwork" loading="lazy">
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div class="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-xl">
-                            <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" class="text-black ml-1"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-4">
-                    <p class="font-black truncate">Binary Dreams</p>
-                    <p class="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-0.5">Digital Ghost · London</p>
-                    <p class="text-orange-600 font-black text-sm mt-2">£8.50</p>
-                </div>
-            </a>
-        </div>
-        <div class="text-center mt-10">
-            <a href="explore.html" class="inline-flex items-center gap-2 text-sm font-black text-zinc-400 hover:text-orange-500 transition-colors uppercase tracking-widest">
-                Browse all releases
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </a>
-        </div>
-    </div>
-</section>
-
-<!-- CTA -->
-<section class="py-32 relative overflow-hidden">
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(234,88,12,0.08),transparent_70%)]"></div>
-    <div class="max-w-5xl mx-auto px-6 md:px-14 text-center relative z-10">
-        <div class="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 rounded-full px-4 py-2 mb-8">
-            <span class="w-1.5 h-1.5 rounded-full bg-orange-600 pulse-dot"></span>
-            <span class="text-[10px] font-black uppercase tracking-widest text-orange-500">Founding member rates — 90% locked forever at sign-up</span>
-        </div>
-        <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-[0.9]">
-            Music belongs<br/>to the <span class="text-orange-600">artists.</span>
-        </h2>
-        <p class="text-zinc-400 text-xl mb-16 max-w-2xl mx-auto font-medium leading-relaxed">
-            Join 12,400+ artists who've cut out the middleman and are getting paid what they deserve. Founding members lock in 90% permanently — even if our fees ever change.
-        </p>
-        <div class="flex flex-col md:flex-row items-stretch justify-center gap-5 max-w-2xl mx-auto">
-            <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl flex-1 hover:border-orange-600/40 transition-colors group text-left">
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 mb-3">For Musicians</p>
-                <h4 class="text-xl font-black mb-2">Ready to sell?</h4>
-                <p class="text-zinc-500 text-sm mb-7 leading-relaxed">Upload your first release in under two minutes.</p>
-                <a href="auth.html" class="block w-full bg-white text-black font-black py-4 rounded-2xl text-center group-hover:bg-orange-600 group-hover:text-white transition-colors text-sm uppercase tracking-wider">Create Artist Account</a>
-            </div>
-            <div class="flex items-center justify-center text-zinc-700 font-black italic text-xl md:px-3">or</div>
-            <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl flex-1 hover:border-zinc-700 transition-colors group text-left">
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-3">For Listeners</p>
-                <h4 class="text-xl font-black mb-2">Want to explore?</h4>
-                <p class="text-zinc-500 text-sm mb-7 leading-relaxed">Discover independent music and support artists directly.</p>
-                <a href="explore.html" class="block w-full bg-zinc-800 text-white font-black py-4 rounded-2xl text-center group-hover:bg-zinc-700 transition-colors text-sm uppercase tracking-wider">Browse Music</a>
-            </div>
-        </div>
-        <p class="mt-10 text-zinc-600 text-[10px] font-black uppercase tracking-[0.3em]">Free to join &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Cancel anytime</p>
-    </div>
-</section>
-
-<!-- REGISTER INTEREST -->
-<section id="register-interest" class="py-24 bg-zinc-950 border-t border-zinc-900">
+<!-- ── BOTTOM CTA ────────────────────────────────────────────────── -->
+<section class="py-28 md:py-36">
     <div class="max-w-2xl mx-auto px-6 text-center">
-        <div class="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 rounded-full px-4 py-2 mb-8">
-            <span class="w-1.5 h-1.5 rounded-full bg-orange-600 pulse-dot"></span>
-            <span class="text-[10px] font-black uppercase tracking-widest text-orange-500">Early Access Open</span>
-        </div>
-        <h2 class="text-4xl md:text-5xl font-black tracking-tighter mb-4">Be first in line.</h2>
-        <p class="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Register your interest and get priority access, a founding member badge, and your 90% rate locked in forever — before we open to everyone.</p>
-        <div id="registerForm" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-5">
-            <input type="email" id="registerEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitInterest()"
-                class="flex-1 bg-zinc-900 border border-zinc-800 focus:border-orange-600 focus:outline-none rounded-xl px-4 py-4 text-sm font-medium text-white placeholder-zinc-600 transition-colors">
-            <button onclick="submitInterest()"
-                class="bg-orange-600 hover:bg-orange-500 text-black font-black px-7 py-4 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20">
-                Register →
-            </button>
-        </div>
-        <div id="registerSuccess" class="hidden mb-5">
-            <div class="inline-flex items-center gap-3 bg-orange-600/10 border border-orange-600/20 rounded-xl px-6 py-4">
-                <svg width="16" height="16" fill="none" stroke="#ea580c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                <span class="text-orange-500 font-black text-sm">You're on the list. We'll be in touch.</span>
+
+        <div class="reveal">
+            <div class="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
+                <span class="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot"></span>
+                Early access open
             </div>
+            <h2 class="font-display text-4xl md:text-6xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">Be first<br>in line.</h2>
+            <p class="text-zinc-400 text-lg leading-relaxed mb-10 max-w-sm mx-auto">
+                Register your interest and get priority access, a founding member badge, and your 90% rate locked in forever.
+            </p>
         </div>
-        <p class="text-zinc-600 text-xs font-medium">No spam, ever &nbsp;·&nbsp; Unsubscribe anytime &nbsp;·&nbsp; <a href="privacy.html" class="hover:text-zinc-400 transition-colors">Privacy Policy</a></p>
+
+        <div class="reveal reveal-delay-1">
+            <div id="bottomForm" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4">
+                <input type="email" id="bottomEmail" placeholder="your@email.com"
+                    onkeydown="if(event.key==='Enter')submitBottom()"
+                    class="flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border border-transparent rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all">
+                <button onclick="submitBottom()"
+                    class="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap">
+                    Register →
+                </button>
+            </div>
+            <div id="bottomSuccess" class="hidden mb-4">
+                <div class="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
+                    <svg width="16" height="16" fill="none" stroke="#ea580c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="text-orange-400 font-bold text-sm">You're on the list. We'll be in touch.</span>
+                </div>
+            </div>
+            <p class="text-zinc-700 text-xs font-medium">
+                No spam, ever &nbsp;·&nbsp; Unsubscribe anytime &nbsp;·&nbsp; <a href="privacy.html" class="hover:text-zinc-500 transition-colors">Privacy Policy</a>
+            </p>
+        </div>
+
     </div>
 </section>
 
-<footer class="py-16 border-t border-zinc-900 bg-black">
-    <div class="max-w-7xl mx-auto px-6 md:px-14">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div>
-                <div class="text-2xl font-black text-orange-600 tracking-tighter mb-2">insound.</div>
-                <p class="text-zinc-600 text-xs font-medium">Independent music. Directly supported.</p>
-            </div>
-            <div class="flex gap-8 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">
-                <a href="why-us.html" class="hover:text-white transition-colors">Why Us</a>
-                <a href="explore.html" class="hover:text-white transition-colors">Explore</a>
-                <a href="privacy.html" class="hover:text-white transition-colors">Privacy</a>
-                <a href="auth.html" class="hover:text-orange-500 transition-colors">Sign In</a>
-            </div>
-            <p class="text-zinc-800 text-[10px] font-bold tracking-widest">© 2026 Insound Music Ltd</p>
-        </div>
+<!-- ── FOOTER ────────────────────────────────────────────────────── -->
+<footer class="border-t border-zinc-900/80 py-12">
+    <div class="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <span class="font-display text-lg font-bold text-orange-500 tracking-tight">insound<span class="text-white/25">.</span></span>
+        <p class="text-zinc-700 text-[11px] font-medium">© 2026 Insound Music Ltd &nbsp;·&nbsp; <a href="privacy.html" class="hover:text-zinc-500 transition-colors">Privacy Policy</a></p>
     </div>
 </footer>
 
 <script>
-// --- Live sale notification ticker ---
-const saleNotifs = [
-    { fan: "James H.", track: "Indie Summer", amount: "£9.00" },
-    { fan: "Sarah J.", track: "Electric Love", amount: "£7.50" },
-    { fan: "Oliver T.", track: "Northern Rain", amount: "£8.00" },
-    { fan: "Priya M.", track: "Binary Dreams", amount: "£8.50" },
-    { fan: "Marcus W.", track: "Golden Hour", amount: "£6.50" },
-    { fan: "Emma R.", track: "Midnight Drive", amount: "£9.00" },
-    { fan: "Liam F.", track: "3AM", amount: "£5.99" },
-    { fan: "Chloe B.", track: "Shoreline", amount: "£7.00" },
-];
-let saleIdx = 0;
-function rotateSale() {
-    const el = document.getElementById('liveSale');
-    const textEl = document.getElementById('liveSaleText');
-    if (!el) return;
-    el.classList.remove('ticker-in');
-    el.classList.add('ticker-out');
-    setTimeout(() => {
-        saleIdx = (saleIdx + 1) % saleNotifs.length;
-        const s = saleNotifs[saleIdx];
-        textEl.innerHTML = `${s.fan} just bought <span class="text-orange-500">${s.track}</span>`;
-        el.classList.remove('ticker-out');
-        el.classList.add('ticker-in');
-    }, 350);
-}
-setInterval(rotateSale, 4000);
+// ── Scroll reveal ──────────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// --- Live payout feed ---
-const payoutEvents = [
-    { track: "Indie Summer", artist: "YOUTH", amount: "+£9.00", time: "just now" },
-    { track: "Electric Love", artist: "Neon Velour", amount: "+£7.50", time: "1m ago" },
-    { track: "Northern Rain", artist: "Manchester Skies", amount: "+£8.00", time: "2m ago" },
-    { track: "Binary Dreams", artist: "Digital Ghost", amount: "+£8.50", time: "3m ago" },
-    { track: "Golden Hour", artist: "Luna Park", amount: "+£6.50", time: "5m ago" },
-    { track: "3AM", artist: "Midnight Runners", amount: "+£5.99", time: "7m ago" },
-    { track: "Shoreline", artist: "Coastal Kids", amount: "+£7.00", time: "9m ago" },
-    { track: "Orbit", artist: "Pale Orbit", amount: "+£9.00", time: "11m ago" },
-];
-let payoutOffset = 0;
-function renderPayoutFeed() {
-    const feed = document.getElementById('payoutFeed');
-    if (!feed) return;
-    const items = [];
-    for (let i = 0; i < 4; i++) {
-        const e = payoutEvents[(payoutOffset + i) % payoutEvents.length];
-        items.push(`
-            <div class="flex items-center justify-between px-1 py-2 rounded-xl slide-in-up" style="animation-delay:${i*60}ms">
-                <div class="flex items-center gap-3">
-                    <div class="w-6 h-6 rounded-lg bg-orange-600/20 flex items-center justify-center flex-shrink-0">
-                        <svg width="10" height="10" fill="#ea580c" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/></svg>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold text-white leading-tight">${e.track}</p>
-                        <p class="text-[10px] text-zinc-500 font-bold">${e.artist}</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="text-xs font-black text-orange-500">${e.amount}</p>
-                    <p class="text-[10px] text-zinc-600">${e.time}</p>
-                </div>
-            </div>
-        `);
-    }
-    feed.innerHTML = items.join('');
-    payoutOffset = (payoutOffset + 1) % payoutEvents.length;
-}
-renderPayoutFeed();
-setInterval(renderPayoutFeed, 3500);
-
-// --- Animated stats counter on scroll ---
-function animateValue(el, target, prefix, suffix, duration) {
-    const start = Date.now();
-    const isZero = target === 0;
-    const tick = () => {
-        const elapsed = Date.now() - start;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const val = Math.floor(eased * target);
-        el.textContent = prefix + (isZero ? '0' : val.toLocaleString()) + suffix;
-        if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-}
-
-const statsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.querySelectorAll('[data-count]').forEach(el => {
-                const target = parseInt(el.dataset.count);
-                const prefix = el.dataset.prefix || '';
-                const suffix = el.dataset.suffix || '';
-                animateValue(el, target, prefix, suffix, 1600);
-            });
-            statsObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0.3 });
-
-const statsSection = document.getElementById('statsStrip');
-if (statsSection) statsObserver.observe(statsSection);
-
-// Register interest form
-(function(){
-    if(localStorage.getItem('insound_interested')){
-        var f=document.getElementById('registerForm');
-        var s=document.getElementById('registerSuccess');
-        if(f) f.classList.add('hidden');
-        if(s) s.classList.remove('hidden');
-    }
-})();
-function submitInterest(){
-    var emailEl=document.getElementById('registerEmail');
-    var email=emailEl?emailEl.value.trim():'';
-    if(!email||!/\S+@\S+\.\S+/.test(email)){
-        if(emailEl){emailEl.style.borderColor='#ef4444';emailEl.focus();}
-        return;
-    }
-    var btn=document.querySelector('#registerForm button');
-    if(btn){btn.disabled=true;btn.textContent='Sending...';}
-    fetch('https://formspree.io/f/mbjergwz',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify({email:email,source:document.title})
-    }).then(function(r){
-        if(r.ok){
-            localStorage.setItem('insound_interested','1');
-            var f=document.getElementById('registerForm');
-            var s=document.getElementById('registerSuccess');
-            if(f) f.classList.add('hidden');
-            if(s) s.classList.remove('hidden');
-            var sf=document.getElementById('stickyForm');
-            var sd=document.getElementById('stickyDone');
-            if(sf) sf.classList.add('hidden');
-            if(sd) sd.classList.remove('hidden');
+// ── Formspree submit helper ────────────────────────────────────
+function postToFormspree(email, btnEl, btnText, onSuccess) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Sending…';
+    fetch('https://formspree.io/f/mbjergwz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ email: email, source: 'index' })
+    }).then(r => {
+        if (r.ok) {
+            localStorage.setItem('insound_interested', '1');
+            onSuccess();
         } else {
-            if(btn){btn.disabled=false;btn.textContent='Register →';}
-            if(emailEl){emailEl.style.borderColor='#ef4444';}
+            btnEl.disabled = false;
+            btnEl.textContent = btnText;
         }
-    }).catch(function(){
-        if(btn){btn.disabled=false;btn.textContent='Register →';}
-        if(emailEl){emailEl.style.borderColor='#ef4444';}
+    }).catch(() => {
+        btnEl.disabled = false;
+        btnEl.textContent = btnText;
     });
 }
-</script>
 
-<!-- STICKY REGISTER BAR -->
-<div id="stickyBar" class="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800 px-5 py-3.5" style="transform:translateY(100%);transition:transform 0.5s cubic-bezier(0.16,1,0.3,1)">
-    <div class="max-w-4xl mx-auto flex items-center gap-4 flex-wrap sm:flex-nowrap">
-        <div class="hidden sm:block flex-1 min-w-0">
-            <p class="font-black text-sm text-white">Get early access to Insound</p>
-            <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Founding member rates — 90% locked forever</p>
-        </div>
-        <div id="stickyForm" class="flex gap-2 flex-1 sm:flex-initial">
-            <input type="email" id="stickyEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitStickyInterest()"
-                class="flex-1 sm:w-52 bg-zinc-800 border border-zinc-700 focus:border-orange-600 focus:outline-none rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 transition-colors">
-            <button onclick="submitStickyInterest()"
-                class="bg-orange-600 hover:bg-orange-500 text-black font-black px-5 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20">
-                Register →
-            </button>
-        </div>
-        <div id="stickyDone" class="hidden">
-            <span class="text-orange-500 font-black text-sm flex items-center gap-2">
-                <svg width="14" height="14" fill="none" stroke="#ea580c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                You're on the list
-            </span>
-        </div>
-        <button onclick="dismissStickyBar()" class="text-zinc-600 hover:text-zinc-400 flex-shrink-0 p-1" aria-label="Dismiss">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-    </div>
-</div>
-<script>
-(function(){
-    var bar=document.getElementById('stickyBar');
-    if(!bar) return;
-    if(sessionStorage.getItem('insound_bar_dismissed')) return;
-    if(localStorage.getItem('insound_interested')) return;
-    var shown=false;
-    window.addEventListener('scroll',function(){
-        if(shown) return;
-        var pct=window.scrollY/(document.body.scrollHeight-window.innerHeight||1);
-        if(pct>0.35){shown=true;bar.style.transform='translateY(0)';}
-    },{passive:true});
-})();
-function dismissStickyBar(){
-    var bar=document.getElementById('stickyBar');
-    if(bar) bar.style.transform='translateY(100%)';
-    sessionStorage.setItem('insound_bar_dismissed','1');
-}
-function submitStickyInterest(){
-    var emailEl=document.getElementById('stickyEmail');
-    var email=emailEl?emailEl.value.trim():'';
-    if(!email||!/\S+@\S+\.\S+/.test(email)){
-        if(emailEl){emailEl.style.borderColor='#ef4444';emailEl.focus();}
-        return;
-    }
-    var btn=document.querySelector('#stickyForm button');
-    if(btn){btn.disabled=true;btn.textContent='Sending...';}
-    fetch('https://formspree.io/f/mbjergwz',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify({email:email,source:document.title})
-    }).then(function(r){
-        if(r.ok){
-            localStorage.setItem('insound_interested','1');
-            var mf=document.getElementById('registerForm');
-            var ms=document.getElementById('registerSuccess');
-            if(mf) mf.classList.add('hidden');
-            if(ms) ms.classList.remove('hidden');
-            var sf=document.getElementById('stickyForm');
-            var sd=document.getElementById('stickyDone');
-            if(sf) sf.classList.add('hidden');
-            if(sd) sd.classList.remove('hidden');
-            sessionStorage.setItem('insound_bar_dismissed','1');
-        } else {
-            if(btn){btn.disabled=false;btn.textContent='Register →';}
-            if(emailEl){emailEl.style.borderColor='#ef4444';}
-        }
-    }).catch(function(){
-        if(btn){btn.disabled=false;btn.textContent='Register →';}
-        if(emailEl){emailEl.style.borderColor='#ef4444';}
+// ── Hero form ─────────────────────────────────────────────────
+function submitHero() {
+    const emailEl = document.getElementById('heroEmail');
+    const email = emailEl.value.trim();
+    if (!email || !/\S+@\S+\.\S+/.test(email)) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); return; }
+    const btn = document.querySelector('#heroForm button');
+    postToFormspree(email, btn, 'Get early access →', () => {
+        document.getElementById('heroForm').classList.add('hidden');
+        document.getElementById('heroSuccess').classList.remove('hidden');
+        document.getElementById('bottomForm').classList.add('hidden');
+        document.getElementById('bottomSuccess').classList.remove('hidden');
     });
+}
+
+// ── Bottom form ───────────────────────────────────────────────
+function submitBottom() {
+    const emailEl = document.getElementById('bottomEmail');
+    const email = emailEl.value.trim();
+    if (!email || !/\S+@\S+\.\S+/.test(email)) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); return; }
+    const btn = document.querySelector('#bottomForm button');
+    postToFormspree(email, btn, 'Register →', () => {
+        document.getElementById('bottomForm').classList.add('hidden');
+        document.getElementById('bottomSuccess').classList.remove('hidden');
+        document.getElementById('heroForm').classList.add('hidden');
+        document.getElementById('heroSuccess').classList.remove('hidden');
+    });
+}
+
+// ── Already signed up ─────────────────────────────────────────
+if (localStorage.getItem('insound_interested')) {
+    ['heroForm','bottomForm'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['heroSuccess','bottomSuccess'].forEach(id => document.getElementById(id).classList.remove('hidden'));
 }
 </script>
 
