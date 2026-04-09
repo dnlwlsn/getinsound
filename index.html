@@ -8,20 +8,50 @@
     <meta property="og:title" content="Insound — Music That Pays Artists">
     <meta property="og:description" content="Upload your music. Keep 90%. Own your masters. No monthly fee. Join the waitlist.">
     <meta property="og:type" content="website">
+    <meta property="og:image" content="https://getinsound.com/og-image.svg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://getinsound.com/og-image.svg">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="tailwind.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --ease-spring: cubic-bezier(0.32,0.72,0,1); }
+        :root {
+            --ease-spring: cubic-bezier(0.32,0.72,0,1);
+            --bg: #050505;
+            --fg: #e4e4e7;
+            --fg-muted: #71717a;
+            --fg-subtle: #52525b;
+            --fg-faint: #3f3f46;
+            --card-bg: #0a0a0a;
+            --input-bg: #18181b;
+            --nav-bg: rgba(5,5,5,0.75);
+            --line-color: rgba(255,255,255,0.06);
+            --border-subtle: rgba(255,255,255,0.05);
+        }
+        [data-theme="light"] {
+            --bg: #f7f7f8;
+            --fg: #18181b;
+            --fg-muted: #52525b;
+            --fg-subtle: #71717a;
+            --fg-faint: #a1a1aa;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --nav-bg: rgba(247,247,248,0.82);
+            --line-color: rgba(0,0,0,0.07);
+            --border-subtle: rgba(0,0,0,0.06);
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: #050505;
-            color: #e4e4e7;
+            background-color: var(--bg);
+            color: var(--fg);
             font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
             scroll-behavior: smooth;
             -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         h1, h2, h3, .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; }
 
@@ -48,26 +78,86 @@
         .pulse-dot { animation: pulse-dot 2.2s ease-in-out infinite; }
 
         /* Divider lines */
-        .line { height: 1px; background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent); }
+        .line { height: 1px; background: linear-gradient(to right, transparent, var(--line-color), transparent); }
 
         /* Comparison cols */
         .col-bad  { background: rgba(239,68,68,0.03);  border-color: rgba(239,68,68,0.12); }
         .col-good { background: rgba(234,88,12,0.04); border-color: rgba(234,88,12,0.14); }
+        [data-theme="light"] .col-bad  { background: rgba(239,68,68,0.04);  border-color: rgba(239,68,68,0.2); }
+        [data-theme="light"] .col-good { background: rgba(234,88,12,0.05); border-color: rgba(234,88,12,0.22); }
 
-        /* Form input */
+        /* Nav */
+        #navInner { background: var(--nav-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); transition: background 0.3s ease; }
+        [data-theme="light"] #navInner { box-shadow: 0 8px 40px rgba(0,0,0,0.08); --tw-ring-color: rgba(0,0,0,0.08); }
+
+        /* Cards */
+        .card { background: var(--card-bg); transition: background 0.3s ease; }
+
+        /* Inputs */
+        input[type=email] { background: var(--input-bg); color: var(--fg); transition: background 0.3s ease, color 0.3s ease; }
+        input[type=email]::placeholder { color: var(--fg-faint); }
         input[type=email]:focus { outline: none; border-color: #ea580c; }
+
+        /* Text colour helpers that respond to theme */
+        .t-muted  { color: var(--fg-muted); }
+        .t-subtle { color: var(--fg-subtle); }
+        .t-faint  { color: var(--fg-faint); }
+
+        /* Stat label overrides */
+        [data-theme="light"] .stat-label { color: #71717a; }
+
+        /* Theme toggle button */
+        #themeToggle { transition: background 0.2s ease, color 0.2s ease; }
+
+        /* Footer border */
+        footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
+
+        /* Punchline box */
+        .punchline { background: var(--card-bg); transition: background 0.3s ease; }
+
+        /* Light: hero emphasis */
+        [data-theme="light"] .hero-emphasis { color: #18181b; }
+        [data-theme="light"] .hero-dot { color: rgba(0,0,0,0.18); }
+
+        /* Light: white text → dark */
+        [data-theme="light"] .text-white { color: #18181b !important; }
+        [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3 { color: #18181b; }
+        [data-theme="light"] .text-zinc-400 { color: #52525b !important; }
+        [data-theme="light"] .text-zinc-500 { color: #71717a !important; }
+        [data-theme="light"] .text-zinc-600 { color: #a1a1aa !important; }
+        [data-theme="light"] .text-zinc-700 { color: #71717a !important; }
+        [data-theme="light"] .border-zinc-900 { border-color: rgba(0,0,0,0.08) !important; }
+        [data-theme="light"] .border-zinc-900\/60 { border-color: rgba(0,0,0,0.06) !important; }
+        [data-theme="light"] .ring-white\/\[0\.05\] { --tw-ring-color: rgba(0,0,0,0.07) !important; }
+        [data-theme="light"] .ring-white\/\[0\.06\] { --tw-ring-color: rgba(0,0,0,0.08) !important; }
+        [data-theme="light"] .ring-white\/\[0\.08\] { --tw-ring-color: rgba(0,0,0,0.1) !important; }
+        [data-theme="light"] #navInner .text-white\/25 { color: rgba(0,0,0,0.2) !important; }
+        [data-theme="light"] .shadow-\[0_8px_40px_rgba\(0\,0\,0\,0\.5\)\] { box-shadow: 0 8px 40px rgba(0,0,0,0.1) !important; }
     </style>
 </head>
 <body>
 
 <!-- ── NAV ─────────────────────────────────────────────────────── -->
 <nav class="fixed top-0 left-0 right-0 z-50 flex justify-center pt-5 px-4" style="pointer-events:none">
-    <div class="flex items-center justify-between w-full max-w-4xl rounded-full px-5 py-3 ring-1 ring-white/[0.06] shadow-[0_8px_40px_rgba(0,0,0,0.5)]"
-         style="background:rgba(5,5,5,0.75);backdrop-filter:blur(24px);pointer-events:auto">
-        <span class="font-display text-lg font-bold text-orange-500 tracking-tight">insound<span class="text-white/25">.</span></span>
-        <a href="#signup" class="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
-            Get early access
-        </a>
+    <div id="navInner" class="flex items-center justify-between w-full max-w-4xl rounded-full px-5 py-3 ring-1 ring-white/[0.06] shadow-[0_8px_40px_rgba(0,0,0,0.5)]" style="pointer-events:auto">
+        <span class="font-display text-lg font-bold text-orange-500 tracking-tight">insound<span class="text-white/25 hero-dot">.</span></span>
+        <div class="flex items-center gap-3">
+            <!-- Theme toggle -->
+            <button id="themeToggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"
+                class="w-9 h-9 rounded-full flex items-center justify-center ring-1 ring-white/[0.08] hover:ring-white/20 text-zinc-400 hover:text-white">
+                <!-- Sun (shown in dark mode) -->
+                <svg id="iconSun" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                </svg>
+                <!-- Moon (shown in light mode, hidden by default) -->
+                <svg id="iconMoon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="hidden">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+            <a href="#signup" class="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
+                Get early access
+            </a>
+        </div>
     </div>
 </nav>
 
@@ -231,7 +321,7 @@
         </div>
 
         <!-- Punchline -->
-        <div class="bg-zinc-950 ring-1 ring-white/[0.05] rounded-2xl p-8 text-center reveal">
+        <div class="punchline ring-1 ring-white/[0.05] rounded-2xl p-8 text-center reveal">
             <p class="text-zinc-400 mb-6">To earn <strong class="text-white">£1,000</strong> from fans spending the same amount:</p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-14">
                 <div class="text-center">
@@ -259,7 +349,7 @@
         </div>
 
         <div class="grid md:grid-cols-3 gap-6">
-            <div class="reveal bg-zinc-950 ring-1 ring-white/[0.05] rounded-3xl p-8">
+            <div class="reveal card ring-1 ring-white/[0.05] rounded-3xl p-8">
                 <div class="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
                     <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 </div>
@@ -338,6 +428,13 @@
 </footer>
 
 <script>
+// ── Theme (apply before paint to avoid flash) ─────────────────
+(function(){
+    const saved = localStorage.getItem('insound_theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    if(saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+</script>
+<script>
 // ── Scroll reveal ──────────────────────────────────────────────
 const observer = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); observer.unobserve(e.target); } });
@@ -393,6 +490,22 @@ function submitBottom() {
         document.getElementById('heroSuccess').classList.remove('hidden');
     });
 }
+
+// ── Theme toggle ──────────────────────────────────────────────
+function toggleTheme() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const next = isLight ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('insound_theme', next);
+    document.getElementById('iconSun').classList.toggle('hidden', !isLight);
+    document.getElementById('iconMoon').classList.toggle('hidden', isLight);
+}
+// Set correct icon on load
+(function(){
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.getElementById('iconSun').classList.toggle('hidden', isLight);
+    document.getElementById('iconMoon').classList.toggle('hidden', !isLight);
+})();
 
 // ── Already signed up ─────────────────────────────────────────
 if (localStorage.getItem('insound_interested')) {
