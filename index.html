@@ -371,7 +371,7 @@
                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Monthly fee, ever</p>
             </div>
             <div class="reveal reveal-delay-2">
-                <p class="font-display text-4xl font-bold text-orange-500 tracking-tight" id="spacesLeft">997</p>
+                <p class="font-display text-4xl font-bold text-orange-500 tracking-tight" id="spacesLeft">1000</p>
                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Founding spaces left</p>
             </div>
             <div class="reveal reveal-delay-3">
@@ -936,17 +936,29 @@ const observer = new IntersectionObserver(entries => {
 }, { threshold: 0.12 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// ── Formspree submit helper ────────────────────────────────────
-function postToFormspree(email, btnEl, btnText, onSuccess) {
+// ── Supabase waitlist config ──────────────────────────────────
+const SB_URL = 'https://rvsfriqjobwuzzfdiyxg.supabase.co';
+const SB_KEY = 'sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg';
+const TOTAL_SPOTS = 1000;
+
+// ── Waitlist submit helper ────────────────────────────────────
+function postToWaitlist(email, btnEl, btnText, onSuccess) {
     btnEl.disabled = true;
     btnEl.textContent = 'Sending…';
-    fetch('https://formspree.io/f/mbjergwz', {
+    fetch(`${SB_URL}/rest/v1/waitlist`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': SB_KEY,
+            'Authorization': `Bearer ${SB_KEY}`,
+            'Prefer': 'return=minimal',
+        },
         body: JSON.stringify({ email: email, source: 'index' })
     }).then(r => {
-        if (r.ok) {
+        // 201 = inserted, 409 = duplicate email (still treat as success so user isn't confused)
+        if (r.ok || r.status === 409) {
             localStorage.setItem('insound_interested', '1');
+            refreshSpacesLeft();
             onSuccess();
         } else {
             btnEl.disabled = false;
@@ -957,6 +969,25 @@ function postToFormspree(email, btnEl, btnText, onSuccess) {
         btnEl.textContent = btnText;
     });
 }
+
+// ── Founding spaces left ──────────────────────────────────────
+function refreshSpacesLeft() {
+    fetch(`${SB_URL}/rest/v1/rpc/get_waitlist_count`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': SB_KEY,
+            'Authorization': `Bearer ${SB_KEY}`,
+        },
+        body: '{}'
+    }).then(r => r.json()).then(count => {
+        if (typeof count !== 'number') return;
+        const left = Math.max(0, TOTAL_SPOTS - count);
+        const el = document.getElementById('spacesLeft');
+        if (el) el.textContent = left;
+    }).catch(() => {});
+}
+refreshSpacesLeft();
 
 // ── Scroll to top & pop email field ──────────────────────────
 function scrollAndPop(e) {
@@ -1028,7 +1059,7 @@ function submitHero() {
     const email = emailEl.value.trim();
     if (!email || !/\S+@\S+\.\S+/.test(email)) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); return; }
     const btn = document.querySelector('#heroForm button');
-    postToFormspree(email, btn, 'Join the waitlist →', () => {
+    postToWaitlist(email, btn, 'Join the waitlist →', () => {
         document.getElementById('heroForm').classList.add('hidden');
         document.getElementById('heroSuccess').classList.remove('hidden');
         document.getElementById('bottomForm').classList.add('hidden');
@@ -1042,7 +1073,7 @@ function submitBottom() {
     const email = emailEl.value.trim();
     if (!email || !/\S+@\S+\.\S+/.test(email)) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); return; }
     const btn = document.querySelector('#bottomForm button');
-    postToFormspree(email, btn, 'Join waitlist →', () => {
+    postToWaitlist(email, btn, 'Join waitlist →', () => {
         document.getElementById('bottomForm').classList.add('hidden');
         document.getElementById('bottomSuccess').classList.remove('hidden');
         document.getElementById('heroForm').classList.add('hidden');
