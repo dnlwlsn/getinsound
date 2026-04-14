@@ -953,7 +953,7 @@ function postToWaitlist(email, btnEl, btnText, onSuccess) {
             'Authorization': `Bearer ${SB_KEY}`,
             'Prefer': 'return=minimal',
         },
-        body: JSON.stringify({ email: email, source: 'index' })
+        body: JSON.stringify({ email: email })
     }).then(r => {
         // 201 = inserted, 409 = duplicate email (still treat as success so user isn't confused)
         if (r.ok || r.status === 409) {
