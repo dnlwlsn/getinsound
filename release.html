@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
     <style>
         body { background-color: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
         .glass { background: rgba(9,9,11,0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -97,6 +98,51 @@
 <!-- Toast -->
 <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 opacity-0 translate-y-4"></div>
 
+<!-- Checkout / Download Modal -->
+<div id="checkoutModal" class="hidden fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-xl shadow-2xl relative my-8">
+            <button id="closeCheckout" class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+
+            <!-- Stage 1: Stripe embedded checkout mount -->
+            <div id="stageCheckout" class="p-6 md:p-8">
+                <p class="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Checkout</p>
+                <h2 id="m-title" class="text-xl font-black mb-6"></h2>
+                <div id="stripeMount"></div>
+            </div>
+
+            <!-- Stage 2: Preparing download -->
+            <div id="stagePreparing" class="hidden p-12 text-center">
+                <div class="inline-block w-12 h-12 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin mb-6"></div>
+                <p class="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Finalising</p>
+                <h2 class="text-xl font-black mb-2">Preparing your download…</h2>
+                <p class="text-zinc-500 text-sm font-medium">This usually takes a few seconds.</p>
+            </div>
+
+            <!-- Stage 3: Download ready -->
+            <div id="stageDownload" class="hidden p-6 md:p-8">
+                <p class="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
+                <h2 id="d-title" class="text-2xl font-black mb-6"></h2>
+                <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-4">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Your files</p>
+                    <ol id="d-tracks" class="space-y-1"></ol>
+                </div>
+                <p class="text-center text-[11px] text-zinc-600 font-medium">A receipt has been sent by Stripe. Bookmark this tab if you need to come back.</p>
+            </div>
+
+            <!-- Stage 4: Error -->
+            <div id="stageError" class="hidden p-12 text-center">
+                <p class="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Something's off</p>
+                <h2 id="e-title" class="text-xl font-black mb-2">Couldn't open checkout.</h2>
+                <p id="e-msg" class="text-zinc-500 text-sm font-medium mb-6"></p>
+                <button id="errorClose" class="bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { supabase } from './src/supabase.js';
 
@@ -165,25 +211,104 @@
         $('loading').classList.add('hidden');
         $('release').classList.remove('hidden');
 
-        $('buyBtn').addEventListener('click', async () => {
-            const btn = $('buyBtn');
-            const original = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span>Redirecting to checkout…</span>';
-            try {
-                const { data, error } = await supabase.functions.invoke('checkout-create', {
-                    body: { release_id: release.id, origin: window.location.origin },
-                });
-                if (error) throw error;
-                if (!data?.url) throw new Error('No checkout URL returned');
-                window.location.href = data.url;
-            } catch (err) {
-                console.error(err);
-                showToast(err.message || 'Could not start checkout.');
-                btn.disabled = false;
-                btn.innerHTML = original;
-            }
+        $('buyBtn').addEventListener('click', () => openCheckout(release, artist));
+    }
+
+    const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TM4GsGkY3otnyNsltYWVo9N1xWEzKEUa8B4XjPlmSnP5VLCKAnkTebfHM8QOkmLTxyxxhNKQ4iJ9karlBfo5jEv007Ts2uEgI';
+    let stripe = null;
+    let embeddedCheckout = null;
+
+    function showStage(stage) {
+        ['stageCheckout', 'stagePreparing', 'stageDownload', 'stageError'].forEach((id) => {
+            $(id).classList.toggle('hidden', id !== stage);
         });
+    }
+
+    function openModal() { $('checkoutModal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+    function closeModal() {
+        $('checkoutModal').classList.add('hidden');
+        document.body.style.overflow = '';
+        if (embeddedCheckout) {
+            try { embeddedCheckout.destroy(); } catch {}
+            embeddedCheckout = null;
+        }
+        $('stripeMount').innerHTML = '';
+    }
+
+    $('closeCheckout').addEventListener('click', closeModal);
+    $('errorClose').addEventListener('click', closeModal);
+    $('checkoutModal').addEventListener('click', (e) => {
+        if (e.target === $('checkoutModal') || e.target === $('checkoutModal').firstElementChild) closeModal();
+    });
+
+    async function openCheckout(release, artist) {
+        if (!stripe) stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+        $('m-title').textContent = `${release.title} — ${artist.name}`;
+        showStage('stageCheckout');
+        openModal();
+
+        try {
+            const { data, error } = await supabase.functions.invoke('checkout-create', {
+                body: { release_id: release.id, origin: window.location.origin },
+            });
+            if (error) throw error;
+            if (!data?.client_secret) throw new Error('No checkout session returned');
+
+            embeddedCheckout = await stripe.initEmbeddedCheckout({
+                clientSecret: data.client_secret,
+                onComplete: () => {
+                    showStage('stagePreparing');
+                    pollForDownload(data.session_id);
+                },
+            });
+            embeddedCheckout.mount('#stripeMount');
+        } catch (err) {
+            console.error(err);
+            $('e-title').textContent = "Couldn't open checkout.";
+            $('e-msg').textContent = err.message || 'Please try again.';
+            showStage('stageError');
+        }
+    }
+
+    async function pollForDownload(sessionId) {
+        const maxAttempts = 12;
+        for (let i = 0; i < maxAttempts; i++) {
+            try {
+                const { data, error } = await supabase.functions.invoke('download', {
+                    body: { session_id: sessionId },
+                });
+                if (data && data.release) return renderDownload(data);
+                let body = null;
+                try { body = await error?.context?.response?.json?.(); } catch {}
+                if (body && body.error !== 'pending') throw new Error(body.error || 'Could not load download');
+            } catch (err) {
+                if (i === maxAttempts - 1) {
+                    $('e-title').textContent = 'Still finalising…';
+                    $('e-msg').textContent = 'Your payment went through but the download isn\'t ready. Refresh this page in a moment.';
+                    showStage('stageError');
+                    return;
+                }
+            }
+            await new Promise((r) => setTimeout(r, 1500));
+        }
+        $('e-title').textContent = 'Still finalising…';
+        $('e-msg').textContent = 'Your payment went through but the download isn\'t ready. Refresh this page in a moment.';
+        showStage('stageError');
+    }
+
+    function renderDownload(data) {
+        $('d-title').textContent = data.release.title;
+        $('d-tracks').innerHTML = data.tracks.map((t, i) => `
+            <li class="flex items-center gap-4 py-3 border-b border-zinc-800 last:border-0">
+                <span class="text-zinc-600 font-mono text-xs w-6">${String(i + 1).padStart(2, '0')}</span>
+                <span class="font-bold text-sm flex-1 truncate">${escapeHtml(t.title)}</span>
+                ${t.url
+                    ? `<a href="${t.url}" class="bg-orange-600 hover:bg-orange-500 text-black font-black px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-colors">Download</a>`
+                    : `<span class="text-zinc-600 text-[10px] uppercase tracking-widest font-bold">Unavailable</span>`
+                }
+            </li>
+        `).join('');
+        showStage('stageDownload');
     }
 
     let toastTimer;

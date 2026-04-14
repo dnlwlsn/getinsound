@@ -75,7 +75,8 @@ Deno.serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
+      ui_mode: 'embedded',
+      redirect_on_completion: 'never',
       line_items: [
         {
           quantity: 1,
@@ -106,11 +107,9 @@ Deno.serve(async (req) => {
         release_id: release.id,
         artist_id: artist.id,
       },
-      success_url: `${origin}/download.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/release.html?a=${artist.slug}&r=${release.slug}`,
     });
 
-    return json({ url: session.url });
+    return json({ client_secret: session.client_secret, session_id: session.id });
   } catch (err) {
     console.error(err);
     return json({ error: (err as Error).message || 'Internal error' }, 500);
