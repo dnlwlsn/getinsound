@@ -99,18 +99,16 @@
 <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 opacity-0 translate-y-4"></div>
 
 <!-- Checkout / Download Modal -->
-<div id="checkoutModal" class="hidden fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm overflow-y-auto">
-    <div class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-xl shadow-2xl relative my-8">
-            <button id="closeCheckout" class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+<div id="checkoutModal" class="hidden fixed inset-0 z-[400] bg-black/85 backdrop-blur-md overflow-y-auto">
+    <div class="min-h-screen flex items-start md:items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg shadow-2xl relative my-8 overflow-hidden">
+            <button id="closeCheckout" aria-label="Close" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white transition-colors shadow-lg">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
 
             <!-- Stage 1: Stripe embedded checkout mount -->
-            <div id="stageCheckout" class="p-6 md:p-8">
-                <p class="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Checkout</p>
-                <h2 id="m-title" class="text-xl font-black mb-6"></h2>
-                <div id="stripeMount"></div>
+            <div id="stageCheckout">
+                <div id="stripeMount" class="rounded-3xl overflow-hidden"></div>
             </div>
 
             <!-- Stage 2: Preparing download -->
@@ -243,7 +241,6 @@
 
     async function openCheckout(release, artist) {
         if (!stripe) stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-        $('m-title').textContent = `${release.title} — ${artist.name}`;
         showStage('stageCheckout');
         openModal();
 

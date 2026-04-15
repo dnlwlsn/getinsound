@@ -27,7 +27,6 @@
 
   <!-- Logo -->
   <text x="96" y="230" font-family="system-ui, sans-serif" font-size="80" font-weight="800" fill="#f97316" letter-spacing="-3">insound</text>
-  <text x="520" y="230" font-family="system-ui, sans-serif" font-size="80" font-weight="800" fill="rgba(255,255,255,0.2)" letter-spacing="-3">.</text>
 
   <!-- Headline -->
   <text x="96" y="316" font-family="system-ui, sans-serif" font-size="52" font-weight="700" fill="#ffffff" letter-spacing="-2">Music that pays artists.</text>
