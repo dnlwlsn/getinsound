@@ -128,7 +128,7 @@
     }
 
     function render(data) {
-        $('d-cover').src = data.release.cover_url || '';
+        $('d-cover').src = data.release.cover_url || 'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22400%22%3E%3Crect%20width%3D%22400%22%20height%3D%22400%22%20fill%3D%22%23111%22%2F%3E%3C%2Fsvg%3E';
         $('d-cover').alt = `${data.release.title} cover`;
         $('d-title').textContent = data.release.title;
         $('d-artist').textContent = data.release.artist_name;

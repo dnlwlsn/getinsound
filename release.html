@@ -146,6 +146,46 @@
 
     const $ = (id) => document.getElementById(id);
 
+    // Inline deterministic gradient for legacy HTML pages
+    function cyrb53(str, seed = 0) {
+        let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+        for (let i = 0; i < str.length; i++) {
+            const ch = str.charCodeAt(i);
+            h1 = Math.imul(h1 ^ ch, 2654435761);
+            h2 = Math.imul(h2 ^ ch, 1597334677);
+        }
+        h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+        h1 ^= Math.imul(h2 ^ (h2 >>> 16), 3266489909);
+        h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+        h2 ^= Math.imul(h1 ^ (h1 >>> 16), 3266489909);
+        return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    }
+    function seededRand(seed) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
+    function hslHex(h, s, l) {
+        const d = l / 100, a = (s * Math.min(d, 1 - d)) / 100;
+        const f = n => { const k = (n + h / 30) % 12; return Math.round(255 * (d - a * Math.max(Math.min(k - 3, 9 - k, 1), -1))).toString(16).padStart(2, '0'); };
+        return `#${f(0)}${f(8)}${f(4)}`;
+    }
+    function generateGradientDataUri(artistId, releaseId) {
+        const hash = cyrb53(`${artistId}:${releaseId}`);
+        const r = seededRand(hash);
+        const h1 = Math.floor(r() * 360), off = 40 + Math.floor(r() * 80), h2 = (h1 + off) % 360;
+        const c1 = hslHex(h1, 60 + Math.floor(r() * 30), 35 + Math.floor(r() * 20));
+        const c2 = hslHex(h2, 60 + Math.floor(r() * 30), 35 + Math.floor(r() * 20));
+        const cols = [c1, c2];
+        if (r() < 0.4) cols.push(hslHex((h1 + off * 2) % 360, 60 + Math.floor(r() * 30), 35 + Math.floor(r() * 20)));
+        const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+        const angle = angles[Math.floor(r() * angles.length)];
+        const rad = (angle * Math.PI) / 180;
+        const x1 = Math.round((50 - 50 * Math.cos(rad)) * 100) / 100;
+        const y1 = Math.round((50 - 50 * Math.sin(rad)) * 100) / 100;
+        const x2 = Math.round((50 + 50 * Math.cos(rad)) * 100) / 100;
+        const y2 = Math.round((50 + 50 * Math.sin(rad)) * 100) / 100;
+        const stops = cols.map((c, i) => `<stop offset="${cols.length === 2 ? (i * 100) : (i * 50)}%" stop-color="${c}"/>`).join('');
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><defs><linearGradient id="g" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">${stops}</linearGradient><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="1200" height="1200" fill="url(#g)"/><rect width="1200" height="1200" filter="url(#n)" opacity="0.05"/></svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const artistSlug = params.get('a');
     const releaseSlug = params.get('r');
@@ -164,7 +204,7 @@
 
         const { data: artist, error: artistErr } = await supabase
             .from('artists')
-            .select('id, slug, name, bio, avatar_url')
+            .select('id, slug, name, bio, avatar_url, accent_colour')
             .eq('slug', artistSlug)
             .maybeSingle();
         if (artistErr || !artist) return showNotFound();
@@ -178,9 +218,18 @@
             .maybeSingle();
         if (releaseErr || !release) return showNotFound();
 
+        // Apply artist accent colour
+        const accent = artist.accent_colour || '#F56D00';
+        document.documentElement.style.setProperty('--artist-accent', accent);
+
         // Render
         document.title = `${release.title} — ${artist.name} | Insound`;
-        $('r-cover').src = release.cover_url || '';
+        if (release.cover_url) {
+            $('r-cover').src = release.cover_url;
+        } else {
+            // Generate deterministic gradient fallback
+            $('r-cover').src = generateGradientDataUri(artist.id, release.id);
+        }
         $('r-cover').alt = `${release.title} cover art`;
         $('r-artist-name').textContent = artist.name;
         $('r-artist-link').href = `/artist.html?a=${artist.slug}`;

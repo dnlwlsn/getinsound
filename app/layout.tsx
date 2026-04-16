@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Montserrat } from 'next/font/google'
+import { PlayerBar } from './components/PlayerBar'
 import './globals.css'
 
 const montserrat = Montserrat({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <PlayerBar />
       </body>
     </html>
   )

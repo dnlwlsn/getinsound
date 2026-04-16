@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import crypto from 'crypto'
+
+// GET: list codes for a release
+export async function GET(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const releaseId = req.nextUrl.searchParams.get('release_id')
+  if (!releaseId) return NextResponse.json({ error: 'release_id required' }, { status: 400 })
+
+  const { data: codes, error } = await supabase
+    .from('download_codes')
+    .select('id, code, redeemed_by, redeemed_at, expires_at, created_at')
+    .eq('release_id', releaseId)
+    .eq('artist_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const total = codes?.length || 0
+  const redeemed = codes?.filter(c => c.redeemed_by !== null).length || 0
+
+  return NextResponse.json({ codes, total, redeemed })
+}
+
+// POST: generate a batch of codes
+export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const body = await req.json().catch(() => ({}))
+  const releaseId = body.release_id as string | undefined
+  const count = Math.min(Math.max(body.count || 10, 1), 100) // 1-100 codes per batch
+  const expiryDays = body.expiry_days || 90
+
+  if (!releaseId) return NextResponse.json({ error: 'release_id required' }, { status: 400 })
+
+  // Verify the release belongs to this artist
+  const { data: release } = await supabase
+    .from('releases')
+    .select('id')
+    .eq('id', releaseId)
+    .eq('artist_id', user.id)
+    .maybeSingle()
+
+  if (!release) return NextResponse.json({ error: 'Release not found' }, { status: 404 })
+
+  const expiresAt = new Date(Date.now() + expiryDays * 86400000).toISOString()
+  const codes = Array.from({ length: count }, () => ({
+    release_id: releaseId,
+    artist_id: user.id,
+    code: generateCode(),
+    expires_at: expiresAt,
+  }))
+
+  const { data, error } = await supabase
+    .from('download_codes')
+    .insert(codes)
+    .select('id, code, expires_at')
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ codes: data, count: data?.length })
+}
+
+// Generate a human-friendly code: INSND-XXXX-XXXX
+function generateCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no I/O/0/1 for readability
+  const segment = () => Array.from({ length: 4 }, () =>
+    chars[crypto.randomInt(chars.length)]
+  ).join('')
+  return `INSND-${segment()}-${segment()}`
+}

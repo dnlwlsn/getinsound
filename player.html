@@ -15,6 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
     <style>
+        :root { --artist-accent: #F56D00; }
         body { background-color: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
         .glass { background: rgba(9,9,11,0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
         @keyframes spin-slow { to { transform: rotate(360deg); } }
@@ -211,8 +212,12 @@
             title: params.get('title') || 'Indie Summer',
             artist: params.get('artist') || 'YOUTH',
             price: params.get('price') || '5.99',
-            img: params.get('img') || 'https://picsum.photos/seed/mus0/600/600'
+            img: params.get('img') || 'https://picsum.photos/seed/mus0/600/600',
+            accent: params.get('accent') || '#F56D00'
         };
+
+        // Apply artist accent colour — updates price pills, play button, scrubber
+        document.documentElement.style.setProperty('--artist-accent', trackData.accent);
 
         document.getElementById('trackTitle').textContent = trackData.title;
         document.getElementById('trackArtist').textContent = trackData.artist;

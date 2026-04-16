@@ -184,7 +184,7 @@
             <!-- Cover drop zone -->
             <div id="uCoverDrop" class="border-2 border-dashed border-zinc-700 rounded-2xl p-6 text-center cursor-pointer hover:border-orange-600/50 hover:bg-orange-600/5 transition-all mb-6">
                 <svg class="mx-auto mb-3 text-zinc-600" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-                <p id="uCoverLabel" class="font-bold text-sm text-zinc-400 mb-1">Choose cover art</p>
+                <p id="uCoverLabel" class="font-bold text-sm text-zinc-400 mb-1">Choose cover art <span class="text-zinc-600 font-normal">(optional — we'll generate one)</span></p>
                 <p class="text-xs text-zinc-600">JPG or PNG · square recommended</p>
                 <input type="file" id="uCoverInput" class="hidden" accept="image/jpeg,image/png,image/webp">
             </div>
@@ -218,6 +218,36 @@
         import { supabase, slugify } from './src/supabase.js';
 
         const $ = (id) => document.getElementById(id);
+
+        // Deterministic gradient fallback for releases without cover art
+        function cyrb53(str, seed = 0) {
+            let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+            for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 16), 3266489909);
+            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 16), 3266489909);
+            return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+        }
+        function seededRand(seed) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
+        function hslHex(h, s, l) {
+            const d = l / 100, a = (s * Math.min(d, 1 - d)) / 100;
+            const f = n => { const k = (n + h / 30) % 12; return Math.round(255 * (d - a * Math.max(Math.min(k - 3, 9 - k, 1), -1))).toString(16).padStart(2, '0'); };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+        function generateGradientDataUri(artistId, releaseId) {
+            const hash = cyrb53(`${artistId}:${releaseId}`); const r = seededRand(hash);
+            const h1 = Math.floor(r() * 360), off = 40 + Math.floor(r() * 80), h2 = (h1 + off) % 360;
+            const c1 = hslHex(h1, 60 + Math.floor(r() * 30), 35 + Math.floor(r() * 20));
+            const c2 = hslHex(h2, 60 + Math.floor(r() * 30), 35 + Math.floor(r() * 20));
+            const cols = [c1, c2];
+            if (r() < 0.4) cols.push(hslHex((h1 + off * 2) % 360, 60 + Math.floor(r() * 30), 35 + Math.floor(r() * 20)));
+            const angles = [0, 45, 90, 135, 180, 225, 270, 315]; const angle = angles[Math.floor(r() * angles.length)];
+            const rad = (angle * Math.PI) / 180;
+            const x1 = Math.round((50 - 50 * Math.cos(rad)) * 100) / 100, y1 = Math.round((50 - 50 * Math.sin(rad)) * 100) / 100;
+            const x2 = Math.round((50 + 50 * Math.cos(rad)) * 100) / 100, y2 = Math.round((50 + 50 * Math.sin(rad)) * 100) / 100;
+            const stops = cols.map((c, i) => `<stop offset="${cols.length === 2 ? (i * 100) : (i * 50)}%" stop-color="${c}"/>`).join('');
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><defs><linearGradient id="g" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">${stops}</linearGradient><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="1200" height="1200" fill="url(#g)"/><rect width="1200" height="1200" filter="url(#n)" opacity="0.05"/></svg>`;
+            return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+        }
 
         // --- Auth guard ---
         let currentUser = null;
@@ -355,7 +385,7 @@
                     <td class="p-5">
                         <div class="flex items-center gap-4">
                             <div class="h-11 w-11 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-800">
-                                ${r.cover_url ? `<img src="${escapeHtml(r.cover_url)}" class="w-full h-full object-cover" loading="lazy" alt="Cover">` : ''}
+                                ${r.cover_url ? `<img src="${escapeHtml(r.cover_url)}" class="w-full h-full object-cover" loading="lazy" alt="Cover">` : `<img src="${generateGradientDataUri(currentUser.id, r.id)}" class="w-full h-full object-cover" alt="Generated cover">`}
                             </div>
                             <div>
                                 <p class="font-bold text-sm">${escapeHtml(r.title)}</p>
@@ -523,7 +553,6 @@
 
             if (!title) return showUploadError('Title is required.');
             if (!audioFile) return showUploadError('Please select an audio file.');
-            if (!coverFile) return showUploadError('Please upload cover art.');
             if (!priceNum || priceNum < 2) return showUploadError('Price must be at least £2.00.');
 
             setPublishBusy(true);
@@ -531,14 +560,18 @@
                 const releaseId = crypto.randomUUID();
                 const releaseSlug = await uniqueReleaseSlug(title);
 
-                // Upload cover
-                const coverExt = (coverFile.name.split('.').pop() || 'jpg').toLowerCase();
-                const coverPath = `${currentUser.id}/${releaseId}/cover.${coverExt}`;
-                const { error: coverErr } = await supabase.storage
-                    .from('covers')
-                    .upload(coverPath, coverFile, { upsert: true, contentType: coverFile.type });
-                if (coverErr) throw coverErr;
-                const { data: coverUrlData } = supabase.storage.from('covers').getPublicUrl(coverPath);
+                // Upload cover (optional — Edge Function generates gradient if skipped)
+                let coverUrl = null;
+                if (coverFile) {
+                    const coverExt = (coverFile.name.split('.').pop() || 'jpg').toLowerCase();
+                    const coverPath = `${currentUser.id}/${releaseId}/cover.${coverExt}`;
+                    const { error: coverErr } = await supabase.storage
+                        .from('covers')
+                        .upload(coverPath, coverFile, { upsert: true, contentType: coverFile.type });
+                    if (coverErr) throw coverErr;
+                    const { data: coverUrlData } = supabase.storage.from('covers').getPublicUrl(coverPath);
+                    coverUrl = coverUrlData.publicUrl;
+                }
 
                 // Upload audio (master)
                 const audioExt = (audioFile.name.split('.').pop() || 'mp3').toLowerCase();
@@ -548,14 +581,14 @@
                     .upload(audioPath, audioFile, { upsert: true, contentType: audioFile.type });
                 if (audioErr) throw audioErr;
 
-                // Insert release
+                // Insert release (null cover_url triggers generate-cover Edge Function)
                 const { error: relErr } = await supabase.from('releases').insert({
                     id: releaseId,
                     artist_id: currentUser.id,
                     slug: releaseSlug,
                     title,
                     type: 'single',
-                    cover_url: coverUrlData.publicUrl,
+                    cover_url: coverUrl,
                     price_pence: Math.round(priceNum * 100),
                     published: true,
                 });
