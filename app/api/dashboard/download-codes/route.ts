@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import crypto from 'crypto'
+
+export const runtime = 'edge'
 
 // GET: list codes for a release
 export async function GET(req: NextRequest) {
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no I/O/0/1 for readability
   const segment = () => Array.from({ length: 4 }, () =>
-    chars[crypto.randomInt(chars.length)]
+    chars[Math.floor(Math.random() * chars.length)]
   ).join('')
   return `INSND-${segment()}-${segment()}`
 }

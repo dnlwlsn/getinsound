@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge'
+
 const VALID_GENRES = new Set([
   'Indie', 'Alternative', 'Electronic', 'Hip-Hop',
   'Folk', 'Ambient', 'Post-Rock', 'Jazz',

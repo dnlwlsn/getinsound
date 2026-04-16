@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge'
+
 const SIGNED_URL_EXPIRY = 60 * 60 // 1 hour
 
 /** GET /api/stream?trackId=xxx — returns a signed URL for audio playback */
