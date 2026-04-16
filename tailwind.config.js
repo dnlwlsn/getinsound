@@ -19,8 +19,14 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
-        display: ['var(--font-grotesk)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
+      },
+      colors: {
+        insound: {
+          bg: '#0A0A0A',
+          orange: '#F56D00',
+        },
       },
     },
   },
