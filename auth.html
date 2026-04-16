@@ -127,7 +127,13 @@
                 <label class="flex items-start gap-3 cursor-pointer group">
                     <input id="signupAttest" type="checkbox" required class="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-700 bg-zinc-950 text-orange-600 focus:ring-orange-600 focus:ring-offset-0">
                     <span class="text-xs text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
-                        I confirm I'm an <strong class="text-white">independent or unsigned</strong> artist and own the rights to the music I upload.
+                        I confirm that I am an <strong class="text-white">independent, unsigned artist</strong> and am not signing up on behalf of a record label, management company, or any entity with a commercial music distribution agreement.
+                    </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer group">
+                    <input id="signupTerms" type="checkbox" required class="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-700 bg-zinc-950 text-orange-600 focus:ring-orange-600 focus:ring-offset-0">
+                    <span class="text-xs text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
+                        I agree to the <a href="terms.html" class="text-orange-600 hover:text-orange-400">Terms of Service</a>, <a href="privacy.html" class="text-orange-600 hover:text-orange-400">Privacy Policy</a>, and <a href="ai-policy.html" class="text-orange-600 hover:text-orange-400">AI Content Policy</a>.
                     </span>
                 </label>
                 <div id="signupError" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3"></div>
@@ -135,9 +141,6 @@
                     <span id="signupBtnText">Create Account</span>
                     <svg id="signupSpinner" class="hidden animate-spin" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                 </button>
-                <p class="text-center text-[10px] text-zinc-600 leading-relaxed">
-                    By creating an account you agree to our <a href="privacy.html" class="text-zinc-500 hover:text-white transition-colors">Privacy Policy</a>.
-                </p>
             </form>
 
             <!-- Post-signup "check your inbox" state -->
@@ -247,14 +250,19 @@
             const slug = $('signupSlug').value.trim().toLowerCase();
             const email = $('signupEmail').value.trim();
             const password = $('signupPassword').value;
-            const self_attest = $('signupAttest').checked;
+            const independence_confirmed = $('signupAttest').checked;
+            const terms_accepted = $('signupTerms').checked;
 
             if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(slug)) {
                 showError('signupError', 'URL must be 3–40 characters: lowercase letters, numbers, hyphens.');
                 return;
             }
-            if (!self_attest) {
-                showError('signupError', 'Please confirm you are an independent/unsigned artist.');
+            if (!independence_confirmed) {
+                showError('signupError', 'Please confirm you are an independent, unsigned artist.');
+                return;
+            }
+            if (!terms_accepted) {
+                showError('signupError', 'Please accept the Privacy Policy and AI Content Policy.');
                 return;
             }
 
@@ -278,7 +286,13 @@
                     email,
                     password,
                     options: {
-                        data: { artist_name, slug, self_attest: true },
+                        data: {
+                            artist_name,
+                            slug,
+                            self_attest: true,
+                            independence_confirmed: true,
+                            independence_confirmed_at: new Date().toISOString(),
+                        },
                         emailRedirectTo: `${window.location.origin}/dashboard.html`,
                     },
                 });

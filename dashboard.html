@@ -94,11 +94,17 @@
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
                 <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 count-up">
                     <p class="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-3">Balance</p>
-                    <p class="text-3xl font-black" data-count="0" data-prefix="£">£0</p>
+                    <p id="balanceDisplay" class="text-3xl font-black" data-count="0" data-prefix="£">£0</p>
                     <p class="text-xs text-zinc-600 font-bold mt-2">No earnings yet</p>
                     <svg class="mt-3 w-full" height="28" viewBox="0 0 100 28" preserveAspectRatio="none">
                         <polyline points="0,24 100,24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>
                     </svg>
+                    <div id="balanceNudge" class="hidden mt-3 flex items-start justify-between gap-2" style="animation:fade-in 0.3s ease both;">
+                        <p class="text-[11px] leading-relaxed" style="color:#71717a;">You have <span id="nudgeAmount"></span> available. You can withdraw any time — though it might be worth letting it build a little first.</p>
+                        <button onclick="document.getElementById('balanceNudge').remove()" class="flex-shrink-0 mt-0.5" style="color:#52525b;" aria-label="Dismiss">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 count-up" style="animation-delay:0.1s">
                     <p class="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-3">Plays</p>
@@ -279,6 +285,18 @@
         document.querySelectorAll('[data-count]').forEach(el => {
             animateCount(el, parseFloat(el.dataset.count), el.dataset.prefix || '');
         });
+
+        // Balance nudge: show when available balance is > £0 and < £2
+        function checkBalanceNudge(pence) {
+            const nudge = document.getElementById('balanceNudge');
+            if (!nudge) return;
+            if (pence > 0 && pence < 200) {
+                var pounds = (pence / 100).toFixed(2);
+                document.getElementById('nudgeAmount').textContent = '\u00A3' + pounds;
+                nudge.classList.remove('hidden');
+            }
+        }
+        // Call when real balance loads, e.g.: checkBalanceNudge(balancePence);
 
         setTimeout(() => {
             document.getElementById('payoutToast').classList.remove('translate-y-32');

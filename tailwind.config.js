@@ -1,8 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./*.html'],
+  content: [
+    './app/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './lib/**/*.{ts,tsx}',
+    './*.html',
+  ],
   safelist: [
-    // Dynamic gradient classes used in JS template strings (discography, library, explore)
     'from-orange-600', 'to-teal-700',
     'from-blue-500', 'to-indigo-700',
     'from-purple-600', 'to-zinc-800',
@@ -13,7 +17,11 @@ module.exports = {
     'bg-gradient-to-br',
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }

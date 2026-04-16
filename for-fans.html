@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Fans | Insound</title>
+<meta name="description" content="Your £10 means £9 to the artist. No middlemen, no algorithms. Buy music directly from independent artists on Insound.">
+<meta property="og:title" content="For Fans | Insound">
+<meta property="og:description" content="Your £10 means £9 to the artist. Support independent music directly.">
+<meta property="og:type" content="website">
+<link rel="icon" href="insound_logo_orange.svg" type="image/svg+xml">
+<link rel="stylesheet" href="tailwind.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ease-spring:cubic-bezier(0.32,0.72,0,1);--bg:#050505;--fg:#e4e4e7;--fg-muted:rgba(255,255,255,0.68);--fg-subtle:rgba(255,255,255,0.5);--fg-faint:rgba(255,255,255,0.6);--card-bg:#0a0a0a;--nav-bg:rgba(5,5,5,0.75);--line-color:rgba(255,255,255,0.06);}
+[data-theme="light"]{--bg:#f7f7f8;--fg:#18181b;--fg-muted:#52525b;--fg-subtle:#71717a;--fg-faint:#a1a1aa;--card-bg:#ffffff;--nav-bg:rgba(247,247,248,0.82);--line-color:rgba(0,0,0,0.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background-color:var(--bg);color:var(--fg);font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;transition:background-color 0.3s ease,color 0.3s ease;}
+h1,h2,h3,.font-display{font-family:'Space Grotesk',system-ui,sans-serif;}
+body::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:none;opacity:0.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px;}
+.reveal{opacity:0;transform:translateY(2rem);filter:blur(6px);transition:opacity 0.8s var(--ease-spring),transform 0.8s var(--ease-spring),filter 0.8s var(--ease-spring);}
+.reveal.is-visible{opacity:1;transform:none;filter:none;}
+.line{height:1px;background:linear-gradient(to right,transparent,var(--line-color),transparent);}
+.col-good{background:rgba(234,88,12,0.04);border-color:rgba(234,88,12,0.14);}
+#navInner{background:var(--nav-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);}
+.card{background:var(--card-bg);}
+.t-muted{color:var(--fg-muted);}
+.t-subtle{color:var(--fg-subtle);}
+.t-faint{color:var(--fg-faint);}
+footer{border-color:var(--line-color);}
+</style>
+</head>
+<body>
+
+<script>(function(){const s=localStorage.getItem('insound_theme')||(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');if(s==='light')document.documentElement.setAttribute('data-theme','light');})();</script>
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 z-50 flex justify-center pt-5 px-4" style="pointer-events:none">
+    <div id="navInner" class="flex items-center justify-between w-full max-w-4xl rounded-full px-5 py-3 ring-1 ring-white/[0.06] shadow-[0_8px_40px_rgba(0,0,0,0.5)]" style="pointer-events:auto">
+        <a href="index.html" class="font-display text-lg font-bold text-orange-500 tracking-tight">insound<span class="text-white/25">.</span></a>
+        <div class="flex items-center gap-3">
+            <button id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme" class="w-9 h-9 rounded-full flex items-center justify-center ring-1 ring-white/[0.08] hover:ring-white/20 text-zinc-400 hover:text-white">
+                <svg id="iconSun" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                <svg id="iconMoon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="hidden"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+            <a href="index.html#top" class="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">Browse music</a>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<header class="relative pt-40 pb-24 px-6 text-center overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full" style="background:radial-gradient(ellipse,rgba(234,88,12,0.1) 0%,transparent 70%);"></div>
+    </div>
+    <div class="max-w-4xl mx-auto relative reveal">
+        <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">For fans</span>
+        <h1 class="font-display text-5xl md:text-7xl font-bold tracking-[-0.03em] leading-[0.92] mb-6">Your £10 can change<br>an artist's <span class="text-orange-500">year.</span></h1>
+        <p class="t-muted text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">Most streaming platforms make supporting artists nearly impossible.</p>
+    </div>
+</header>
+
+<div class="line"></div>
+
+<!-- COMPARISON -->
+<section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16 reveal">
+            <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">The difference</span>
+            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">Where your money<br>actually goes.</h2>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mb-6 reveal">
+            <div class="card ring-1 ring-white/[0.05] rounded-3xl p-8">
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-red-400/70 mb-4">Stream on Spotify</p>
+                <p class="font-display text-3xl font-bold text-red-400 tracking-tight mb-2">£0.003 per stream</p>
+                <p class="t-muted text-sm leading-relaxed">333,000 streams to earn the artist £1,000. That's 1,370 hours of non-stop listening.</p>
+            </div>
+            <div class="col-good ring-1 ring-orange-600/15 rounded-3xl p-8">
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-4">Buy on Insound</p>
+                <p class="font-display text-3xl font-bold text-orange-500 tracking-tight mb-2">90% to artist</p>
+                <p class="t-muted text-sm leading-relaxed">Your £10 = £9 to the artist. 112 sales to earn £1,000 at £10.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="line"></div>
+
+<!-- £10 BREAKDOWN -->
+<section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-12 reveal">
+            <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">£10 breakdown</span>
+            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">A fan spends £10.<br>Here's where it goes.</h2>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4 reveal">
+            <div class="col-good border rounded-3xl p-8 text-center" style="box-shadow:0 8px 40px rgba(234,88,12,0.22),0 0 0 1px rgba(234,88,12,0.14)">
+                <p class="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-orange-500">£9.00</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/80 mt-4">To the artist</p>
+            </div>
+            <div class="card ring-1 ring-white/[0.05] rounded-3xl p-8 text-center">
+                <p class="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em]">80p</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] t-faint mt-4">Insound</p>
+            </div>
+            <div class="card ring-1 ring-white/[0.05] rounded-3xl p-8 text-center">
+                <p class="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em]">20p</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] t-faint mt-4">Stripe fee</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="line"></div>
+
+<!-- WHY HERE -->
+<section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16 reveal">
+            <span class="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">Why here</span>
+            <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">What makes this different.</h2>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+            <div class="card ring-1 ring-white/[0.05] rounded-2xl p-6 reveal">
+                <p class="font-display font-bold mb-1">No labels</p>
+                <p class="t-muted text-sm leading-relaxed">Independent &amp; unsigned only. Every purchase goes to an artist, not a corporation.</p>
+            </div>
+            <div class="card ring-1 ring-white/[0.05] rounded-2xl p-6 reveal">
+                <p class="font-display font-bold mb-1">No algorithms</p>
+                <p class="t-muted text-sm leading-relaxed">Your money goes to the artist you choose. Not whoever gamed a recommendation engine.</p>
+            </div>
+            <div class="card ring-1 ring-white/[0.05] rounded-2xl p-6 reveal">
+                <p class="font-display font-bold mb-1">No subscription</p>
+                <p class="t-muted text-sm leading-relaxed">Pay for music you actually want. No monthly fee pooled across artists you don't listen to.</p>
+            </div>
+            <div class="card ring-1 ring-white/[0.05] rounded-2xl p-6 reveal">
+                <p class="font-display font-bold mb-1">Pay what you want</p>
+                <p class="t-muted text-sm leading-relaxed">Feel free to pay more if you love it. The artist gets 90% of whatever you give.</p>
+            </div>
+            <div class="card ring-1 ring-white/[0.05] rounded-2xl p-6 reveal">
+                <p class="font-display font-bold mb-1">Transparent fees</p>
+                <p class="t-muted text-sm leading-relaxed">Stripe's 20p + 1.5% at checkout, always. No hidden deductions, no markup.</p>
+            </div>
+            <div class="card ring-1 ring-white/[0.05] rounded-2xl p-6 reveal">
+                <p class="font-display font-bold mb-1">Permanent model</p>
+                <p class="t-muted text-sm leading-relaxed">No shareholders to answer to. No investors who might change the terms. Just artists and fans.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CLOSING LINE -->
+<section class="py-28 px-6">
+    <div class="max-w-3xl mx-auto text-center reveal">
+        <h2 class="font-display text-3xl md:text-5xl font-bold tracking-[-0.03em] leading-[1.05]">Discover on Spotify.<br>But when you find something you love — <span class="text-orange-500">buy it here.</span><br><br>The artist will feel the difference.<br>We promise.</h2>
+    </div>
+</section>
+
+<div class="line"></div>
+
+<!-- CTA -->
+<section class="py-24 px-6">
+    <div class="max-w-3xl mx-auto text-center reveal">
+        <h2 class="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-4">Browse music</h2>
+        <p class="t-muted text-base mb-8">Launching soon. Join the waitlist to be first to explore.</p>
+        <a href="index.html#top" class="inline-block bg-orange-600 hover:bg-orange-500 text-black text-sm font-bold uppercase tracking-widest px-10 py-5 rounded-full transition-colors shadow-lg shadow-orange-600/20">Join the waitlist →</a>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="border-t py-16">
+    <div class="max-w-4xl mx-auto px-6 flex flex-col items-center gap-6">
+        <a href="index.html"><img src="insound_logo_orange.svg" alt="insound." class="h-8" /></a>
+        <div class="flex flex-wrap justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] t-faint">
+            <a href="index.html" class="hover:text-orange-500 transition-colors">Home</a>
+            <a href="for-artists.html" class="hover:text-orange-500 transition-colors">Artists</a>
+            <a href="for-fans.html" class="text-orange-500">Fans</a>
+            <a href="for-press.html" class="hover:text-orange-500 transition-colors">Press</a>
+            <a href="privacy.html" class="hover:text-orange-500 transition-colors">Privacy</a>
+        </div>
+        <p class="text-zinc-700 text-[11px] font-medium">© 2026 Insound</p>
+    </div>
+</footer>
+
+<script>
+function toggleTheme(){
+    const isLight=document.documentElement.getAttribute('data-theme')==='light';
+    if(isLight){document.documentElement.removeAttribute('data-theme');localStorage.setItem('insound_theme','dark');document.getElementById('iconSun').classList.remove('hidden');document.getElementById('iconMoon').classList.add('hidden');}
+    else{document.documentElement.setAttribute('data-theme','light');localStorage.setItem('insound_theme','light');document.getElementById('iconSun').classList.add('hidden');document.getElementById('iconMoon').classList.remove('hidden');}
+}
+(function(){if(document.documentElement.getAttribute('data-theme')==='light'){document.getElementById('iconSun').classList.add('hidden');document.getElementById('iconMoon').classList.remove('hidden');}})();
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-visible');obs.unobserve(e.target);}});},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>
+
+</body>
+</html>

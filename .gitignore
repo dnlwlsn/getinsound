@@ -3,3 +3,12 @@ npm-debug.log*
 .DS_Store
 supabase/.temp/
 supabase/.branches/
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# Environment
+.env.local
+.env*.local
