@@ -9,6 +9,9 @@ supabase/.branches/
 out/
 .vercel/
 
+# Claude Code
+.claude/
+
 # Environment
 .env.local
 .env*.local
