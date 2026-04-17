@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ArtistProfileClient from './ArtistProfileClient'
+export const runtime = 'edge';
 
 interface Props {
   params: Promise<{ slug: string }>

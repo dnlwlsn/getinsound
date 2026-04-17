@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DiscographyClient } from './DiscographyClient'
 
+export const runtime = 'edge';
+
 export const metadata = { title: 'My Discography | Insound' }
 
 export default async function DiscographyPage() {
