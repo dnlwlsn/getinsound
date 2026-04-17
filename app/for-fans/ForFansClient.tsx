@@ -77,8 +77,8 @@ export function ForFansClient() {
           {/* Insound */}
           <div className="bg-orange-600/[0.06] ring-1 ring-orange-600/[0.12] rounded-3xl p-8">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-4">Buy on Insound</p>
-            <p className="font-display text-3xl font-bold tracking-tight text-orange-400 mb-2">90%</p>
-            <p className="text-sm text-zinc-300 leading-relaxed">to artist. Your £10 = £9 to the artist.<br />112 sales to earn £1,000 at £10.</p>
+            <p className="font-display text-3xl font-bold tracking-tight text-orange-400 mb-2">~87%</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">to artist after all fees. Your £10 = £8.65 to the artist.<br />We take 10%, Stripe takes 1.5% + 20p. That&apos;s it.</p>
           </div>
         </div>
       </section>
@@ -98,16 +98,16 @@ export function ForFansClient() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-2xl p-5 text-center ring-1 bg-orange-600/[0.08] ring-orange-600/[0.15]">
-              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-orange-500">£9.00</p>
+              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-orange-500">£8.65</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">To the artist</p>
             </div>
             <div className="rounded-2xl p-5 text-center ring-1 bg-white/[0.02] ring-white/[0.06]">
-              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">80p</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Insound</p>
+              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">£1.00</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Insound (10%)</p>
             </div>
             <div className="rounded-2xl p-5 text-center ring-1 bg-white/[0.02] ring-white/[0.06]">
-              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">20p</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Stripe fee</p>
+              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">35p</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Stripe (1.5%+20p)</p>
             </div>
           </div>
         </div>

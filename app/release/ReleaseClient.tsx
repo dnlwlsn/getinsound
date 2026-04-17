@@ -268,7 +268,7 @@ export default function ReleaseClient() {
               </button>
 
               <p className="text-center text-[10px] text-zinc-600 mt-4">
-                Instant download after payment. 90% goes to the artist.
+                Instant download after payment. We take 10%, Stripe takes 1.5%&nbsp;+&nbsp;20p, the rest goes to the artist.
               </p>
 
               {/* Tracklist */}

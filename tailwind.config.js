@@ -4,7 +4,6 @@ module.exports = {
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
     './lib/**/*.{ts,tsx}',
-    './*.html',
   ],
   safelist: [
     'from-orange-600', 'to-teal-700',

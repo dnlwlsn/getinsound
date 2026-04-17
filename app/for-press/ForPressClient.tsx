@@ -6,7 +6,7 @@ import Image from 'next/image'
 const KEY_FACTS = [
   { label: 'Founded', value: '2026, UK' },
   { label: 'Model', value: 'Bootstrapped — no investors' },
-  { label: 'Revenue split', value: '90% artist / 10% Insound' },
+  { label: 'Revenue split', value: '10% Insound, 1.5%+20p Stripe, rest to artist' },
   { label: 'Monthly fee', value: 'None' },
   { label: 'Payout threshold', value: 'None' },
   { label: 'Who can join', value: 'Independent & unsigned artists only' },
@@ -95,7 +95,7 @@ export function ForPressClient() {
               Insound was built because the model that Bandcamp proved — direct-to-fan, artist-first, pay-what-you-want — deserved a platform that wouldn&apos;t get sold out from under the artists who depend on it.
             </p>
             <p>
-              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We take 10%, artists get 90%, and that&apos;s the model — permanently.
+              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We take 10%, Stripe takes 1.5% + 20p, and the rest goes to the artist. Every fee is shown transparently at checkout — permanently.
             </p>
             <p>
               We only allow independent and unsigned artists. No labels. No aggregators. If you&apos;re signed to a label, Insound isn&apos;t for you — and we think that clarity matters.

@@ -90,9 +90,9 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         <a href="/" className="text-2xl font-display font-bold text-orange-600 tracking-tighter mb-12 block hover:text-orange-500 transition-colors">insound.</a>
         <nav className="space-y-1 flex-1">
           <SidebarLink href="/dashboard" label="Dashboard" active />
-          <SidebarLink href="/discography.html" label="Discography" />
-          <SidebarLink href="/sales.html" label="Sales & Payouts" />
-          <SidebarLink href="/explore.html" label="Browse Store" />
+          <SidebarLink href="/discography" label="Discography" />
+          <SidebarLink href="/sales" label="Sales & Payouts" />
+          <SidebarLink href="/explore" label="Browse Store" />
         </nav>
         <div className="pt-6 border-t border-zinc-900">
           <a href="/" className="block text-zinc-600 hover:text-red-400 font-bold text-xs uppercase tracking-wider py-2 transition-colors">Log Out</a>
@@ -109,7 +109,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               <p className="text-zinc-500 text-sm font-semibold mb-1">Welcome back</p>
               <h1 className="text-4xl font-display font-bold tracking-tight">{artist.name}</h1>
             </div>
-            <a href="/discography.html" className="bg-orange-600 text-black font-bold px-7 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20 text-sm uppercase tracking-wider flex items-center gap-2 shrink-0">
+            <a href="/discography" className="bg-orange-600 text-black font-bold px-7 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20 text-sm uppercase tracking-wider flex items-center gap-2 shrink-0">
               + Upload Track
             </a>
           </header>
@@ -241,7 +241,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               </a>
             )}
             {!account.stripe_onboarded && (
-              <a href="/discography.html" className="mt-4 inline-block bg-orange-600 text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors">
+              <a href="/discography" className="mt-4 inline-block bg-orange-600 text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors">
                 Complete Stripe Setup
               </a>
             )}
@@ -364,7 +364,7 @@ function ReleaseRow({ release: r, artistId, artistSlug, codes, onToggle, onGener
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <VisibilityBadge v={r.visibility} />
-          <a href={`/release.html?a=${artistSlug}&r=${r.slug}`} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">View</a>
+          <a href={`/release?a=${artistSlug}&r=${r.slug}`} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">View</a>
           <button onClick={() => setShowControls(!showControls)} className="text-zinc-500 hover:text-white transition-colors p-1">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>

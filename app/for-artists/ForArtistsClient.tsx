@@ -12,7 +12,7 @@ const isValidEmail = (e: string) => !!e && /\S+@\S+\.\S+/.test(e)
 /* ── Data ─────────────────────────────────────────────────────── */
 
 const STATS = [
-  { value: '90%', label: 'To you, always' },
+  { value: '10%', label: 'Our cut, that\u2019s it' },
   { value: '£0', label: 'Monthly fee' },
   { value: '£2', label: 'Minimum sale price' },
   { value: '100%', label: 'You own your masters' },
@@ -21,7 +21,7 @@ const STATS = [
 const STEPS = [
   { num: '01', title: 'Upload', desc: 'WAV, FLAC, AIFF or MP3. Page live instantly.' },
   { num: '02', title: 'Set your price', desc: '£2 minimum, no ceiling. Pay what you want available on every release.' },
-  { num: '03', title: 'Get paid', desc: '90% direct to your Stripe account. Withdraw any time, no threshold.' },
+  { num: '03', title: 'Get paid', desc: 'We take 10%. Stripe takes 1.5% + 20p. The rest is yours, direct to your Stripe account. No threshold.' },
   { num: '04', title: 'Own everything', desc: 'Your masters, forever.' },
 ]
 
@@ -39,7 +39,7 @@ const COMPETITOR_CARDS = [
     name: 'Streaming vs Insound',
     subtitle: 'How streaming stacks up',
     rows: [
-      { label: 'Artist cut', them: '~£0.003 per stream', us: '90% of every sale' },
+      { label: 'Artist cut', them: '~£0.003 per stream', us: '~87% after all fees' },
       { label: 'To earn £1,000', them: '333,000+ streams', us: '~112 sales at £10' },
       { label: 'Pricing control', them: 'None', us: 'You set the price' },
       { label: 'Fan relationship', them: 'Anonymous', us: 'Direct — you own it' },
@@ -51,8 +51,8 @@ const COMPETITOR_CARDS = [
     name: 'Bandcamp vs Insound',
     subtitle: 'The platform we learned from',
     rows: [
-      { label: 'Artist cut', them: '~80% after all fees', us: '90% always' },
-      { label: 'Revenue threshold', them: 'Higher rate after $5k', us: 'None — 90% from sale one' },
+      { label: 'Artist cut', them: '~80% after all fees', us: '~87% after all fees' },
+      { label: 'Revenue threshold', them: 'Higher rate after $5k', us: 'None — same rate from sale one' },
       { label: 'Platform future', them: 'Sold twice since 2022', us: 'Independent, no investors' },
       { label: "Who it's for", them: 'Everyone including labels', us: 'Independent & unsigned only' },
       { label: 'Holds your money', them: 'Yes', us: 'Never' },
@@ -73,7 +73,7 @@ const COMPETITOR_CARDS = [
 ]
 
 const FAQ = [
-  { q: 'Is the 90% rate permanent?', a: "Yes. It's not a launch promotion or an introductory offer — it's the whole business model. We keep 10% to cover development, storage, and the team. That's the deal, permanently." },
+  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% cut is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges 1.5% + 20p per transaction, shown transparently at checkout. That's it. No hidden fees, permanently." },
   { q: 'Does Insound hold my money?', a: 'Never. We use Stripe Connect direct charges — when a fan buys your music, the payment goes directly to your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes.' },
   { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
   { q: 'Are there any hidden fees?', a: "No. We take 10%. Stripe charges 1.5% + 20p. That's it. Both are shown at checkout — nothing hidden, nothing added." },
@@ -202,7 +202,7 @@ export function ForArtistsClient() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="bg-orange-600/[0.06] ring-1 ring-orange-600/[0.12] rounded-3xl p-10 md:p-14">
             <p className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-snug">
-              &ldquo;90% is permanent. Not a launch offer.<br />Not subject to change.&rdquo;
+              &ldquo;10% is permanent. Not a launch offer.<br />Every fee, transparent.&rdquo;
             </p>
           </div>
         </div>
@@ -304,7 +304,7 @@ export function ForArtistsClient() {
             Your music.<br />Your money.
           </h2>
           <p className="text-zinc-400 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
-            Sign up now and get first access when we launch. 90% is the model — not a launch offer.
+            Sign up now and get first access when we launch. 10% is our cut — not a launch offer. Every fee shown upfront.
           </p>
 
           {phase === 'form' ? (

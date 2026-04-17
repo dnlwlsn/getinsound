@@ -356,7 +356,7 @@ export default function HomeClient() {
           </h1>
 
           <p className="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-xl mx-auto mb-5 font-medium">
-            Upload your music. Keep <strong className="text-white font-bold">90%</strong> of every sale. No monthly fee. No labels.
+            Upload your music. We take <strong className="text-white font-bold">10%</strong>, Stripe takes 1.5%&nbsp;+&nbsp;20p, you keep the rest. No monthly fee. No labels.
           </p>
           <p className="t-muted text-sm max-w-md mx-auto mb-12">
             For independent and unsigned artists only. We&apos;re building this now — founding artists get first access.
@@ -432,8 +432,8 @@ export default function HomeClient() {
         <div className="max-w-4xl mx-auto px-6 md:px-14 py-8 md:py-14">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
             <div className="reveal">
-              <p className="font-display text-4xl font-bold text-white tracking-tight">90%</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Revenue to you</p>
+              <p className="font-display text-4xl font-bold text-white tracking-tight">10%</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Our cut, that&apos;s it</p>
             </div>
             <div className="reveal reveal-delay-1">
               <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">£0</p>
@@ -548,7 +548,7 @@ export default function HomeClient() {
                 <div className="col-good p-5 border-t border-white/[0.04]">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-orange-400 mb-4">insound.</p>
                   <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">90% of every sale</p></div>
+                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">~87% after all fees</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">To earn £1,000</p><p className="font-bold text-orange-400 text-xs leading-snug">~112 sales</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Pricing control</p><p className="font-bold text-orange-400 text-xs leading-snug">You set your price</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Fan relationship</p><p className="font-bold text-orange-400 text-xs leading-snug">Direct — you own it</p></div>
@@ -579,8 +579,8 @@ export default function HomeClient() {
                 <div className="col-good p-5 border-t border-white/[0.04]">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-orange-400 mb-4">insound.</p>
                   <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">90% — always</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Revenue threshold</p><p className="font-bold text-orange-400 text-xs leading-snug">None — 90% from sale one</p></div>
+                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">~87% after all fees</p></div>
+                    <div><p className="text-[10px] text-zinc-600 mb-1">Revenue threshold</p><p className="font-bold text-orange-400 text-xs leading-snug">None — same rate from sale one</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Platform future</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent, no investors</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent &amp; unsigned only</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Holds your money</p><p className="font-bold text-orange-400 text-xs leading-snug">Never</p></div>
@@ -610,7 +610,7 @@ export default function HomeClient() {
                 <div className="col-good p-5 border-t border-white/[0.04]">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-orange-400 mb-4">insound.</p>
                   <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">90% — always, no hidden fees</p></div>
+                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">~87% — every fee shown at checkout</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Payment setup</p><p className="font-bold text-orange-400 text-xs leading-snug">Stripe Connect, guided setup</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Platform stability</p><p className="font-bold text-orange-400 text-xs leading-snug">Independently built, sustainable model</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Curation</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent artists only — curated</p></div>
@@ -731,7 +731,7 @@ export default function HomeClient() {
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 3</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Get paid</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">90% of every sale goes straight to you, the moment it completes. Withdraw anytime. No thresholds, no delays, no surprises.</p>
+              <p className="text-zinc-500 text-sm leading-relaxed">We take 10%, Stripe takes 1.5% + 20p — the rest goes straight to you, the moment the sale completes. Withdraw anytime. No thresholds, no delays, no surprises.</p>
             </div>
           </div>
 
@@ -755,8 +755,8 @@ export default function HomeClient() {
           <div className="reveal punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:p-12">
             <h3 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Built different.</h3>
             <p className="t-muted text-base leading-relaxed mb-5">Bandcamp was sold to Epic Games in 2022. Then sold again to Songtradr in 2023, who laid off most of the team within weeks. By Q1 2026, active Bandcamp stores had declined 50% quarter-over-quarter. The platform artists trusted most became a cautionary tale in under three years.</p>
-            <p className="text-white font-medium leading-relaxed mb-5">We&apos;re building Insound independently. No investors. No exit strategy. No cap table that could ever change the 90% split. Just a platform that works for artists, permanently.</p>
-            <p className="t-muted text-base leading-relaxed">Sign up now and your 90% starts from your first sale. No thresholds, no waiting, no asterisks.</p>
+            <p className="text-white font-medium leading-relaxed mb-5">We&apos;re building Insound independently. No investors. No exit strategy. No cap table that could ever change the deal. Just a platform that works for artists, permanently.</p>
+            <p className="t-muted text-base leading-relaxed">Sign up now and your rate is locked from your first sale. We take 10%, Stripe takes 1.5% + 20p, you keep the rest. No thresholds, no waiting, no asterisks.</p>
           </div>
         </div>
       </section>
@@ -899,8 +899,8 @@ export default function HomeClient() {
             <div className="faq-list flex-1 space-y-0 reveal">
               {[
                 { q: 'When does Insound launch?', a: "We're in development now. Founding members get first access before we open to everyone — that's what the waitlist is for." },
-                { q: 'Is the 90% rate permanent?', a: "Yes. It's not a launch promotion or an introductory offer — it's the whole business model. We keep 10% to cover development, storage, and the team. That's the deal, permanently." },
-                { q: 'How do I get paid?', a: "90% goes directly to your Stripe account the moment a sale completes — we never hold it. Your Stripe balance is yours immediately. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days depending on your account settings. No minimum thresholds, no delays on our end." },
+                { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges 1.5% + 20p per transaction, shown at checkout. Both fees are transparent and permanent." },
+                { q: 'How do I get paid?', a: "Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. We take 10%, Stripe takes 1.5% + 20p, and the rest is yours immediately. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end." },
                 { q: 'Does Insound hold my money?', a: "Never. We use Stripe Connect direct charges — when a fan buys your music, the payment is created directly in your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes. We are never in the middle." },
                 { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
                 { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
@@ -995,7 +995,7 @@ export default function HomeClient() {
             </div>
             <h2 className="font-display text-4xl md:text-6xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">Your music.<br />Your money.</h2>
             <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-sm mx-auto">
-              Sign up now and get first access when we launch. 90% is the model — not a launch offer. Your rate starts from your first sale. No thresholds. No asterisks.
+              Sign up now and get first access when we launch. 10% is our cut — not a launch offer. Stripe takes 1.5% + 20p. You keep the rest, from your first sale. No thresholds. No asterisks.
             </p>
           </div>
 

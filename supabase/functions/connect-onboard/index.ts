@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const user = userData.user;
 
     const body = await req.json().catch(() => ({}));
-    const returnUrl: string = body.return_url || 'https://getinsound.com/discography.html';
+    const returnUrl: string = body.return_url || 'https://getinsound.com/discography';
 
     const { data: account, error: accountErr } = await admin
       .from('artist_accounts')

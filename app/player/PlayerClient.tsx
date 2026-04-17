@@ -376,7 +376,7 @@ export default function PlayerClient() {
             {/* Artist payout callout */}
             <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-zinc-500 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-600 pulse-dot flex-shrink-0" />
-              90% goes directly to <span className="text-orange-500 font-black ml-1">{artist}</span>
+              We take 10%, Stripe takes 1.5%+20p — the rest goes to <span className="text-orange-500 font-black ml-1">{artist}</span>
             </div>
           </div>
 
@@ -419,7 +419,7 @@ export default function PlayerClient() {
                 {checkoutStep !== 'success' ? (
                   <div>
                     <h3 className="text-xl font-black mb-1 font-display">Support {artist}</h3>
-                    <p className="text-zinc-500 text-sm mb-6">90% of your purchase goes directly to the artist.</p>
+                    <p className="text-zinc-500 text-sm mb-6">We take 10%, Stripe takes 1.5% + 20p. The rest goes directly to the artist.</p>
                     <div className="bg-zinc-950 rounded-2xl p-5 mb-6 border border-zinc-800">
                       <div className="flex items-center gap-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -491,7 +491,7 @@ export default function PlayerClient() {
             </div>
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 font-display">Be first in line.</h2>
             <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">
-              Register your interest and get priority access, a founding member badge, and your 90% rate locked in forever — before we open to everyone.
+              Register your interest and get priority access, a founding member badge, and your rate locked in forever — before we open to everyone.
             </p>
             {!registered ? (
               <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-5">
@@ -537,7 +537,7 @@ export default function PlayerClient() {
           <div className="max-w-4xl mx-auto flex items-center gap-4 flex-wrap sm:flex-nowrap">
             <div className="hidden sm:block flex-1 min-w-0">
               <p className="font-black text-sm text-white">Get early access to Insound</p>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Founding member rates — 90% locked forever</p>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Founding member rates — locked forever</p>
             </div>
             {!registered ? (
               <div className="flex gap-2 flex-1 sm:flex-initial">

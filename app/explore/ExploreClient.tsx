@@ -199,7 +199,8 @@ export default function ExploreClient() {
 
   /* ── Cart math ────────────────────────────────────────────── */
   const cartTotal = basket.reduce((s, t) => s + parseFloat(t.price), 0)
-  const artistShare = cartTotal * 0.9
+  const stripeFee = cartTotal > 0 ? cartTotal * 0.015 + 0.20 : 0
+  const artistShare = cartTotal - (cartTotal * 0.10) - stripeFee
 
   /* ── Toast helper ─────────────────────────────────────────── */
   const showToast = useCallback((msg: string) => {
@@ -237,7 +238,7 @@ export default function ExploreClient() {
     const total = basket.reduce((s, t) => s + parseFloat(t.price), 0)
     setTimeout(() => {
       setCartOpen(false)
-      setSuccessAmount({ total: total.toFixed(2), artist: (total * 0.9).toFixed(2) })
+      setSuccessAmount({ total: total.toFixed(2), artist: (total - (total * 0.10) - (total * 0.015 + 0.20)).toFixed(2) })
       setSuccessModal(true)
       setBasket([])
       setProcessing(false)
@@ -533,7 +534,7 @@ export default function ExploreClient() {
         <div className="flex justify-between items-center p-6 border-b border-zinc-800">
           <div>
             <h2 className="text-lg font-black">Your Basket</h2>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">90% goes to the artist</p>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">We take 10%, Stripe takes 1.5%+20p, the rest goes to the artist</p>
           </div>
           <button onClick={toggleCart} className="text-zinc-500 hover:text-white transition-colors p-1">
             <CloseIcon />
@@ -571,7 +572,7 @@ export default function ExploreClient() {
           <div className="flex justify-between text-xs font-bold text-zinc-500">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-600" />
-              Goes to artists (90%)
+              To artist (after fees)
             </span>
             <span>&pound;{artistShare.toFixed(2)}</span>
           </div>
@@ -631,7 +632,7 @@ export default function ExploreClient() {
             <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Early Access Open</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">Be first in line.</h2>
-          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Register your interest and get priority access, a founding member badge, and your 90% rate locked in forever &mdash; before we open to everyone.</p>
+          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Register your interest and get priority access, a founding member badge, and your rate locked in forever &mdash; before we open to everyone.</p>
           {!registered ? (
             <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-5">
               <input
@@ -674,7 +675,7 @@ export default function ExploreClient() {
         <div className="max-w-4xl mx-auto flex items-center gap-4 flex-wrap sm:flex-nowrap">
           <div className="hidden sm:block flex-1 min-w-0">
             <p className="font-black text-sm text-white">Get early access to Insound</p>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Founding member rates &mdash; 90% locked forever</p>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Founding member rates &mdash; locked forever</p>
           </div>
           <div className="flex gap-2 flex-1 sm:flex-initial">
             <input

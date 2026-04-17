@@ -5,11 +5,11 @@ import ReleaseClient from './ReleaseClient'
 export const metadata: Metadata = {
   title: 'Release | insound.',
   description:
-    'Buy music directly from the artist. 90% of every sale goes to the creator.',
+    'Buy music directly from the artist. We take 10%, Stripe takes 1.5% + 20p, the rest goes to the creator.',
   openGraph: {
     title: 'Release | insound.',
     description:
-      'Buy music directly from the artist. 90% of every sale goes to the creator.',
+      'Buy music directly from the artist. We take 10%, Stripe takes 1.5% + 20p, the rest goes to the creator.',
     type: 'website',
   },
 }
