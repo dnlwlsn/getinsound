@@ -27,22 +27,33 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Track not found' }, { status: 404 })
   }
 
-  // Check if the user has purchased this release
+  // Check if the user owns this release or has purchased it
   const { data: { user } } = await supabase.auth.getUser()
-  let purchased = false
+  let hasFullAccess = false
 
   if (user) {
-    const { count } = await supabase
-      .from('purchases')
-      .select('*', { count: 'exact', head: true })
-      .eq('buyer_user_id', user.id)
-      .eq('release_id', track.release_id)
-      .eq('status', 'paid')
+    // Artist owns their own tracks
+    const { data: release } = await supabase
+      .from('releases')
+      .select('artist_id')
+      .eq('id', track.release_id)
+      .single()
 
-    purchased = (count ?? 0) > 0
+    if (release?.artist_id === user.id) {
+      hasFullAccess = true
+    } else {
+      const { count } = await supabase
+        .from('purchases')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_user_id', user.id)
+        .eq('release_id', track.release_id)
+        .eq('status', 'paid')
+
+      hasFullAccess = (count ?? 0) > 0
+    }
   }
 
-  if (purchased && track.audio_path) {
+  if (hasFullAccess && track.audio_path) {
     // Full track — signed URL from private 'masters' bucket
     const { data: signed, error: signErr } = await supabase.storage
       .from('masters')

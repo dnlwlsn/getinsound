@@ -56,7 +56,7 @@ function generateGradientDataUri(artistId: string, releaseId: string) {
 
 /* ── Types ────────────────────────────────────────────────────── */
 interface Track { id: string; title: string; position: number; duration_sec: number }
-interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; tracks: Track[] }
+interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null; tracks: Track[] }
 interface Artist { id: string; slug: string; name: string; bio: string; avatar_url: string; accent_colour: string | null }
 
 type Stage = 'checkout' | 'preparing' | 'download' | 'error'
@@ -98,7 +98,7 @@ export default function ReleaseClient() {
 
       const { data: rel, error: rErr } = await supabase
         .from('releases')
-        .select('id, slug, title, type, cover_url, price_pence, currency, published, tracks(id, title, position, duration_sec)')
+        .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, tracks(id, title, position, duration_sec)')
         .eq('artist_id', a.id)
         .eq('slug', releaseSlug)
         .eq('published', true)
@@ -219,8 +219,6 @@ export default function ReleaseClient() {
   if (!artist || !release) return null
 
   const tracks = [...release.tracks].sort((a, b) => a.position - b.position)
-  const price = (release.price_pence / 100).toFixed(2)
-  const artistCut = ((release.price_pence * 0.9) / 100).toFixed(2)
   const typeLabel = { single: 'Single', ep: 'EP', album: 'Album' }[release.type] || 'Release'
   const coverSrc = release.cover_url || generateGradientDataUri(artist.id, release.id)
 
@@ -245,31 +243,13 @@ export default function ReleaseClient() {
 
             {/* Details */}
             <div>
-              <Link href={`/artist?a=${artist.slug}`} className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-400 transition-colors">
+              <Link href={`/${artist.slug}`} className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-400 transition-colors">
                 {artist.name}
               </Link>
               <h1 className="text-4xl md:text-5xl font-black tracking-tight mt-3 mb-2 font-display">{release.title}</h1>
               <p className="text-zinc-500 text-sm mb-8">{typeLabel} · {tracks.length} track{tracks.length === 1 ? '' : 's'}</p>
 
-              <div className="flex items-baseline gap-3 mb-1">
-                <span className="text-4xl font-black text-orange-600">&pound;{price}</span>
-                <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">GBP</span>
-              </div>
-              <p className="text-[11px] text-zinc-600 mb-6">
-                &pound;{artistCut} goes directly to the artist.
-              </p>
-
-              <button
-                onClick={openCheckout}
-                className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
-              >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" /><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /></svg>
-                <span>Buy for &pound;{price}</span>
-              </button>
-
-              <p className="text-center text-[10px] text-zinc-600 mt-4">
-                Instant download after payment. We take 10%, Stripe takes 1.5%&nbsp;+&nbsp;20p, the rest goes to the artist.
-              </p>
+              <PriceSection release={release} onBuy={openCheckout} />
 
               {/* Tracklist */}
               <div className="mt-10 border-t border-zinc-800 pt-6">
@@ -291,80 +271,144 @@ export default function ReleaseClient() {
       {/* Toast */}
       <div id="toast" className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 opacity-0 translate-y-4" />
 
-      {/* Checkout / Download Modal */}
+      {/* Checkout / Download Panel — slides from right */}
       {modalOpen && (
         <div
-          className="fixed inset-0 z-[400] bg-black/85 backdrop-blur-md overflow-y-auto"
+          className="fixed inset-0 z-[400] bg-black/70 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div
-            className="min-h-screen flex items-start md:items-center justify-center p-4"
-            onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
-          >
-            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg shadow-2xl relative my-8 overflow-hidden">
-              <button
-                onClick={closeModal}
-                aria-label="Close"
-                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white transition-colors shadow-lg"
-              >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </button>
+          <div className="absolute top-0 right-0 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-[slide-in-right_0.3s_ease_both]">
+            <button
+              onClick={closeModal}
+              aria-label="Close"
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white transition-colors shadow-lg"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            </button>
 
-              {/* Stage: Stripe checkout */}
-              {stage === 'checkout' && (
-                <div>
-                  <div ref={stripeMountRef} className="rounded-3xl overflow-hidden" />
-                </div>
-              )}
+            {/* Stage: Stripe checkout */}
+            {stage === 'checkout' && (
+              <div>
+                <div ref={stripeMountRef} className="min-h-[400px]" />
+              </div>
+            )}
 
-              {/* Stage: Preparing */}
-              {stage === 'preparing' && (
-                <div className="p-12 text-center">
-                  <div className="inline-block w-12 h-12 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin mb-6" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Finalising</p>
-                  <h2 className="text-xl font-black mb-2 font-display">Preparing your download...</h2>
-                  <p className="text-zinc-500 text-sm font-medium">This usually takes a few seconds.</p>
-                </div>
-              )}
+            {/* Stage: Preparing */}
+            {stage === 'preparing' && (
+              <div className="p-12 text-center mt-20">
+                <div className="inline-block w-12 h-12 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin mb-6" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Finalising</p>
+                <h2 className="text-xl font-black mb-2 font-display">Preparing your download...</h2>
+                <p className="text-zinc-500 text-sm font-medium">This usually takes a few seconds.</p>
+              </div>
+            )}
 
-              {/* Stage: Download ready */}
-              {stage === 'download' && (
-                <div className="p-6 md:p-8">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
-                  <h2 className="text-2xl font-black mb-6 font-display">{downloadTitle}</h2>
-                  <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Your files</p>
-                    <ol className="space-y-1">
-                      {downloadTracks.map((t, i) => (
-                        <li key={i} className="flex items-center gap-4 py-3 border-b border-zinc-800 last:border-0">
-                          <span className="text-zinc-600 font-mono text-xs w-6">{String(i + 1).padStart(2, '0')}</span>
-                          <span className="font-bold text-sm flex-1 truncate">{t.title}</span>
-                          {t.url ? (
-                            <a href={t.url} className="bg-orange-600 hover:bg-orange-500 text-black font-black px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-colors">Download</a>
-                          ) : (
-                            <span className="text-zinc-600 text-[10px] uppercase tracking-widest font-bold">Unavailable</span>
-                          )}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                  <p className="text-center text-[11px] text-zinc-600 font-medium">A receipt has been sent by Stripe. Bookmark this tab if you need to come back.</p>
+            {/* Stage: Download ready */}
+            {stage === 'download' && (
+              <div className="p-6 md:p-8 mt-8">
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
+                <h2 className="text-2xl font-black mb-6 font-display">{downloadTitle}</h2>
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Your files</p>
+                  <ol className="space-y-1">
+                    {downloadTracks.map((t, i) => (
+                      <li key={i} className="flex items-center gap-4 py-3 border-b border-zinc-800 last:border-0">
+                        <span className="text-zinc-600 font-mono text-xs w-6">{String(i + 1).padStart(2, '0')}</span>
+                        <span className="font-bold text-sm flex-1 truncate">{t.title}</span>
+                        {t.url ? (
+                          <a href={t.url} className="bg-orange-600 hover:bg-orange-500 text-black font-black px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-colors">Download</a>
+                        ) : (
+                          <span className="text-zinc-600 text-[10px] uppercase tracking-widest font-bold">Unavailable</span>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
-              )}
+                <p className="text-center text-[11px] text-zinc-600 font-medium">A receipt has been sent by Stripe. Bookmark this tab if you need to come back.</p>
+              </div>
+            )}
 
-              {/* Stage: Error */}
-              {stage === 'error' && (
-                <div className="p-12 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Something&apos;s off</p>
-                  <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
-                  <p className="text-zinc-500 text-sm font-medium mb-6">{errorMsg}</p>
-                  <button onClick={closeModal} className="bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Close</button>
-                </div>
-              )}
-            </div>
+            {/* Stage: Error */}
+            {stage === 'error' && (
+              <div className="p-12 text-center mt-20">
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Something&apos;s off</p>
+                <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
+                <p className="text-zinc-500 text-sm font-medium mb-6">{errorMsg}</p>
+                <button onClick={closeModal} className="bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Close</button>
+              </div>
+            )}
           </div>
         </div>
       )}
     </>
+  )
+}
+
+/* ── Price section with PWYW support ──────────────────────────── */
+
+function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void }) {
+  const defaultPounds = (release.price_pence / 100).toFixed(2)
+  const minPence = release.pwyw_enabled
+    ? (release.pwyw_minimum_pence ?? release.price_pence)
+    : release.price_pence
+  const minPounds = (minPence / 100).toFixed(2)
+  const [customAmount, setCustomAmount] = useState(defaultPounds)
+
+  const amountPence = Math.round(parseFloat(customAmount || '0') * 100)
+  const isValid = amountPence >= minPence
+  const stripeFee = Math.round(amountPence * 0.015) + 20
+  const insoundFee = Math.round(amountPence * 0.10)
+  const artistGetsPence = amountPence - stripeFee - insoundFee
+  const artistGets = (Math.max(0, artistGetsPence) / 100).toFixed(2)
+
+  return (
+    <div className="mb-6">
+      {release.pwyw_enabled ? (
+        <>
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Name your price</p>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl font-black text-zinc-400">&pound;</span>
+            <input
+              type="number"
+              step="0.01"
+              min={minPounds}
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+              className="text-4xl font-black text-orange-600 bg-transparent border-b-2 border-zinc-700 focus:border-orange-600 outline-none w-32 transition-colors"
+            />
+            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">GBP</span>
+          </div>
+          <p className="text-[10px] text-zinc-600 mb-1">Minimum &pound;{minPounds}</p>
+        </>
+      ) : (
+        <div className="flex items-baseline gap-3 mb-1">
+          <span className="text-4xl font-black text-orange-600">&pound;{defaultPounds}</span>
+          <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">GBP</span>
+        </div>
+      )}
+      {isValid && (
+        <p className="text-[11px] text-zinc-600 mb-6">
+          &pound;{artistGets} goes to the artist after fees (10% Insound + 1.5%&nbsp;+&nbsp;20p Stripe).
+        </p>
+      )}
+      {!isValid && (
+        <p className="text-[11px] text-red-400 mb-6">
+          Minimum amount is &pound;{minPounds}
+        </p>
+      )}
+
+      <button
+        onClick={onBuy}
+        disabled={!isValid}
+        className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" /><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /></svg>
+        <span>Buy for &pound;{release.pwyw_enabled ? (parseFloat(customAmount || '0')).toFixed(2) : defaultPounds}</span>
+      </button>
+
+      <p className="text-center text-[10px] text-zinc-600 mt-4">
+        Instant download after payment.
+      </p>
+    </div>
   )
 }
