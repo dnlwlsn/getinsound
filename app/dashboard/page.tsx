@@ -8,7 +8,7 @@ export const metadata = { title: 'Artist Studio | Insound' }
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth')
+  if (!user) redirect('/signup')
 
   // Parallel queries
   const [artistRes, accountRes, releasesRes, purchasesRes, codesRes] = await Promise.all([
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   const purchases = purchasesRes.data || []
   const codes = codesRes.data || []
 
-  if (!artist || !account) redirect('/auth')
+  if (!artist || !account) redirect('/become-an-artist')
 
   // Compute stats
   const totalEarningsPence = purchases.reduce((s, p) => s + p.artist_pence, 0)

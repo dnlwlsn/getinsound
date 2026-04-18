@@ -1,6 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const ARTIST_ROUTES = ['/dashboard', '/release']
+const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
+const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/become-an-artist', '/api']
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -25,17 +29,36 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh the session — this is the critical part.
-  // Do NOT remove this line — it ensures the auth token stays fresh
-  // and that server components can read the session.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  const path = request.nextUrl.pathname
+
+  // Protect artist-only routes
+  if (user && ARTIST_ROUTES.some(r => path.startsWith(r))) {
+    const { data: artist } = await supabase
+      .from('artists')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!artist) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/become-an-artist'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // Redirect unauthenticated users away from protected routes
+  if (!user && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/signup'
+    return NextResponse.redirect(url)
+  }
 
   return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    // Match all routes except static files and images
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|zip|pdf)$).*)',
   ],
 }

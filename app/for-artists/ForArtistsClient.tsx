@@ -4,11 +4,6 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://rvsfriqjobwuzzfdiyxg.supabase.co'
-const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg'
-
-const isValidEmail = (e: string) => !!e && /\S+@\S+\.\S+/.test(e)
-
 /* ── Data ─────────────────────────────────────────────────────── */
 
 const STATS = [
@@ -88,25 +83,6 @@ const FAQ = [
 /* ── Component ────────────────────────────────────────────────── */
 
 export function ForArtistsClient() {
-  const [email, setEmail] = useState('')
-  const [sending, setSending] = useState(false)
-  const [phase, setPhase] = useState<'form' | 'success'>('form')
-  const [invalid, setInvalid] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  function submit() {
-    if (!isValidEmail(email)) { setInvalid(true); return }
-    setInvalid(false)
-    setSending(true)
-    fetch(`${SB_URL}/rest/v1/waitlist`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Prefer: 'return=minimal' },
-      body: JSON.stringify({ email }),
-    }).then(r => {
-      if (r.ok || r.status === 409) { setPhase('success'); localStorage.setItem('insound_interested', '1') }
-    }).finally(() => setSending(false))
-  }
-
   return (
     <main className="bg-[#0A0A0A] text-white min-h-screen">
 
@@ -298,33 +274,18 @@ export function ForArtistsClient() {
         <div className="max-w-2xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot" />
-            Waitlist open
+            Now open
           </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">
             Your music.<br />Your money.
           </h2>
           <p className="text-zinc-400 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
-            Sign up now and get first access when we launch. 10% is our cut — not a launch offer. Every fee shown upfront.
+            Sign up and start selling. We only take 10%. Every fee shown upfront.
           </p>
-
-          {phase === 'form' ? (
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input ref={inputRef} type="email" value={email}
-                onChange={e => { setEmail(e.target.value); setInvalid(false) }}
-                onKeyDown={e => e.key === 'Enter' && submit()}
-                placeholder="your@email.com" autoComplete="email"
-                className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${invalid ? 'border-red-500' : 'border-transparent'}`} />
-              <button onClick={submit} disabled={sending}
-                className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
-                {sending ? 'Sending…' : 'Join the waitlist →'}
-              </button>
-            </div>
-          ) : (
-            <div className="bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl p-6 max-w-md mx-auto">
-              <p className="font-display font-bold text-lg text-orange-400">You&apos;re on the list.</p>
-              <p className="text-sm text-zinc-400 mt-1">We&apos;ll email you when it&apos;s your turn.</p>
-            </div>
-          )}
+          <Link href="/signup?intent=artist"
+            className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-8 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25">
+            Start selling your music →
+          </Link>
         </div>
       </section>
 

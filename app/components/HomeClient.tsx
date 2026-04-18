@@ -332,10 +332,10 @@ export default function HomeClient() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             </button>
-            <a href="#top" onClick={scrollAndPop}
+            <Link href="/signup"
               className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
-              Join the waitlist
-            </a>
+              Get started
+            </Link>
           </div>
         </div>
       </nav>
