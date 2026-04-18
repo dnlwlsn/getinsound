@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { calculateFees } from '@/app/lib/fees'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -291,12 +292,13 @@ export default function HomeClient() {
 
   /* ── Calculator derived values ───────────────────────────────── */
   const calcFill     = `${((calcPrice - 1) / 49 * 100).toFixed(1)}%`
-  const calcStreams   = Math.round(calcPrice * 0.9 / 0.003)
+  const calcInArtist  = calculateFees(calcPrice).artistReceived
+  const calcStreams   = Math.round(calcInArtist / 0.003)
   const calcStreamLbl = calcStreams >= 1000 ? `${Math.round(calcStreams / 1000).toLocaleString()},000+` : calcStreams.toLocaleString()
   const calcBcPer    = `${currSym}${(calcPrice * 0.8).toFixed(2)}`
-  const calcInPer    = `${currSym}${(calcPrice * 0.9).toFixed(2)}`
+  const calcInPer    = `${currSym}${calcInArtist.toFixed(2)}`
   const calcBcSales  = `~${Math.ceil(1000 / (calcPrice * 0.8))}`
-  const calcInSales  = Math.ceil(1000 / (calcPrice * 0.9))
+  const calcInSales  = Math.ceil(1000 / calcInArtist)
 
   /* ── Device basket helpers ───────────────────────────────────── */
   function toggleBasket(name: string) {
@@ -356,7 +358,7 @@ export default function HomeClient() {
           </h1>
 
           <p className="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-xl mx-auto mb-5 font-medium">
-            Upload your music. We take <strong className="text-white font-bold">10%</strong>, Stripe takes 1.5%&nbsp;+&nbsp;20p, you keep the rest. No monthly fee. No labels.
+            Upload your music. We only take <strong className="text-white font-bold">10%</strong>. No surprises. No monthly fee. No labels.
           </p>
           <p className="t-muted text-sm max-w-md mx-auto mb-12">
             For independent and unsigned artists only. We&apos;re building this now — founding artists get first access.
@@ -507,21 +509,21 @@ export default function HomeClient() {
 
           <div className="grid md:grid-cols-3 gap-4 reveal">
             <div className="col-good border rounded-3xl p-8 text-center relative" style={{ boxShadow: '0 8px 40px rgba(234,88,12,0.22),0 0 0 1px rgba(234,88,12,0.14)' }}>
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-orange-500">£9.00</p>
+              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-orange-500">£8.65</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/80 mt-4">To the artist</p>
             </div>
             <div className="col-good border rounded-3xl p-8 text-center">
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">80p</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Insound</p>
+              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">£1.00</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Insound (10%)</p>
             </div>
             <div className="col-good border rounded-3xl p-8 text-center">
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">20p</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Stripe fee</p>
+              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">35p</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Stripe (1.5%+20p)</p>
             </div>
           </div>
 
           <p className="text-zinc-500 text-sm leading-relaxed max-w-2xl mx-auto text-center mt-6 mb-10 reveal">
-            Stripe&apos;s fee is 1.5% + 20p per transaction. Shown transparently at checkout. No markup. Just the actual cost, passed through at cost.
+            We take a flat 10%. Stripe takes their standard processing fee (1.5%&nbsp;+&nbsp;20p), shown transparently at checkout. What you keep is everything else.
           </p>
 
           {/* Comparison cards */}
@@ -671,7 +673,7 @@ export default function HomeClient() {
               <div className="rounded-2xl p-4 text-center bg-orange-600/5 ring-1 ring-orange-600/10">
                 <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-orange-400/60 mb-3">Insound</p>
                 <p className="font-display text-xl font-bold text-orange-400">{calcInPer}</p>
-                <p className="text-[10px] t-faint mt-1 leading-snug">per sale,<br />always</p>
+                <p className="text-[10px] t-faint mt-1 leading-snug">per sale,<br />after all fees</p>
               </div>
             </div>
 
@@ -723,7 +725,7 @@ export default function HomeClient() {
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 2</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Set your price</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum £2. No ceiling. Stripe&apos;s fee (1.5% + 20p) is shown transparently at checkout — no markup, no hidden deductions.</p>
+              <p className="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum £2. No ceiling. We take a flat 10%. Stripe&apos;s processing fee (1.5%&nbsp;+&nbsp;20p) is shown transparently at checkout.</p>
             </div>
             <div className="reveal reveal-delay-2 card ring-1 ring-white/[0.05] rounded-3xl p-8">
               <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
@@ -731,7 +733,7 @@ export default function HomeClient() {
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 3</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Get paid</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">We take 10%, Stripe takes 1.5% + 20p — the rest goes straight to you, the moment the sale completes. Withdraw anytime. No thresholds, no delays, no surprises.</p>
+              <p className="text-zinc-500 text-sm leading-relaxed">We take a flat 10%. Stripe takes their standard processing fee (1.5%&nbsp;+&nbsp;20p), shown at checkout. What you keep is everything else — paid the moment the sale completes. No thresholds, no delays.</p>
             </div>
           </div>
 
@@ -756,7 +758,7 @@ export default function HomeClient() {
             <h3 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Built different.</h3>
             <p className="t-muted text-base leading-relaxed mb-5">Bandcamp was sold to Epic Games in 2022. Then sold again to Songtradr in 2023, who laid off most of the team within weeks. By Q1 2026, active Bandcamp stores had declined 50% quarter-over-quarter. The platform artists trusted most became a cautionary tale in under three years.</p>
             <p className="text-white font-medium leading-relaxed mb-5">We&apos;re building Insound independently. No investors. No exit strategy. No cap table that could ever change the deal. Just a platform that works for artists, permanently.</p>
-            <p className="t-muted text-base leading-relaxed">Sign up now and your rate is locked from your first sale. We take 10%, Stripe takes 1.5% + 20p, you keep the rest. No thresholds, no waiting, no asterisks.</p>
+            <p className="t-muted text-base leading-relaxed">Sign up now and your rate is locked from your first sale. We only take 10%. Stripe&apos;s processing fee (1.5%&nbsp;+&nbsp;20p) is shown transparently at checkout. What you keep is everything else. No thresholds, no waiting, no asterisks.</p>
           </div>
         </div>
       </section>
@@ -899,13 +901,13 @@ export default function HomeClient() {
             <div className="faq-list flex-1 space-y-0 reveal">
               {[
                 { q: 'When does Insound launch?', a: "We're in development now. Founding members get first access before we open to everyone — that's what the waitlist is for." },
-                { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges 1.5% + 20p per transaction, shown at checkout. Both fees are transparent and permanent." },
-                { q: 'How do I get paid?', a: "Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. We take 10%, Stripe takes 1.5% + 20p, and the rest is yours immediately. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end." },
+                { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee (1.5% + 20p), shown transparently at checkout. Both fees are permanent." },
+                { q: 'How do I get paid?', a: "Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. On a £10 sale: £8.65 to you, £1.00 to Insound, 35p to Stripe. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end." },
                 { q: 'Does Insound hold my money?', a: "Never. We use Stripe Connect direct charges — when a fan buys your music, the payment is created directly in your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes. We are never in the middle." },
                 { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
                 { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
                 { q: 'Is there a subscription fee?', a: "No. It's free to publish. We only make money when you make money — 10% per sale, nothing else." },
-                { q: 'Are there any hidden fees?', a: 'None. We take 10% per sale. Stripe charges 1.5% + 20p per transaction — shown clearly at checkout and passed through at cost. No markup on the Stripe fee. What you see is what happens.' },
+                { q: 'Are there any hidden fees?', a: 'None. We take a flat 10%. Stripe charges their standard processing fee (1.5% + 20p) — shown transparently at checkout, passed through at cost. On a £10 sale: £8.65 to you, £1.00 to Insound, 35p to Stripe. What you see is what happens.' },
               ].map((item, i, arr) => (
                 <div key={i} className={`${i < arr.length - 1 ? 'border-b' : ''} py-6`} style={{ borderColor: 'var(--line-color)' }}>
                   <p className="font-display font-bold text-lg text-white mb-2">{item.q}</p>
@@ -995,7 +997,7 @@ export default function HomeClient() {
             </div>
             <h2 className="font-display text-4xl md:text-6xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">Your music.<br />Your money.</h2>
             <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-sm mx-auto">
-              Sign up now and get first access when we launch. 10% is our cut — not a launch offer. Stripe takes 1.5% + 20p. You keep the rest, from your first sale. No thresholds. No asterisks.
+              Sign up now and get first access when we launch. We only take 10%. No surprises. Stripe&apos;s processing fee is shown transparently at checkout. From your first sale. No thresholds. No asterisks.
             </p>
           </div>
 

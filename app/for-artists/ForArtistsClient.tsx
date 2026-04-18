@@ -21,7 +21,7 @@ const STATS = [
 const STEPS = [
   { num: '01', title: 'Upload', desc: 'WAV, FLAC, AIFF or MP3. Page live instantly.' },
   { num: '02', title: 'Set your price', desc: '£2 minimum, no ceiling. Pay what you want available on every release.' },
-  { num: '03', title: 'Get paid', desc: 'We take 10%. Stripe takes 1.5% + 20p. The rest is yours, direct to your Stripe account. No threshold.' },
+  { num: '03', title: 'Get paid', desc: 'We only take 10%. Stripe processing (1.5% + 20p) shown at checkout. Everything else is yours, direct to your Stripe account.' },
   { num: '04', title: 'Own everything', desc: 'Your masters, forever.' },
 ]
 
@@ -73,10 +73,10 @@ const COMPETITOR_CARDS = [
 ]
 
 const FAQ = [
-  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% cut is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges 1.5% + 20p per transaction, shown transparently at checkout. That's it. No hidden fees, permanently." },
+  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee (1.5% + 20p), shown transparently at checkout. Both fees are permanent." },
   { q: 'Does Insound hold my money?', a: 'Never. We use Stripe Connect direct charges — when a fan buys your music, the payment goes directly to your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes.' },
   { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
-  { q: 'Are there any hidden fees?', a: "No. We take 10%. Stripe charges 1.5% + 20p. That's it. Both are shown at checkout — nothing hidden, nothing added." },
+  { q: 'Are there any hidden fees?', a: "No. We take a flat 10%. Stripe charges their standard processing fee (1.5% + 20p). On a £10 sale: £8.65 to you, £1.00 to Insound, 35p to Stripe. Both shown at checkout — nothing hidden." },
   { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
   { q: 'Is there a subscription fee?', a: 'No. It costs nothing to sign up, nothing to upload, and nothing per month. We only make money when you make a sale.' },
   { q: 'What happens if I want to leave?', a: 'You can remove your music at any time. Your Stripe earnings are already in your account — we never hold them. No lock-in, no penalty.' },

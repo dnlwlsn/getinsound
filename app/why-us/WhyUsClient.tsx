@@ -174,7 +174,7 @@ export function WhyUsClient() {
                 <div className="bg-orange-600 p-8 rounded-3xl shadow-xl shadow-orange-600/20">
                   <p className="text-[10px] font-black text-emerald-950 uppercase tracking-widest mb-1">Your Insound profit</p>
                   <p className="text-6xl font-black text-black">£{profit.toFixed(2)}</p>
-                  <p className="mt-4 text-[10px] text-emerald-900 font-bold italic">After our 10% and Stripe (1.5% + 20p). Paid instantly. No annual subscription.</p>
+                  <p className="mt-4 text-[10px] text-emerald-900 font-bold italic">After our flat 10% and Stripe processing (1.5% + 20p). Paid instantly. No annual subscription.</p>
                 </div>
 
                 <div className="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
@@ -223,7 +223,7 @@ export function WhyUsClient() {
                 </tr>
                 <tr className="border-b border-zinc-800">
                   <td className="p-8 font-bold text-zinc-300">Commission / fee</td>
-                  <td className="p-8 font-black text-white bg-orange-600/5">10% <span className="text-[10px] block opacity-60 font-normal italic">+ Stripe 1.5% + 20p</span></td>
+                  <td className="p-8 font-black text-white bg-orange-600/5">10% flat <span className="text-[10px] block opacity-60 font-normal italic">Stripe processing shown at checkout</span></td>
                   <td className="p-8 text-zinc-400">0%* <span className="text-[10px] block opacity-50 font-normal italic">*Plus hidden admin fees</span></td>
                 </tr>
                 <tr className="border-b border-zinc-800">
@@ -276,7 +276,7 @@ export function WhyUsClient() {
           </div>
 
           <p className="mt-10 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">
-            No annual fees. No hidden costs. 10% platform fee, all-in.
+            No annual fees. No hidden costs. 10% platform fee. Every fee shown at checkout.
           </p>
         </div>
       </section>

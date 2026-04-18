@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { calculateFees } from '@/app/lib/fees'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -199,8 +200,7 @@ export default function ExploreClient() {
 
   /* ── Cart math ────────────────────────────────────────────── */
   const cartTotal = basket.reduce((s, t) => s + parseFloat(t.price), 0)
-  const stripeFee = cartTotal > 0 ? cartTotal * 0.015 + 0.20 : 0
-  const artistShare = cartTotal - (cartTotal * 0.10) - stripeFee
+  const { stripeFee, artistReceived: artistShare } = cartTotal > 0 ? calculateFees(cartTotal) : { stripeFee: 0, artistReceived: 0 }
 
   /* ── Toast helper ─────────────────────────────────────────── */
   const showToast = useCallback((msg: string) => {
@@ -534,7 +534,7 @@ export default function ExploreClient() {
         <div className="flex justify-between items-center p-6 border-b border-zinc-800">
           <div>
             <h2 className="text-lg font-black">Your Basket</h2>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">We take 10%, Stripe takes 1.5%+20p, the rest goes to the artist</p>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">We only take 10%. Every fee shown at checkout.</p>
           </div>
           <button onClick={toggleCart} className="text-zinc-500 hover:text-white transition-colors p-1">
             <CloseIcon />

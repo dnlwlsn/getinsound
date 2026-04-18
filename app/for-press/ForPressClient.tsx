@@ -6,12 +6,12 @@ import Image from 'next/image'
 const KEY_FACTS = [
   { label: 'Founded', value: '2026, UK' },
   { label: 'Model', value: 'Bootstrapped — no investors' },
-  { label: 'Revenue split', value: '10% Insound, 1.5%+20p Stripe, rest to artist' },
+  { label: 'Platform fee', value: '10% flat — Stripe processing (1.5%+20p) shown at checkout' },
   { label: 'Monthly fee', value: 'None' },
   { label: 'Payout threshold', value: 'None' },
   { label: 'Who can join', value: 'Independent & unsigned artists only' },
   { label: 'Minimum sale', value: '£2.00' },
-  { label: 'Payment fees', value: 'Stripe 1.5% + 20p — transparent, no markup' },
+  { label: 'Payment processing', value: 'Stripe 1.5% + 20p — shown at checkout, no markup' },
   { label: 'Masters', value: 'Artists retain 100%' },
   { label: 'Future features', value: 'Merch, pre-orders, download codes, collectives' },
 ]
@@ -95,7 +95,7 @@ export function ForPressClient() {
               Insound was built because the model that Bandcamp proved — direct-to-fan, artist-first, pay-what-you-want — deserved a platform that wouldn&apos;t get sold out from under the artists who depend on it.
             </p>
             <p>
-              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We take 10%, Stripe takes 1.5% + 20p, and the rest goes to the artist. Every fee is shown transparently at checkout — permanently.
+              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We only take 10%. Stripe takes their standard processing fee (1.5%&nbsp;+&nbsp;20p), shown transparently at checkout. What the artist keeps is everything else — permanently.
             </p>
             <p>
               We only allow independent and unsigned artists. No labels. No aggregators. If you&apos;re signed to a label, Insound isn&apos;t for you — and we think that clarity matters.
@@ -142,7 +142,7 @@ export function ForPressClient() {
             </h2>
           </div>
           <div className="grid sm:grid-cols-3 gap-4">
-            <a href="/press/insound-press-deck.pdf" target="_blank" rel="noopener"
+            <a href="/press/insound-press-deck.pdf" download="insound-press-deck.pdf"
               className="bg-white/[0.02] ring-1 ring-white/[0.06] rounded-2xl p-6 text-center hover:ring-white/[0.15] transition-all group">
               <div className="w-10 h-10 mx-auto mb-4 rounded-xl bg-orange-600/10 flex items-center justify-center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F56D00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -153,7 +153,7 @@ export function ForPressClient() {
               <p className="font-display font-bold text-sm mb-1 group-hover:text-orange-400 transition-colors">Press Deck</p>
               <p className="text-[10px] text-zinc-500">PDF download</p>
             </a>
-            <a href="/press/insound-logo.zip" target="_blank" rel="noopener"
+            <a href="/press/insound-logo.zip" download="insound-logo.zip"
               className="bg-white/[0.02] ring-1 ring-white/[0.06] rounded-2xl p-6 text-center hover:ring-white/[0.15] transition-all group">
               <div className="w-10 h-10 mx-auto mb-4 rounded-xl bg-orange-600/10 flex items-center justify-center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F56D00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

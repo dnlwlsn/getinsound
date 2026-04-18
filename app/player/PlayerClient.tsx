@@ -376,7 +376,7 @@ export default function PlayerClient() {
             {/* Artist payout callout */}
             <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-zinc-500 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-600 pulse-dot flex-shrink-0" />
-              We take 10%, Stripe takes 1.5%+20p — the rest goes to <span className="text-orange-500 font-black ml-1">{artist}</span>
+              We only take 10% — the rest goes to <span className="text-orange-500 font-black ml-1">{artist}</span>
             </div>
           </div>
 
@@ -419,7 +419,7 @@ export default function PlayerClient() {
                 {checkoutStep !== 'success' ? (
                   <div>
                     <h3 className="text-xl font-black mb-1 font-display">Support {artist}</h3>
-                    <p className="text-zinc-500 text-sm mb-6">We take 10%, Stripe takes 1.5% + 20p. The rest goes directly to the artist.</p>
+                    <p className="text-zinc-500 text-sm mb-6">We take a flat 10%. Stripe takes their standard processing fee (1.5% + 20p), shown at checkout. The rest goes directly to the artist.</p>
                     <div className="bg-zinc-950 rounded-2xl p-5 mb-6 border border-zinc-800">
                       <div className="flex items-center gap-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}

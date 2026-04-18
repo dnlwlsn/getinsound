@@ -14,7 +14,7 @@ const WHY_HERE = [
   { title: 'No algorithms', desc: 'Your money goes to the artist you choose.' },
   { title: 'No subscription', desc: 'Pay for music you actually want.' },
   { title: 'Pay what you want', desc: 'Pay more if you love it.' },
-  { title: 'Transparent fees', desc: "Stripe's 20p + 1.5% at checkout, always." },
+  { title: 'Transparent fees', desc: "Every fee shown at checkout, always." },
   { title: 'Permanent model', desc: 'No shareholders to answer to.' },
 ]
 
@@ -78,7 +78,7 @@ export function ForFansClient() {
           <div className="bg-orange-600/[0.06] ring-1 ring-orange-600/[0.12] rounded-3xl p-8">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-4">Buy on Insound</p>
             <p className="font-display text-3xl font-bold tracking-tight text-orange-400 mb-2">~87%</p>
-            <p className="text-sm text-zinc-300 leading-relaxed">to artist after all fees. Your £10 = £8.65 to the artist.<br />We take 10%, Stripe takes 1.5% + 20p. That&apos;s it.</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">to artist after all fees. Your £10 = £8.65 to the artist.<br />We take a flat 10%. Stripe takes 1.5% + 20p. That&apos;s it.</p>
           </div>
         </div>
       </section>

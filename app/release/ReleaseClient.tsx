@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -356,9 +357,7 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void 
 
   const amountPence = Math.round(parseFloat(customAmount || '0') * 100)
   const isValid = amountPence >= minPence
-  const stripeFee = Math.round(amountPence * 0.015) + 20
-  const insoundFee = Math.round(amountPence * 0.10)
-  const artistGetsPence = amountPence - stripeFee - insoundFee
+  const { stripeFee, insoundFee, artistReceived: artistGetsPence } = calculateFeesPence(amountPence)
   const artistGets = (Math.max(0, artistGetsPence) / 100).toFixed(2)
 
   return (

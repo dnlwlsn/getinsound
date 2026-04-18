@@ -3,7 +3,7 @@ import { ForArtistsClient } from './ForArtistsClient'
 
 export const metadata: Metadata = {
   title: 'For Artists — insound.',
-  description: 'Your music. Your money. Permanently. We take 10%, Stripe takes 1.5% + 20p, you keep the rest. No monthly fee. Own your masters.',
+  description: 'Your music. Your money. Permanently. We only take 10%. No surprises. No monthly fee. Own your masters.',
 }
 
 export default function ForArtistsPage() {
