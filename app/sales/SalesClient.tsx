@@ -1,9 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 export function SalesClient() {
+  const supabase = createClient()
+  const router = useRouter()
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }, [supabase, router])
+
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [withdrawStep, setWithdrawStep] = useState<1 | 2 | 3>(1)
 
@@ -45,10 +54,10 @@ export function SalesClient() {
           </Link>
         </nav>
         <div className="pt-6 border-t border-zinc-900">
-          <Link href="/" className="flex items-center gap-3 p-3.5 text-zinc-600 hover:text-red-400 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors">
+          <button onClick={handleLogout} className="flex items-center gap-3 p-3.5 text-zinc-600 hover:text-red-400 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors w-full">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             Log Out
-          </Link>
+          </button>
         </div>
       </aside>
 

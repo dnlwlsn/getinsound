@@ -77,6 +77,11 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
   const router = useRouter()
   const supabase = createClient()
 
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }, [supabase, router])
+
   const [releases, setReleases] = useState(initialReleases)
   const [showModal, setShowModal] = useState(false)
 
@@ -329,9 +334,9 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
           <SidebarLink href="/explore" label="Browse Store" icon="search" />
         </nav>
         <div className="pt-6 border-t border-zinc-900">
-          <Link href="/" className="flex items-center gap-3 p-3.5 text-zinc-600 hover:text-red-400 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors">
+          <button onClick={handleLogout} className="flex items-center gap-3 p-3.5 text-zinc-600 hover:text-red-400 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors w-full">
             Log Out
-          </Link>
+          </button>
         </div>
       </aside>
 

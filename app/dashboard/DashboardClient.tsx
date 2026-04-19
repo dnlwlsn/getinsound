@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ColourPicker } from '@/app/components/ui/ColourPicker'
 import { SoftNudge } from '@/app/components/ui/SoftNudge'
@@ -83,6 +84,13 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     setAccentSaving(false)
   }
 
+  // ── Logout ─────────────────────────────────────────────────
+  const router = useRouter()
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }, [supabase, router])
+
   return (
     <div className="min-h-screen flex bg-[#09090b] text-zinc-100">
       {/* ── Sidebar ─────────────────────────────────────────── */}
@@ -95,7 +103,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           <SidebarLink href="/explore" label="Browse Store" />
         </nav>
         <div className="pt-6 border-t border-zinc-900">
-          <a href="/" className="block text-zinc-600 hover:text-red-400 font-bold text-xs uppercase tracking-wider py-2 transition-colors">Log Out</a>
+          <button onClick={handleLogout} className="block text-zinc-600 hover:text-red-400 font-bold text-xs uppercase tracking-wider py-2 transition-colors">Log Out</button>
         </div>
       </aside>
 
