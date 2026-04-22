@@ -1,62 +1,62 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
-async function createSupabase() {
-  const cookieStore = await cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        },
-      },
-    },
-  )
-}
+export const runtime = 'edge'
 
-export async function GET() {
-  const supabase = await createSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+const VALID_GENRES = new Set([
+  'Indie', 'Alternative', 'Electronic', 'Hip-Hop',
+  'Folk', 'Ambient', 'Post-Rock', 'Jazz',
+  'Soul', 'Punk', 'Metal', 'Classical',
+  'R&B', 'Experimental', 'Singer-Songwriter', 'World',
+])
 
-  const { data, error } = await supabase
-    .from('fan_profiles')
-    .select('display_currency, locale')
-    .eq('id', user.id)
-    .maybeSingle()
+/** POST /api/fan-preferences — save genre selections or skip */
+export async function POST(request: Request) {
+  const supabase = await createClient()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data || { display_currency: 'GBP', locale: null })
-}
-
-export async function POST(request: NextRequest) {
-  const supabase = await createSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const body = await request.json()
-  const { display_currency, locale } = body
-
-  if (!display_currency) {
-    return NextResponse.json({ error: 'display_currency required' }, { status: 400 })
+  const { data: { user }, error: authErr } = await supabase.auth.getUser()
+  if (authErr || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { error } = await supabase
-    .from('fan_profiles')
-    .update({
-      display_currency,
-      locale: locale || null,
-    })
-    .eq('id', user.id)
+  const body = await request.json()
+  const { genres, skip } = body as { genres?: string[]; skip?: boolean }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Upsert fan_profiles row
+  const { error: profileErr } = await supabase
+    .from('fan_profiles')
+    .upsert({
+      id: user.id,
+      preferences_skipped: skip === true,
+    }, { onConflict: 'id' })
+
+  if (profileErr) {
+    return NextResponse.json({ error: profileErr.message }, { status: 500 })
+  }
+
+  // If skipping, we're done
+  if (skip) {
+    return NextResponse.json({ ok: true })
+  }
+
+  // Validate genres
+  if (!Array.isArray(genres) || genres.length < 3 || genres.length > 5) {
+    return NextResponse.json({ error: 'Select 3–5 genres' }, { status: 400 })
+  }
+  if (!genres.every(g => VALID_GENRES.has(g))) {
+    return NextResponse.json({ error: 'Invalid genre' }, { status: 400 })
+  }
+
+  // Clear any old preferences, then insert new ones
+  await supabase.from('fan_preferences').delete().eq('user_id', user.id)
+
+  const { error: insertErr } = await supabase
+    .from('fan_preferences')
+    .insert(genres.map(genre => ({ user_id: user.id, genre })))
+
+  if (insertErr) {
+    return NextResponse.json({ error: insertErr.message }, { status: 500 })
+  }
+
   return NextResponse.json({ ok: true })
 }
