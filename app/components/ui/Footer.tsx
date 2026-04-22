@@ -1,3 +1,5 @@
+import { CurrencySwitcher } from './CurrencySwitcher'
+
 type FooterLink = {
   label: string
   href: string
@@ -38,7 +40,10 @@ export function Footer({ links = [], className = '' }: Props) {
         )}
 
         {/* Copyright */}
-        <p className="text-xs text-zinc-600">&copy; {year} Insound. All rights reserved.</p>
+        <div className="flex items-center gap-4">
+          <CurrencySwitcher />
+          <p className="text-xs text-zinc-600">&copy; {year} Insound. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   )
