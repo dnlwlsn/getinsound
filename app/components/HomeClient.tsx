@@ -501,12 +501,12 @@ export default function HomeClient() {
             </div>
             <div className="col-good border rounded-3xl p-8 text-center">
               <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">{formatPrice(convertPrice(0.35, 'GBP', currency))}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Stripe (1.5%+20p)</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Stripe fee</p>
             </div>
           </div>
 
           <p className="text-zinc-500 text-sm leading-relaxed max-w-2xl mx-auto text-center mt-6 mb-10 reveal">
-            We take a flat 10%. Stripe takes their standard processing fee (1.5%&nbsp;+&nbsp;20p), shown transparently at checkout. What you keep is everything else.
+            We take a flat 10%. Stripe takes their standard processing fee , shown transparently at checkout. What you keep is everything else.
           </p>
 
           {/* Comparison cards */}
@@ -708,7 +708,7 @@ export default function HomeClient() {
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 2</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Set your price</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum {formatPrice(convertPrice(2, 'GBP', currency))}. No ceiling. We take a flat 10%. Stripe&apos;s processing fee (1.5%&nbsp;+&nbsp;20p) is shown transparently at checkout.</p>
+              <p className="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum {formatPrice(convertPrice(2, 'GBP', currency))}. No ceiling. We take a flat 10%. Stripe&apos;s processing fee  is shown transparently at checkout.</p>
             </div>
             <div className="reveal reveal-delay-2 card ring-1 ring-white/[0.05] rounded-3xl p-8">
               <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
@@ -716,7 +716,7 @@ export default function HomeClient() {
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 3</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Get paid</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">We take a flat 10%. Stripe takes their standard processing fee (1.5%&nbsp;+&nbsp;20p), shown at checkout. What you keep is everything else — paid the moment the sale completes. No thresholds, no delays.</p>
+              <p className="text-zinc-500 text-sm leading-relaxed">We take a flat 10%. Stripe takes their standard processing fee , shown at checkout. What you keep is everything else — paid the moment the sale completes. No thresholds, no delays.</p>
             </div>
           </div>
 
@@ -741,7 +741,7 @@ export default function HomeClient() {
             <h3 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Built different.</h3>
             <p className="t-muted text-base leading-relaxed mb-5">Bandcamp was sold to Epic Games in 2022. Then sold again to Songtradr in 2023, who laid off most of the team within weeks. By Q1 2026, active Bandcamp stores had declined 50% quarter-over-quarter. The platform artists trusted most became a cautionary tale in under three years.</p>
             <p className="text-white font-medium leading-relaxed mb-5">We&apos;re building Insound independently. No investors. No exit strategy. No cap table that could ever change the deal. Just a platform that works for artists, permanently.</p>
-            <p className="t-muted text-base leading-relaxed">Sign up now and your rate is locked from your first sale. We only take 10%. Stripe&apos;s processing fee (1.5%&nbsp;+&nbsp;20p) is shown transparently at checkout. What you keep is everything else. No thresholds, no waiting, no asterisks.</p>
+            <p className="t-muted text-base leading-relaxed">Sign up now and your rate is locked from your first sale. We only take 10%. Stripe&apos;s processing fee  is shown transparently at checkout. What you keep is everything else. No thresholds, no waiting, no asterisks.</p>
           </div>
         </div>
       </section>
@@ -884,13 +884,13 @@ export default function HomeClient() {
             <div className="faq-list flex-1 space-y-0 reveal">
               {[
                 { q: 'When does Insound launch?', a: "We're in development now. Founding members get first access before we open to everyone — that's what the waitlist is for." },
-                { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee (1.5% + 20p), shown transparently at checkout. Both fees are permanent." },
+                { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee , shown transparently at checkout. Both fees are permanent." },
                 { q: 'How do I get paid?', a: `Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end.` },
                 { q: 'Does Insound hold my money?', a: "Never. We use Stripe Connect direct charges — when a fan buys your music, the payment is created directly in your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes. We are never in the middle." },
                 { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
                 { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
                 { q: 'Is there a subscription fee?', a: "No. It's free to publish. We only make money when you make money — 10% per sale, nothing else." },
-                { q: 'Are there any hidden fees?', a: `None. We take a flat 10%. Stripe charges their standard processing fee (1.5% + 20p) — shown transparently at checkout, passed through at cost. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. What you see is what happens.` },
+                { q: 'Are there any hidden fees?', a: `None. We take a flat 10%. Stripe charges their standard processing fee  — shown transparently at checkout, passed through at cost. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. What you see is what happens.` },
               ].map((item, i, arr) => (
                 <div key={i} className={`${i < arr.length - 1 ? 'border-b' : ''} py-6`} style={{ borderColor: 'var(--line-color)' }}>
                   <p className="font-display font-bold text-lg text-white mb-2">{item.q}</p>
