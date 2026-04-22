@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { calculateFees } from '@/app/lib/fees'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useCurrency } from '../providers/CurrencyProvider'
 
 /* ── Supabase config ─────────────────────────────────────────── */
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://rvsfriqjobwuzzfdiyxg.supabase.co'
@@ -62,7 +63,9 @@ export default function HomeClient() {
 
   /* Calculator */
   const [calcPrice, setCalcPrice]   = useState(10)
-  const [currSym, setCurrSym]       = useState('£')
+
+  /* Currency */
+  const { currency, formatPrice, convertPrice } = useCurrency()
 
   /* Typewriter */
   const [twText, setTwText]         = useState('')
@@ -213,26 +216,6 @@ export default function HomeClient() {
     return () => clearInterval(id)
   }, [])
 
-  /* ── Currency detection ──────────────────────────────────────── */
-  useEffect(() => {
-    const map: Record<string, string> = {
-      'en-US': 'USD', 'en-CA': 'CAD', 'en-AU': 'AUD', 'en-NZ': 'NZD',
-      ja: 'JPY', ko: 'KRW', zh: 'CNY', hi: 'INR', 'pt-BR': 'BRL',
-      sv: 'SEK', no: 'NOK', da: 'DKK', pl: 'PLN', tr: 'TRY',
-      de: 'EUR', fr: 'EUR', it: 'EUR', es: 'EUR', nl: 'EUR',
-      pt: 'EUR', fi: 'EUR', el: 'EUR', sk: 'EUR', sl: 'EUR',
-    }
-    const locale = navigator.language || 'en-GB'
-    const lang = locale.split('-')[0]
-    const code = map[locale] || map[lang] || 'GBP'
-    let sym = '£'
-    try {
-      sym = (0).toLocaleString(locale, { style: 'currency', currency: code, maximumFractionDigits: 0 })
-        .replace(/[\d\s.,]/g, '').trim() || '£'
-    } catch {}
-    setCurrSym(sym)
-  }, [])
-
   /* ── Typewriter ──────────────────────────────────────────────── */
   useEffect(() => {
     const card = costCardRef.current
@@ -295,8 +278,8 @@ export default function HomeClient() {
   const calcInArtist  = calculateFees(calcPrice).artistReceived
   const calcStreams   = Math.round(calcInArtist / 0.003)
   const calcStreamLbl = calcStreams >= 1000 ? `${Math.round(calcStreams / 1000).toLocaleString()},000+` : calcStreams.toLocaleString()
-  const calcBcPer    = `${currSym}${(calcPrice * 0.8).toFixed(2)}`
-  const calcInPer    = `${currSym}${calcInArtist.toFixed(2)}`
+  const calcBcPer    = formatPrice(calcPrice * 0.8)
+  const calcInPer    = formatPrice(calcInArtist)
   const calcBcSales  = `~${Math.ceil(1000 / (calcPrice * 0.8))}`
   const calcInSales  = Math.ceil(1000 / calcInArtist)
 
@@ -438,7 +421,7 @@ export default function HomeClient() {
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Our cut, that&apos;s it</p>
             </div>
             <div className="reveal reveal-delay-1">
-              <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">£0</p>
+              <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">{formatPrice(0)}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Monthly fee, ever</p>
             </div>
             <div className="reveal reveal-delay-2">
@@ -482,14 +465,14 @@ export default function HomeClient() {
             </div>
             <div className="border-t px-8 py-5 flex justify-between items-center" style={{ borderColor: 'var(--line-color)' }}>
               <span className="text-white font-bold">Typical annual total</span>
-              <span className="text-orange-500 font-bold">£2,000 – £8,000+</span>
+              <span className="text-orange-500 font-bold">{formatPrice(convertPrice(2000, 'GBP', currency))} – {formatPrice(convertPrice(8000, 'GBP', currency))}+</span>
             </div>
             <div className="mx-0 bg-orange-600/8 border-t border-orange-600/15 px-8 py-6 flex justify-between items-center">
               <div>
                 <p className="text-white font-bold">Publishing your music on Insound</p>
                 <p className="text-[11px] t-muted mt-1">We keep 10% per sale — for development, storage, and coffee. That&apos;s it.</p>
               </div>
-              <span className="text-orange-400 font-display font-bold text-2xl tracking-tight ml-6 flex-shrink-0">£0 to publish</span>
+              <span className="text-orange-400 font-display font-bold text-2xl tracking-tight ml-6 flex-shrink-0">{formatPrice(0)} to publish</span>
             </div>
           </div>
 
@@ -504,20 +487,20 @@ export default function HomeClient() {
           <div className="text-center mb-16 reveal">
             <span className="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">The honest truth</span>
             <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Here&apos;s what you keep.</h2>
-            <p className="text-zinc-500 text-lg max-w-lg mx-auto">A fan spends £10 on your music. How much reaches you?</p>
+            <p className="text-zinc-500 text-lg max-w-lg mx-auto">A fan spends {formatPrice(convertPrice(10, 'GBP', currency))} on your music. How much reaches you?</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4 reveal">
             <div className="col-good border rounded-3xl p-8 text-center relative" style={{ boxShadow: '0 8px 40px rgba(234,88,12,0.22),0 0 0 1px rgba(234,88,12,0.14)' }}>
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-orange-500">£8.65</p>
+              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-orange-500">{formatPrice(convertPrice(8.65, 'GBP', currency))}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/80 mt-4">To the artist</p>
             </div>
             <div className="col-good border rounded-3xl p-8 text-center">
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">£1.00</p>
+              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">{formatPrice(convertPrice(1, 'GBP', currency))}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Insound (10%)</p>
             </div>
             <div className="col-good border rounded-3xl p-8 text-center">
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">35p</p>
+              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">{formatPrice(convertPrice(0.35, 'GBP', currency))}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Stripe (1.5%+20p)</p>
             </div>
           </div>
@@ -540,8 +523,8 @@ export default function HomeClient() {
                 <div className="col-bad p-5 border-t border-r border-white/[0.04]">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-red-400/70 mb-4">Them</p>
                   <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-red-400 text-xs leading-snug">~£0.003 per stream</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">To earn £1,000</p><p className="font-bold text-red-400 text-xs leading-snug">333,000+ streams</p></div>
+                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-red-400 text-xs leading-snug">{currency === 'GBP' ? '~£0.003' : `~${formatPrice(convertPrice(0.003, 'GBP', currency))}`} per stream</p></div>
+                    <div><p className="text-[10px] text-zinc-600 mb-1">To earn {formatPrice(convertPrice(1000, 'GBP', currency))}</p><p className="font-bold text-red-400 text-xs leading-snug">333,000+ streams</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Pricing control</p><p className="font-bold text-red-400 text-xs leading-snug">None — platform decides</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Fan relationship</p><p className="font-bold text-red-400 text-xs leading-snug">Anonymous</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-red-400 text-xs leading-snug">Everyone</p></div>
@@ -551,7 +534,7 @@ export default function HomeClient() {
                   <p className="text-[9px] font-bold uppercase tracking-widest text-orange-400 mb-4">insound.</p>
                   <div className="space-y-4">
                     <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">~87% after all fees</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">To earn £1,000</p><p className="font-bold text-orange-400 text-xs leading-snug">~112 sales</p></div>
+                    <div><p className="text-[10px] text-zinc-600 mb-1">To earn {formatPrice(convertPrice(1000, 'GBP', currency))}</p><p className="font-bold text-orange-400 text-xs leading-snug">~112 sales</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Pricing control</p><p className="font-bold text-orange-400 text-xs leading-snug">You set your price</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Fan relationship</p><p className="font-bold text-orange-400 text-xs leading-snug">Direct — you own it</p></div>
                     <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent artists only</p></div>
@@ -648,14 +631,14 @@ export default function HomeClient() {
             <div className="mb-10">
               <div className="flex justify-between items-end mb-4">
                 <p className="text-sm font-semibold t-muted">Price per release</p>
-                <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">{currSym}{calcPrice}</p>
+                <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">{formatPrice(calcPrice)}</p>
               </div>
               <input type="range" min={1} max={50} value={calcPrice}
                 onChange={e => setCalcPrice(parseInt(e.target.value))}
                 className="calc-slider w-full"
                 style={{ '--fill': calcFill } as React.CSSProperties} />
               <div className="flex justify-between text-[10px] t-faint mt-2 font-medium">
-                <span>{currSym}1 minimum</span><span>{currSym}50</span>
+                <span>{formatPrice(1)} minimum</span><span>{formatPrice(50)}</span>
               </div>
             </div>
 
@@ -678,7 +661,7 @@ export default function HomeClient() {
             </div>
 
             <div className="border-t pt-6 text-center" style={{ borderColor: 'var(--line-color)' }}>
-              <p className="t-muted text-sm mb-4">To earn <strong className="text-white font-bold">£1,000</strong> at this price:</p>
+              <p className="t-muted text-sm mb-4">To earn <strong className="text-white font-bold">{formatPrice(convertPrice(1000, 'GBP', currency))}</strong> at this price:</p>
               <div className="flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
                 <div className="text-center">
                   <p className="font-display text-2xl font-bold text-red-400">333,000+</p>
@@ -725,7 +708,7 @@ export default function HomeClient() {
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 2</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Set your price</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum £2. No ceiling. We take a flat 10%. Stripe&apos;s processing fee (1.5%&nbsp;+&nbsp;20p) is shown transparently at checkout.</p>
+              <p className="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum {formatPrice(convertPrice(2, 'GBP', currency))}. No ceiling. We take a flat 10%. Stripe&apos;s processing fee (1.5%&nbsp;+&nbsp;20p) is shown transparently at checkout.</p>
             </div>
             <div className="reveal reveal-delay-2 card ring-1 ring-white/[0.05] rounded-3xl p-8">
               <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
@@ -788,14 +771,14 @@ export default function HomeClient() {
                     </div>
                     <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', fontFamily: 'system-ui' }}>Sale received</span>
                   </div>
-                  <span style={{ fontSize: '18px', fontWeight: 800, color: '#f97316', letterSpacing: '-0.02em', fontFamily: "'Space Grotesk',system-ui" }}>£7.20</span>
+                  <span style={{ fontSize: '18px', fontWeight: 800, color: '#f97316', letterSpacing: '-0.02em', fontFamily: "'Space Grotesk',system-ui" }}>{formatPrice(convertPrice(7.20, 'GBP', currency))}</span>
                   <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)', fontFamily: 'system-ui', display: 'block', marginTop: '2px' }}>Midnight Drive</span>
                 </div>
 
                 {/* Floating earnings card */}
                 <div className="floating-card" style={{ position: 'absolute', left: '-140px', bottom: '100px', zIndex: 6, width: '135px', background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '11px 12px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)', animation: 'floatB 5.5s ease-in-out infinite' }}>
                   <p style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', marginBottom: '4px', fontFamily: 'system-ui' }}>This month</p>
-                  <p style={{ fontSize: '22px', fontWeight: 800, color: 'white', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '5px', fontFamily: "'Space Grotesk',system-ui" }}>£247.50</p>
+                  <p style={{ fontSize: '22px', fontWeight: 800, color: 'white', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '5px', fontFamily: "'Space Grotesk',system-ui" }}>{formatPrice(convertPrice(247.50, 'GBP', currency))}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                     <svg width="9" height="9" fill="none" stroke="#22c55e" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15" /></svg>
                     <span style={{ fontSize: '9px', color: '#22c55e', fontWeight: 600, fontFamily: 'system-ui' }}>23 sales</span>
@@ -874,7 +857,7 @@ export default function HomeClient() {
                             <div className={`device-price${inBasket ? ' in-basket' : ''}`}
                               onClick={e => { e.stopPropagation(); toggleBasket(track.name) }}
                               style={{ background: inBasket ? 'transparent' : (i === 0 ? track.color1 : 'rgba(255,255,255,0.07)'), color: inBasket ? '#22c55e' : (i === 0 ? '#000' : 'rgba(255,255,255,0.6)'), fontSize: '10px', fontWeight: 700, padding: '5px 11px', borderRadius: '20px', flexShrink: 0, cursor: 'pointer', transition: 'transform 0.15s ease' }}>
-                              {inBasket ? '✓' : `£${track.price}`}
+                              {inBasket ? '✓' : formatPrice(convertPrice(track.price, 'GBP', currency))}
                             </div>
                           </div>
                         )
@@ -902,12 +885,12 @@ export default function HomeClient() {
               {[
                 { q: 'When does Insound launch?', a: "We're in development now. Founding members get first access before we open to everyone — that's what the waitlist is for." },
                 { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee (1.5% + 20p), shown transparently at checkout. Both fees are permanent." },
-                { q: 'How do I get paid?', a: "Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. On a £10 sale: £8.65 to you, £1.00 to Insound, 35p to Stripe. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end." },
+                { q: 'How do I get paid?', a: `Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end.` },
                 { q: 'Does Insound hold my money?', a: "Never. We use Stripe Connect direct charges — when a fan buys your music, the payment is created directly in your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes. We are never in the middle." },
                 { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
                 { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
                 { q: 'Is there a subscription fee?', a: "No. It's free to publish. We only make money when you make money — 10% per sale, nothing else." },
-                { q: 'Are there any hidden fees?', a: 'None. We take a flat 10%. Stripe charges their standard processing fee (1.5% + 20p) — shown transparently at checkout, passed through at cost. On a £10 sale: £8.65 to you, £1.00 to Insound, 35p to Stripe. What you see is what happens.' },
+                { q: 'Are there any hidden fees?', a: `None. We take a flat 10%. Stripe charges their standard processing fee (1.5% + 20p) — shown transparently at checkout, passed through at cost. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. What you see is what happens.` },
               ].map((item, i, arr) => (
                 <div key={i} className={`${i < arr.length - 1 ? 'border-b' : ''} py-6`} style={{ borderColor: 'var(--line-color)' }}>
                   <p className="font-display font-bold text-lg text-white mb-2">{item.q}</p>
