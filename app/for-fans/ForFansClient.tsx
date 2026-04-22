@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useCurrency } from '../providers/CurrencyProvider'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://rvsfriqjobwuzzfdiyxg.supabase.co'
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg'
@@ -19,6 +20,7 @@ const WHY_HERE = [
 ]
 
 export function ForFansClient() {
+  const { currency, formatPrice, convertPrice } = useCurrency()
   const [email, setEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [phase, setPhase] = useState<'form' | 'success'>('form')
@@ -57,7 +59,7 @@ export function ForFansClient() {
           </span>
           <h1 className="font-display font-bold tracking-[-0.04em] leading-[0.88] mb-6"
             style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
-            Your £10 can change<br />an artist&apos;s <span className="text-orange-500">year.</span>
+            Your {formatPrice(convertPrice(10, 'GBP', currency))} can change<br />an artist&apos;s <span className="text-orange-500">year.</span>
           </h1>
           <p className="text-zinc-400 text-lg max-w-lg mx-auto leading-relaxed">
             Most streaming platforms make supporting artists nearly impossible.
@@ -71,14 +73,14 @@ export function ForFansClient() {
           {/* Streaming */}
           <div className="bg-white/[0.02] ring-1 ring-white/[0.06] rounded-3xl p-8">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-400/70 mb-4">Stream on Spotify</p>
-            <p className="font-display text-3xl font-bold tracking-tight text-red-400 mb-2">£0.003</p>
-            <p className="text-sm text-zinc-400 leading-relaxed">per stream. 333,000 streams to earn £1,000.</p>
+            <p className="font-display text-3xl font-bold tracking-tight text-red-400 mb-2">{currency === 'GBP' ? '£0.003' : formatPrice(convertPrice(0.003, 'GBP', currency))}</p>
+            <p className="text-sm text-zinc-400 leading-relaxed">per stream. 333,000 streams to earn {formatPrice(convertPrice(1000, 'GBP', currency))}.</p>
           </div>
           {/* Insound */}
           <div className="bg-orange-600/[0.06] ring-1 ring-orange-600/[0.12] rounded-3xl p-8">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-4">Buy on Insound</p>
             <p className="font-display text-3xl font-bold tracking-tight text-orange-400 mb-2">~87%</p>
-            <p className="text-sm text-zinc-300 leading-relaxed">to artist after all fees. Your £10 = £8.65 to the artist.<br />We take a flat 10%. Stripe takes 1.5% + 20p. That&apos;s it.</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">to artist after all fees. Your {formatPrice(convertPrice(10, 'GBP', currency))} = {formatPrice(convertPrice(8.65, 'GBP', currency))} to the artist.<br />We take a flat 10%. Stripe&apos;s standard processing fee. That&apos;s it.</p>
           </div>
         </div>
       </section>
@@ -90,7 +92,7 @@ export function ForFansClient() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
             <span className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">
-              Your £10
+              Your {formatPrice(convertPrice(10, 'GBP', currency))}
             </span>
             <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">
               Where your money goes.
@@ -98,16 +100,16 @@ export function ForFansClient() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-2xl p-5 text-center ring-1 bg-orange-600/[0.08] ring-orange-600/[0.15]">
-              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-orange-500">£8.65</p>
+              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-orange-500">{formatPrice(convertPrice(8.65, 'GBP', currency))}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">To the artist</p>
             </div>
             <div className="rounded-2xl p-5 text-center ring-1 bg-white/[0.02] ring-white/[0.06]">
-              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">£1.00</p>
+              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">{formatPrice(convertPrice(1, 'GBP', currency))}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Insound (10%)</p>
             </div>
             <div className="rounded-2xl p-5 text-center ring-1 bg-white/[0.02] ring-white/[0.06]">
               <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">35p</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Stripe (1.5%+20p)</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Stripe processing</p>
             </div>
           </div>
         </div>

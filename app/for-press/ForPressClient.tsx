@@ -2,16 +2,17 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useCurrency } from '../providers/CurrencyProvider'
 
 const KEY_FACTS = [
   { label: 'Founded', value: '2026, UK' },
   { label: 'Model', value: 'Bootstrapped — no investors' },
-  { label: 'Platform fee', value: '10% flat — Stripe processing (1.5%+20p) shown at checkout' },
+  { label: 'Platform fee', value: "10% flat — Stripe's standard processing fee shown at checkout" },
   { label: 'Monthly fee', value: 'None' },
   { label: 'Payout threshold', value: 'None' },
   { label: 'Who can join', value: 'Independent & unsigned artists only' },
   { label: 'Minimum sale', value: '£2.00' },
-  { label: 'Payment processing', value: 'Stripe 1.5% + 20p — shown at checkout, no markup' },
+  { label: 'Payment processing', value: "Stripe's standard processing fee — shown at checkout, no markup" },
   { label: 'Masters', value: 'Artists retain 100%' },
   { label: 'Future features', value: 'Merch, pre-orders, download codes, collectives' },
 ]
@@ -24,6 +25,14 @@ const MARKET_STATS = [
 ]
 
 export function ForPressClient() {
+  const { currency, formatPrice, convertPrice } = useCurrency()
+
+  const KEY_FACTS_DYNAMIC = KEY_FACTS.map(f =>
+    f.label === 'Minimum sale'
+      ? { ...f, value: formatPrice(convertPrice(2, 'GBP', currency)) }
+      : f
+  )
+
   return (
     <main className="bg-[#0A0A0A] text-white min-h-screen">
 
@@ -63,7 +72,7 @@ export function ForPressClient() {
             </h2>
           </div>
           <div className="bg-white/[0.02] ring-1 ring-white/[0.06] rounded-3xl overflow-hidden">
-            {KEY_FACTS.map((fact, i) => (
+            {KEY_FACTS_DYNAMIC.map((fact, i) => (
               <div key={fact.label}
                 className={`flex items-start sm:items-center justify-between gap-4 px-6 py-4 ${i < KEY_FACTS.length - 1 ? 'border-b border-white/[0.04]' : ''}`}>
                 <p className="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500 shrink-0 w-40">{fact.label}</p>
@@ -95,7 +104,7 @@ export function ForPressClient() {
               Insound was built because the model that Bandcamp proved — direct-to-fan, artist-first, pay-what-you-want — deserved a platform that wouldn&apos;t get sold out from under the artists who depend on it.
             </p>
             <p>
-              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We only take 10%. Stripe takes their standard processing fee (1.5%&nbsp;+&nbsp;20p), shown transparently at checkout. What the artist keeps is everything else — permanently.
+              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We only take 10%. Stripe takes their standard processing fee, shown transparently at checkout. What the artist keeps is everything else — permanently.
             </p>
             <p>
               We only allow independent and unsigned artists. No labels. No aggregators. If you&apos;re signed to a label, Insound isn&apos;t for you — and we think that clarity matters.
