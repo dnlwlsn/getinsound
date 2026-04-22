@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useCurrency } from '../providers/CurrencyProvider'
 
 /* ── Deterministic gradient fallback ──────────────────────────── */
 function cyrb53(str: string, seed = 0) {
@@ -60,7 +61,7 @@ interface Track { id: string; title: string; position: number; duration_sec: num
 interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null; tracks: Track[] }
 interface Artist { id: string; slug: string; name: string; bio: string; avatar_url: string; accent_colour: string | null }
 
-type Stage = 'checkout' | 'preparing' | 'download' | 'error'
+type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'error'
 
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TM4GsGkY3otnyNsltYWVo9N1xWEzKEUa8B4XjPlmSnP5VLCKAnkTebfHM8QOkmLTxyxxhNKQ4iJ9karlBfo5jEv007Ts2uEgI'
 
@@ -81,6 +82,9 @@ export default function ReleaseClient() {
   const [errorMsg, setErrorMsg] = useState('')
   const [downloadTracks, setDownloadTracks] = useState<{ title: string; url?: string }[]>([])
   const [downloadTitle, setDownloadTitle] = useState('')
+  const [digitalConsent, setDigitalConsent] = useState(false)
+  const [consentBusy, setConsentBusy] = useState(false)
+  const sessionIdRef = useRef<string | null>(null)
 
   const stripeMountRef = useRef<HTMLDivElement>(null)
   const embeddedCheckoutRef = useRef<any>(null)
@@ -136,12 +140,15 @@ export default function ReleaseClient() {
     try {
       const stripe = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY)
       const supabase = createClient()
+      const refCookie = document.cookie.split('; ').find(c => c.startsWith('insound_ref='))
+      const refCode = refCookie?.split('=')[1] || undefined
       const { data, error } = await supabase.functions.invoke('checkout-create', {
-        body: { release_id: release.id, origin: window.location.origin },
+        body: { release_id: release.id, origin: window.location.origin, ref_code: refCode },
       })
       if (error) throw error
       if (!data?.client_secret) throw new Error('No checkout session returned')
 
+      sessionIdRef.current = data.session_id
       const embedded = await stripe.initEmbeddedCheckout({
         clientSecret: data.client_secret,
         onComplete: () => {
@@ -175,7 +182,8 @@ export default function ReleaseClient() {
         if (data && data.release) {
           setDownloadTitle(data.release.title)
           setDownloadTracks(data.tracks)
-          setStage('download')
+          setDigitalConsent(false)
+          setStage('consent')
           return
         }
         let body: any = null
@@ -304,6 +312,47 @@ export default function ReleaseClient() {
               </div>
             )}
 
+            {/* Stage: Digital content consent */}
+            {stage === 'consent' && (
+              <div className="p-6 md:p-8 mt-8">
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
+                <h2 className="text-2xl font-black mb-4 font-display">{downloadTitle}</h2>
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-6">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={digitalConsent}
+                      onChange={e => setDigitalConsent(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-700 bg-zinc-950 text-orange-600 focus:ring-orange-600 focus:ring-offset-0"
+                    />
+                    <span className="text-xs text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
+                      I agree to immediate access to this digital content and acknowledge that I lose my 14-day cancellation right once the download starts.
+                    </span>
+                  </label>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!digitalConsent) return
+                    setConsentBusy(true)
+                    try {
+                      if (sessionIdRef.current) {
+                        const sb = createClient()
+                        await sb.functions.invoke('record-digital-consent', {
+                          body: { session_id: sessionIdRef.current },
+                        })
+                      }
+                    } catch {}
+                    setConsentBusy(false)
+                    setStage('download')
+                  }}
+                  disabled={!digitalConsent || consentBusy}
+                  className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {consentBusy ? 'Processing...' : 'Access my download'}
+                </button>
+              </div>
+            )}
+
             {/* Stage: Download ready */}
             {stage === 'download' && (
               <div className="p-6 md:p-8 mt-8">
@@ -348,6 +397,9 @@ export default function ReleaseClient() {
 /* ── Price section with PWYW support ──────────────────────────── */
 
 function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void }) {
+  const { currency, formatPrice, convertPrice } = useCurrency()
+  const relCurrency = release.currency || 'GBP'
+
   const defaultPounds = (release.price_pence / 100).toFixed(2)
   const minPence = release.pwyw_enabled
     ? (release.pwyw_minimum_pence ?? release.price_pence)
@@ -357,8 +409,12 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void 
 
   const amountPence = Math.round(parseFloat(customAmount || '0') * 100)
   const isValid = amountPence >= minPence
-  const { stripeFee, insoundFee, artistReceived: artistGetsPence } = calculateFeesPence(amountPence)
-  const artistGets = (Math.max(0, artistGetsPence) / 100).toFixed(2)
+  const { artistReceived: artistGetsPence } = calculateFeesPence(amountPence)
+  const artistGetsAmount = convertPrice(Math.max(0, artistGetsPence) / 100, relCurrency, currency)
+
+  const displayPrice = formatPrice(convertPrice(release.price_pence / 100, relCurrency, currency))
+  const displayMin = formatPrice(convertPrice(minPence / 100, relCurrency, currency))
+  const displayCustom = formatPrice(convertPrice(parseFloat(customAmount || '0'), relCurrency, currency))
 
   return (
     <div className="mb-6">
@@ -366,7 +422,6 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void 
         <>
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Name your price</p>
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl font-black text-zinc-400">&pound;</span>
             <input
               type="number"
               step="0.01"
@@ -375,24 +430,24 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void 
               onChange={(e) => setCustomAmount(e.target.value)}
               className="text-4xl font-black text-orange-600 bg-transparent border-b-2 border-zinc-700 focus:border-orange-600 outline-none w-32 transition-colors"
             />
-            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">GBP</span>
+            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{relCurrency}</span>
           </div>
-          <p className="text-[10px] text-zinc-600 mb-1">Minimum &pound;{minPounds}</p>
+          <p className="text-[10px] text-zinc-600 mb-1">Minimum {displayMin}</p>
         </>
       ) : (
         <div className="flex items-baseline gap-3 mb-1">
-          <span className="text-4xl font-black text-orange-600">&pound;{defaultPounds}</span>
-          <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">GBP</span>
+          <span className="text-4xl font-black text-orange-600">{displayPrice}</span>
+          <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{relCurrency}</span>
         </div>
       )}
       {isValid && (
         <p className="text-[11px] text-zinc-600 mb-6">
-          &pound;{artistGets} goes to the artist after fees (10% Insound + 1.5%&nbsp;+&nbsp;20p Stripe).
+          {formatPrice(artistGetsAmount)} goes to the artist after fees (10% Insound + Stripe processing fee).
         </p>
       )}
       {!isValid && (
         <p className="text-[11px] text-red-400 mb-6">
-          Minimum amount is &pound;{minPounds}
+          Minimum amount is {displayMin}
         </p>
       )}
 
@@ -402,7 +457,7 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void 
         className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" /><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /></svg>
-        <span>Buy for &pound;{release.pwyw_enabled ? (parseFloat(customAmount || '0')).toFixed(2) : defaultPounds}</span>
+        <span>Buy for {release.pwyw_enabled ? displayCustom : displayPrice}</span>
       </button>
 
       <p className="text-center text-[10px] text-zinc-600 mt-4">

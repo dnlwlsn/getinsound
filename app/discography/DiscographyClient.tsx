@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -64,7 +65,7 @@ function slugify(value: string): string {
 }
 
 function pence(n: number) {
-  return `£${(n / 100).toFixed(2)}`
+  return formatPriceUtil(n / 100, 'GBP')
 }
 
 function formatDate(iso: string) {
@@ -183,7 +184,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
 
     const pricePence = Math.round(parseFloat(pricePounds) * 100)
     if (isNaN(pricePence) || pricePence < 200) {
-      setError('Minimum price is £2.00.')
+      setError(`Minimum price is ${formatPriceUtil(2, 'GBP')}.`)
       return
     }
 
@@ -519,7 +520,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                 {/* Price */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Price (£)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Price (GBP)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -529,7 +530,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                       onChange={(e) => setPricePounds(e.target.value)}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white focus:border-orange-600 outline-none transition-colors"
                     />
-                    <p className="text-[10px] text-zinc-600 mt-1.5">{pwyw ? 'Suggested price shown to fans.' : 'Fixed price fans pay to download.'} Min £2.</p>
+                    <p className="text-[10px] text-zinc-600 mt-1.5">{pwyw ? 'Suggested price shown to fans.' : 'Fixed price fans pay to download.'} Min {formatPriceUtil(2, 'GBP')}.</p>
                   </div>
                   <div className="flex flex-col justify-end">
                     <label className="flex items-center gap-3 cursor-pointer py-3">
@@ -542,7 +543,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
 
                 {pwyw && (
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Minimum price (£)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Minimum price (GBP)</label>
                     <input
                       type="number"
                       step="0.01"
