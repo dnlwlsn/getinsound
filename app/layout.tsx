@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Montserrat } from 'next/font/google'
+import { cookies } from 'next/headers'
 import { PlayerBar } from './components/PlayerBar'
+import { CurrencyProvider } from './providers/CurrencyProvider'
 import './globals.css'
 
 const montserrat = Montserrat({
@@ -33,7 +35,11 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://getinsound.com/' },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies()
+  const initialLocale = cookieStore.get('insound_locale')?.value || ''
+  const initialCurrency = cookieStore.get('insound_currency')?.value || 'GBP'
+
   return (
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <head>
@@ -41,7 +47,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        {children}
+        <CurrencyProvider initialLocale={initialLocale} initialCurrency={initialCurrency}>
+          {children}
+        </CurrencyProvider>
         <PlayerBar />
       </body>
     </html>
