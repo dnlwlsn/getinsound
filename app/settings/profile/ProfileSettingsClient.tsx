@@ -157,8 +157,8 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
           style={{ color: resolvedAccent }}>
           insound.
         </Link>
-        {profile.username && (
-          <Link href={`/${profile.username}`}
+        {username && (
+          <Link href={`/${username}`}
             className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
             View Profile
           </Link>
