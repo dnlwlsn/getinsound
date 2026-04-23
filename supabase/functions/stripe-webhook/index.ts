@@ -235,6 +235,42 @@ Deno.serve(async (req) => {
       const artistObj = Array.isArray(release?.artists) ? release.artists[0] : release?.artists;
       const artistName = artistObj?.name ?? 'the artist';
 
+      // ── In-app notifications ──
+      try {
+        const salePence = amountPence;
+        const saleLabel = `£${(salePence / 100).toFixed(2)}`;
+
+        // Notify artist of sale
+        await admin.from('notifications').insert({
+          user_id: artistId,
+          type: isPreOrder ? 'preorder' : 'sale',
+          title: isPreOrder
+            ? `New pre-order: ${releaseTitle}`
+            : `New sale: ${releaseTitle}`,
+          body: `${buyerEmail} purchased for ${saleLabel}`,
+          link: '/dashboard',
+        });
+
+        // Check if this was the first sale — notify with special type
+        const { count: saleCount } = await admin
+          .from('purchases')
+          .select('id', { count: 'exact', head: true })
+          .eq('artist_id', artistId)
+          .eq('status', 'paid');
+
+        if (saleCount === 1) {
+          await admin.from('notifications').insert({
+            user_id: artistId,
+            type: 'first_sale',
+            title: 'Your first sale!',
+            body: `${releaseTitle} just got its first purchase. Congratulations!`,
+            link: '/dashboard',
+          });
+        }
+      } catch (e) {
+        console.error('Notification insert failed:', (e as Error).message);
+      }
+
       if (isNewAccount) {
         // Generate magic link for the new fan
         const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({

@@ -8,6 +8,7 @@ import { SoftNudge } from '@/app/components/ui/SoftNudge'
 import { generateGradientDataUri } from '@/lib/gradient'
 import { referralShareUrl, twitterShareUrl, whatsappShareUrl, emailShareUrl } from '@/lib/referral'
 import { isZeroFeesActive } from '@/app/lib/fees'
+import { NotificationBell } from '@/app/components/ui/NotificationBell'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -150,7 +151,10 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     <div className="min-h-screen flex bg-[#09090b] text-zinc-100">
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
-        <a href="/" className="text-2xl font-display font-bold text-orange-600 tracking-tighter mb-12 block hover:text-orange-500 transition-colors">insound.</a>
+        <div className="flex items-center justify-between mb-12">
+          <a href="/" className="text-2xl font-display font-bold text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</a>
+          <NotificationBell userId={artist.id} />
+        </div>
         <nav className="space-y-1 flex-1">
           <SidebarLink href="/dashboard" label="Dashboard" active />
           <SidebarLink href="/discography" label="Discography" />

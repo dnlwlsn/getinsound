@@ -70,6 +70,35 @@ Deno.serve(async (req) => {
     }
   }
 
+  // In-app notifications for fans
+  for (const releaseId of releaseIds) {
+    const { data: purchases } = await admin
+      .from('purchases')
+      .select('buyer_user_id, releases!inner(title, artists!inner(name))')
+      .eq('release_id', releaseId)
+      .eq('pre_order', true)
+      .eq('status', 'paid')
+      .not('buyer_user_id', 'is', null);
+
+    const rows = (purchases ?? [])
+      .filter((p: any) => p.buyer_user_id)
+      .map((p: any) => {
+        const rel = Array.isArray(p.releases) ? p.releases[0] : p.releases;
+        const artist = Array.isArray(rel?.artists) ? rel.artists[0] : rel?.artists;
+        return {
+          user_id: p.buyer_user_id,
+          type: 'preorder_ready',
+          title: `${rel?.title ?? 'Your pre-order'} is ready!`,
+          body: `${artist?.name ?? 'The artist'}'s release is now available to listen and download.`,
+          link: '/library',
+        };
+      });
+
+    if (rows.length > 0) {
+      await admin.from('notifications').insert(rows);
+    }
+  }
+
   // Send notification emails
   const emails = unlocked.map((row: any) => ({
     from: 'Insound <noreply@getinsound.com>',

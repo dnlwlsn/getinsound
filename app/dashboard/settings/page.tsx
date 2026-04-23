@@ -40,6 +40,7 @@ export default async function DashboardSettingsPage() {
   return (
     <DashboardSettingsClient
       userEmail={user.email!}
+      userId={user.id}
       artistName={artistRes.data.name}
       stripeConnected={accountRes.data.stripe_onboarded}
       stripeAccountId={accountRes.data.stripe_account_id}

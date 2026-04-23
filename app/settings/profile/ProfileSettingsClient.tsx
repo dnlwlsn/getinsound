@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { resolveAccent, DEFAULT_ACCENT } from '@/lib/accent'
 import { SettingsTabs } from '@/components/settings/SettingsTabs'
+import { NotificationBell } from '@/app/components/ui/NotificationBell'
 
 const ACCENT_COLOURS = [
   '#ea580c', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
@@ -29,10 +30,11 @@ interface ProfileData {
   show_purchase_amounts: boolean
 }
 
-export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }: {
+export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, userId }: {
   profile: ProfileData
   purchases: SettingsPurchase[]
   hiddenPurchaseIds: string[]
+  userId: string
 }) {
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -158,12 +160,15 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
           style={{ color: resolvedAccent }}>
           insound.
         </Link>
-        {username && (
-          <Link href={`/${username}`}
-            className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
-            View Profile
-          </Link>
-        )}
+        <div className="flex gap-4 items-center">
+          {username && (
+            <Link href={`/${username}`}
+              className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
+              View Profile
+            </Link>
+          )}
+          <NotificationBell userId={userId} />
+        </div>
       </nav>
 
       <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">

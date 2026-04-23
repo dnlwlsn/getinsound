@@ -31,6 +31,7 @@ export default async function AccountSettingsPage() {
   return (
     <AccountSettingsClient
       userEmail={user.email!}
+      userId={user.id}
       pendingDeletion={pending ?? null}
     />
   )

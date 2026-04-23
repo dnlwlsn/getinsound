@@ -5,9 +5,12 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { DeleteAccountModal } from '@/components/settings/DeleteAccountModal'
 import { DeletionPendingBanner } from '@/components/settings/DeletionPendingBanner'
+import { NotificationPreferences } from '@/components/settings/NotificationPreferences'
+import { NotificationBell } from '@/app/components/ui/NotificationBell'
 
 interface Props {
   userEmail: string
+  userId: string
   artistName: string
   stripeConnected: boolean
   stripeAccountId: string | null
@@ -16,7 +19,7 @@ interface Props {
 }
 
 export function DashboardSettingsClient({
-  userEmail, artistName, stripeConnected, stripeAccountId,
+  userEmail, userId, artistName, stripeConnected, stripeAccountId,
   pendingDeletion, impact,
 }: Props) {
   const router = useRouter()
@@ -78,10 +81,13 @@ export function DashboardSettingsClient({
           style={{ color: '#F56D00' }}>
           insound.
         </Link>
-        <Link href="/dashboard"
-          className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
-          Back to Dashboard
-        </Link>
+        <div className="flex gap-4 items-center">
+          <Link href="/dashboard"
+            className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
+            Back to Dashboard
+          </Link>
+          <NotificationBell userId={userId} />
+        </div>
       </nav>
 
       <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
@@ -101,6 +107,8 @@ export function DashboardSettingsClient({
               <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Email</label>
               <p className="text-sm text-zinc-300">{userEmail}</p>
             </div>
+
+            <NotificationPreferences isArtist={true} />
 
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Stripe Connect</label>

@@ -7,13 +7,16 @@ import { resolveAccent, DEFAULT_ACCENT } from '@/lib/accent'
 import { SettingsTabs } from '@/components/settings/SettingsTabs'
 import { DeleteAccountModal } from '@/components/settings/DeleteAccountModal'
 import { DeletionPendingBanner } from '@/components/settings/DeletionPendingBanner'
+import { NotificationPreferences } from '@/components/settings/NotificationPreferences'
+import { NotificationBell } from '@/app/components/ui/NotificationBell'
 
 interface Props {
   userEmail: string
+  userId: string
   pendingDeletion: { id: string; execute_at: string } | null
 }
 
-export function AccountSettingsClient({ userEmail, pendingDeletion }: Props) {
+export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showModal, setShowModal] = useState(false)
@@ -74,10 +77,13 @@ export function AccountSettingsClient({ userEmail, pendingDeletion }: Props) {
           style={{ color: resolvedAccent }}>
           insound.
         </Link>
-        <Link href="/library"
-          className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
-          Library
-        </Link>
+        <div className="flex gap-4 items-center">
+          <Link href="/library"
+            className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
+            Library
+          </Link>
+          <NotificationBell userId={userId} />
+        </div>
       </nav>
 
       <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
@@ -99,6 +105,8 @@ export function AccountSettingsClient({ userEmail, pendingDeletion }: Props) {
               <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Email</label>
               <p className="text-sm text-zinc-300">{userEmail}</p>
             </div>
+
+            <NotificationPreferences isArtist={false} />
 
             {!pending && (
               <div className="border border-red-900/30 bg-red-950/10 rounded-xl p-6">

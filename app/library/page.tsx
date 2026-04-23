@@ -108,5 +108,5 @@ export default async function LibraryPage() {
       }
     })
 
-  return <LibraryClient releases={releases} error={null} />
+  return <LibraryClient releases={releases} error={null} userId={user.id} />
 }

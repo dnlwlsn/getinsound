@@ -41,6 +41,7 @@ export default async function ProfileSettingsPage() {
       profile={profile}
       purchases={(purchases || []) as any}
       hiddenPurchaseIds={[...hiddenIds]}
+      userId={user.id}
     />
   )
 }

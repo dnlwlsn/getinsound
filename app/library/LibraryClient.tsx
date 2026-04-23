@@ -7,6 +7,7 @@ import { generateGradient } from '@/lib/gradient'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { SearchInput } from '@/app/components/ui/SearchInput'
+import { NotificationBell } from '@/app/components/ui/NotificationBell'
 import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { zipSync } from 'fflate'
@@ -25,9 +26,10 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
 interface Props {
   releases: LibraryRelease[]
   error: string | null
+  userId: string
 }
 
-export default function LibraryClient({ releases, error }: Props) {
+export default function LibraryClient({ releases, error, userId }: Props) {
   const [artistFilter, setArtistFilter] = useState<string>('all')
   const [dateRange, setDateRange] = useState<DateRange>('all')
   const [sort, setSort] = useState<SortOption>('newest')
@@ -137,7 +139,7 @@ export default function LibraryClient({ releases, error }: Props) {
   if (releases.length === 0) {
     return (
       <div className="min-h-screen font-display">
-        <LibraryNav />
+        <LibraryNav userId={userId} />
         <div className="flex items-center justify-center min-h-[70vh] relative">
           <div className="absolute inset-0 opacity-30" style={{ background: generateGradient('empty', 'state').css }} />
           <div className="text-center relative z-10 px-8">
@@ -157,7 +159,7 @@ export default function LibraryClient({ releases, error }: Props) {
 
   return (
     <div className="min-h-screen font-display pb-24">
-      <LibraryNav />
+      <LibraryNav userId={userId} />
 
       <div className="max-w-6xl mx-auto px-8 py-12">
         {/* Header + Stats */}
@@ -294,7 +296,7 @@ export default function LibraryClient({ releases, error }: Props) {
 
 /* ── Nav ─────────────────────────────────────────────────────── */
 
-function LibraryNav() {
+function LibraryNav({ userId }: { userId: string }) {
   return (
     <nav className="flex justify-between items-center gap-3 px-8 py-5 border-b border-zinc-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
       <Link
@@ -317,6 +319,7 @@ function LibraryNav() {
         >
           Explore
         </Link>
+        <NotificationBell userId={userId} />
       </div>
     </nav>
   )
