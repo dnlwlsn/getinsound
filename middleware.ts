@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getCurrencyForCountry } from './app/lib/currency'
 
-const ARTIST_ROUTES = ['/dashboard', '/release', '/admin']
+const ARTIST_ROUTES = ['/dashboard', '/release']
 const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/discover', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
 const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/become-an-artist', '/api']
 
@@ -65,13 +65,12 @@ export async function middleware(request: NextRequest) {
 
   // Protect artist-only routes
   if (user && ARTIST_ROUTES.some(r => path.startsWith(r))) {
-    const { data: artist } = await supabase
-      .from('artists')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle()
+    const [{ data: artist }, { data: account }] = await Promise.all([
+      supabase.from('artists').select('id').eq('id', user.id).maybeSingle(),
+      supabase.from('artist_accounts').select('id').eq('id', user.id).maybeSingle(),
+    ])
 
-    if (!artist) {
+    if (!artist || !account) {
       const url = request.nextUrl.clone()
       url.pathname = '/become-an-artist'
       return NextResponse.redirect(url)
@@ -79,10 +78,27 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect unauthenticated users away from protected routes
-  if (!user && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
+  // Single-segment paths are public profiles (artists: /slug, fans: /@username)
+  const isProfileRoute = /^\/[^/]+$/.test(path) && !ARTIST_ROUTES.some(r => path.startsWith(r))
+  if (!user && !isProfileRoute && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     return NextResponse.redirect(url)
+  }
+
+  // ── Session activity tracking (throttled to every 5 minutes) ──
+  if (user) {
+    const sessionId = request.cookies.get('session_id')?.value
+    const lastTracked = request.cookies.get('session_tracked')?.value
+    if (sessionId && !lastTracked) {
+      supabase.rpc('touch_session', { p_session_id: sessionId }).then(() => {})
+      supabaseResponse.cookies.set('session_tracked', '1', {
+        path: '/',
+        maxAge: 300,
+        httpOnly: true,
+        sameSite: 'lax',
+      })
+    }
   }
 
   // ── Set locale cookies (after Supabase may have rebuilt response) ──
