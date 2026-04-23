@@ -33,17 +33,23 @@ type Referral = {
   zeroFeesStart: string | null; artistHasZeroFees: boolean
 }
 
+type Milestone = {
+  artistName: string
+  achievedAt: string | null
+}
+
 type Props = {
   artist: Artist; account: Account; releases: Release[]; stats: Stats
   fans: Fan[]; codesByRelease: Record<string, CodeSummary>
   fanUsername: string | null; fanIsPublic: boolean
+  milestone?: Milestone
   referral?: Referral
 }
 
 function pence(n: number) { return formatPriceUtil(n / 100, 'GBP') }
 
 // ── Component ──────────────────────────────────────────────────
-export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, referral }: Props) {
+export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral }: Props) {
   const supabase = createClient()
   const [rels, setRels] = useState(releases)
   const [payouts, setPayouts] = useState<any[] | null>(null)
@@ -54,6 +60,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [generatingCodes, setGeneratingCodes] = useState<string | null>(null)
   const [accentSaving, setAccentSaving] = useState(false)
   const [showArtistTooltip, setShowArtistTooltip] = useState(false)
+  const [showMilestone, setShowMilestone] = useState(!!milestone)
 
   const hasPublishedContent = rels.some(r => r.published) || !!artist.bio
 
@@ -390,6 +397,17 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         </div>
       </main>
 
+      {/* First sale milestone modal */}
+      {showMilestone && milestone && (
+        <FirstSaleMilestoneModal
+          artistName={milestone.artistName}
+          onClose={async () => {
+            setShowMilestone(false)
+            await fetch('/api/milestone/shown', { method: 'POST' })
+          }}
+        />
+      )}
+
       {/* Cancel pre-order confirmation modal */}
       {cancelTarget && (() => {
         const rel = rels.find(r => r.id === cancelTarget)
@@ -684,6 +702,93 @@ function ReferralWidget({ referral }: { referral: Referral }) {
           </div>
         </div>
       </Section>
+    </div>
+  )
+}
+
+function FirstSaleMilestoneModal({ artistName, onClose }: { artistName: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const imageUrl = `/api/milestone/image?name=${encodeURIComponent(artistName)}`
+  const shareText = `Just made my first sale on @getinsound! 🎶`
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent('https://getinsound.com')}`
+
+  async function copyImage() {
+    try {
+      const res = await fetch(imageUrl)
+      const blob = await res.blob()
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      try {
+        await navigator.clipboard.writeText(`${shareText}\nhttps://getinsound.com`)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch {}
+    }
+  }
+
+  async function downloadImage() {
+    const res = await fetch(imageUrl)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `insound-first-sale-${artistName.toLowerCase().replace(/\s+/g, '-')}.png`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Milestone image */}
+        <img
+          src={imageUrl}
+          alt={`${artistName} — First sale on Insound`}
+          className="w-full aspect-[1200/630] object-cover"
+        />
+
+        <div className="p-6 space-y-5">
+          <div>
+            <h3 className="font-display font-bold text-xl mb-1">Congratulations!</h3>
+            <p className="text-zinc-400 text-sm">You just made your first sale on Insound. Share the moment.</p>
+          </div>
+
+          {/* Share buttons */}
+          <div className="flex gap-2">
+            <a
+              href={twitterUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] rounded-xl py-3 text-center text-xs font-bold text-zinc-400 transition-all"
+            >
+              Share on 𝕏
+            </a>
+            <button
+              onClick={copyImage}
+              className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] rounded-xl py-3 text-xs font-bold text-zinc-400 transition-all"
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+            <button
+              onClick={downloadImage}
+              className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] rounded-xl py-3 text-xs font-bold text-zinc-400 transition-all"
+            >
+              Download
+            </button>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full bg-orange-600 text-black font-bold py-3.5 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider"
+          >
+            Continue to Dashboard
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

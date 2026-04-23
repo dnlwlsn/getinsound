@@ -63,7 +63,7 @@ export default async function ProfilePage({ params }: Props) {
   if (artist) {
     const { data: releases } = await supabase
       .from('releases')
-      .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, tracks(id, title, position, duration_sec)')
+      .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, tracks(id, title, position, duration_sec)')
       .eq('artist_id', artist.id)
       .eq('published', true)
       .order('created_at', { ascending: false })

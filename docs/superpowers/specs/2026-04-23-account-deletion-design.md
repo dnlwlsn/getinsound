@@ -58,6 +58,7 @@ GDPR-compliant account deletion for both fan and artist accounts, with 24-hour c
 | `executed` | boolean | default false |
 | `executed_at` | timestamptz | nullable |
 | `stripe_pending_disconnect` | boolean | default false — artist only, set when Stripe balance non-zero |
+| `stripe_account_id` | text | nullable — stored before artist_accounts row is deleted, used by retry-stripe-disconnect |
 
 **Constraints:**
 - Partial unique index on `user_id` where `cancelled = false AND executed = false` (prevents duplicate pending requests)
@@ -178,7 +179,7 @@ Document the anonymisation approach:
 
 ## Migration
 
-Single migration file: `supabase/migrations/0017_account_deletion.sql`
+Single migration file: `supabase/migrations/0018_account_deletion.sql`
 - Creates `account_deletion_requests` table
 - Adds partial unique index
 - Adds RLS policies

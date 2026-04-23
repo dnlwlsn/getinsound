@@ -196,7 +196,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
             {step === 2 && (
               <div className="space-y-5">
                 <p className="text-zinc-400 text-sm leading-relaxed mb-2">
-                  Insound is exclusively for independent and unsigned artists. Please confirm the following:
+                  Insound is for independent artists who control the rights needed to sell their music. Please confirm:
                 </p>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <input
@@ -206,7 +206,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
                     className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-700 bg-zinc-950 text-orange-600 focus:ring-orange-600 focus:ring-offset-0"
                   />
                   <span className="text-xs text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
-                    I confirm that I am an <strong className="text-white">independent, unsigned artist</strong> and am not signing up on behalf of a record label, management company, or any entity with a commercial music distribution agreement.
+                    I control the rights needed to sell my music on Insound and am not signing up on behalf of a record label, management company, or any entity with an exclusive commercial distribution agreement. Using a non-exclusive DIY distributor (e.g. DistroKid, TuneCore, CD Baby) elsewhere does not make me ineligible.
                   </span>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer group">

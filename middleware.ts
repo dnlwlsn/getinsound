@@ -2,8 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getCurrencyForCountry } from './app/lib/currency'
 
-const ARTIST_ROUTES = ['/dashboard', '/release']
-const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
+const ARTIST_ROUTES = ['/dashboard', '/release', '/admin']
+const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/discover', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
 const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/become-an-artist', '/api']
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30

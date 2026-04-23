@@ -211,6 +211,42 @@ export function ForArtistsClient() {
 
       <div className="line mx-6" />
 
+      {/* ── MULTI-PRICE-POINT ────────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">
+              Pricing
+            </span>
+            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">
+              More tracks, more value.
+            </h2>
+            <p className="text-zinc-400 text-sm max-w-lg mx-auto mt-4 leading-relaxed">
+              Albums and EPs let you set a single price for a complete body of work. Fans get more music, you earn more per sale.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { type: 'Single', tracks: '1 track', range: `${formatPrice(convertPrice(2, 'GBP', currency))}–${formatPrice(convertPrice(3, 'GBP', currency))}`, desc: 'Great for teasers and lead singles.' },
+              { type: 'EP', tracks: '3–6 tracks', range: `${formatPrice(convertPrice(3, 'GBP', currency))}–${formatPrice(convertPrice(6, 'GBP', currency))}`, desc: 'A focused collection. Strong for first releases.' },
+              { type: 'Album', tracks: '7+ tracks', range: `${formatPrice(convertPrice(5, 'GBP', currency))}–${formatPrice(convertPrice(10, 'GBP', currency))}`, desc: 'Your best opportunity to earn. Fans pay once, get everything.', highlight: true },
+            ].map(item => (
+              <div key={item.type} className={`rounded-3xl p-8 ${item.highlight ? 'bg-orange-600/[0.08] ring-1 ring-orange-600/20' : 'bg-white/[0.02] ring-1 ring-white/[0.06]'}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-1 ${item.highlight ? 'text-orange-400' : 'text-zinc-500'}`}>{item.type}</p>
+                <p className="font-display text-2xl font-bold mb-1">{item.range}</p>
+                <p className="text-zinc-500 text-xs mb-3 font-bold">{item.tracks}</p>
+                <p className="text-sm text-zinc-400 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-zinc-600 text-xs mt-6">
+            You set the price. These are typical ranges — there&apos;s no ceiling.
+          </p>
+        </div>
+      </section>
+
+      <div className="line mx-6" />
+
       {/* ── COMPETITOR COMPARISON ─────────────────────────────────── */}
       <section className="py-24 px-6">
         <div className="max-w-5xl mx-auto">

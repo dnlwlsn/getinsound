@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { resolveAccent } from '@/lib/accent'
 import { createClient } from '@/lib/supabase/client'
+import { useCurrency } from '../providers/CurrencyProvider'
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -26,6 +27,7 @@ interface FanArtist {
 interface FanPurchase {
   id: string
   amount_pence: number
+  fan_currency: string | null
   paid_at: string
   releases: FanRelease
   artists: FanArtist
@@ -232,6 +234,20 @@ export function FanProfileClient({ fan, purchases, pinned, badges, wallPosts, st
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 pt-32 pb-24">
+        {/* ── Private profile banner ─────────────────────────── */}
+        {isOwner && !fan.is_public && (
+          <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 flex items-center justify-between gap-4">
+            <p className="text-sm text-zinc-400">
+              This is how your profile looks. It&rsquo;s currently <span className="text-white font-bold">private</span> — only you can see this.
+            </p>
+            <Link href="/settings/profile"
+              className="shrink-0 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full transition-colors"
+              style={{ color: accent, border: `1px solid ${accent}33` }}>
+              Settings
+            </Link>
+          </div>
+        )}
+
         {/* ── Bento Grid ─────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -527,6 +543,7 @@ function VinylCard({ purchase, accent, showAmount, editing, isPinned, onTogglePi
   onTogglePin: (releaseId: string) => void
   badges: FanBadge[]
 }) {
+  const { formatPrice } = useCurrency()
   const isAlbum = purchase.releases.type === 'album'
 
   function handleTilt(e: React.MouseEvent<HTMLElement>) {
@@ -571,7 +588,7 @@ function VinylCard({ purchase, accent, showAmount, editing, isPinned, onTogglePi
             ))}
           </div>
           {showAmount && (
-            <p className="text-[10px] text-zinc-600 mt-2">&pound;{(purchase.amount_pence / 100).toFixed(2)}</p>
+            <p className="text-[10px] text-zinc-600 mt-2">{formatPrice(purchase.amount_pence / 100, purchase.fan_currency || 'GBP')}</p>
           )}
         </div>
       </Link>

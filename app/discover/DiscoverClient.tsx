@@ -1,0 +1,562 @@
+'use client'
+
+import { useState, useMemo, useCallback } from 'react'
+import Link from 'next/link'
+import { useCurrency } from '../providers/CurrencyProvider'
+import { useViewMode } from '@/lib/useViewMode'
+import { ViewToggle } from '@/app/components/ui/ViewToggle'
+
+/* ── Types ───────────────────────────────────────────────────── */
+
+interface Artist {
+  id: string
+  slug: string
+  name: string
+  avatar_url: string | null
+  accent_colour: string | null
+}
+
+interface Release {
+  id: string
+  slug: string
+  title: string
+  type: string
+  cover_url: string | null
+  genre: string | null
+  price_pence: number
+  created_at?: string
+  artists: Artist | Artist[]
+}
+
+interface Featured {
+  id: string
+  week_of: string
+  editorial_note: string | null
+  artists: Artist | Artist[]
+  releases?: { releases: Omit<Release, 'artists'>[] }
+}
+
+interface Recommendation {
+  id: string
+  recommender_id: string
+  recommended_id: string
+  recommender: Artist | Artist[]
+  recommended: Artist | Artist[]
+}
+
+interface Props {
+  featured: Featured | null
+  newReleases: Release[]
+  recommendations: Recommendation[]
+  fanGenres: string[]
+  isLoggedIn: boolean
+}
+
+const PAGE_SIZE = 12
+
+/* ── SVG Icons ───────────────────────────────────────────────── */
+
+function PlayIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
+
+function ArrowIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+function ChevronRight() {
+  return (
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-zinc-600">
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  )
+}
+
+/* ── Helpers ──────────────────────────────────────────────────── */
+
+function getArtist(a: Artist | Artist[]): Artist {
+  return Array.isArray(a) ? a[0] : a
+}
+
+function getGenres(releases: Release[]): string[] {
+  const set = new Set<string>()
+  releases.forEach(r => { if (r.genre) set.add(r.genre) })
+  return Array.from(set).sort()
+}
+
+/* ── Main Component ──────────────────────────────────────────── */
+
+export default function DiscoverClient({ featured, newReleases, recommendations, fanGenres, isLoggedIn }: Props) {
+  const { currency, formatPrice, convertPrice } = useCurrency()
+  const { mode: viewMode, set: setViewMode } = useViewMode()
+  const [currentGenre, setCurrentGenre] = useState('All')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  const genres = useMemo(() => getGenres(newReleases), [newReleases])
+
+  const filteredReleases = useMemo(() => {
+    let items = newReleases
+    if (currentGenre !== 'All') {
+      items = items.filter(r => r.genre === currentGenre)
+    }
+    if (fanGenres.length > 0 && currentGenre === 'All') {
+      const preferred = items.filter(r => r.genre && fanGenres.includes(r.genre))
+      const rest = items.filter(r => !r.genre || !fanGenres.includes(r.genre))
+      items = [...preferred, ...rest]
+    }
+    return items
+  }, [newReleases, currentGenre, fanGenres])
+
+  const visibleReleases = filteredReleases.slice(0, visibleCount)
+  const remaining = filteredReleases.length - visibleCount
+
+  const setGenre = useCallback((genre: string) => {
+    setCurrentGenre(genre)
+    setVisibleCount(PAGE_SIZE)
+  }, [])
+
+  const price = (pence: number) => formatPrice(convertPrice(pence / 100, 'GBP', currency))
+
+  const featuredArtist = featured ? getArtist(featured.artists) : null
+
+  const chains = useMemo(() => {
+    const map = new Map<string, { recommender: Artist; recommended: Artist[] }>()
+    for (const rec of recommendations) {
+      const from = getArtist(rec.recommender)
+      const to = getArtist(rec.recommended)
+      const existing = map.get(from.id)
+      if (existing) {
+        existing.recommended.push(to)
+      } else {
+        map.set(from.id, { recommender: from, recommended: [to] })
+      }
+    }
+    return Array.from(map.values())
+  }, [recommendations])
+
+  return (
+    <div className="min-h-screen font-display">
+      {/* NAV */}
+      <nav
+        className="sticky top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 py-4"
+        style={{
+          background: 'rgba(9,9,11,0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(39,39,42,0.8)',
+        }}
+      >
+        <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">
+          insound.
+        </Link>
+        <div className="flex gap-5 items-center text-sm font-bold">
+          <Link href="/explore" className="text-zinc-500 hover:text-white transition-colors hidden sm:block">
+            Explore
+          </Link>
+          <Link href="/discover" className="text-white">
+            Discover
+          </Link>
+          {isLoggedIn ? (
+            <Link href="/library" className="text-zinc-500 hover:text-white transition-colors">
+              Library
+            </Link>
+          ) : (
+            <Link
+              href="/signup"
+              className="bg-orange-600 text-black font-black px-5 py-2 rounded-full text-xs hover:bg-orange-500 transition-colors"
+            >
+              Sign Up
+            </Link>
+          )}
+        </div>
+      </nav>
+
+      {/* ── SECTION 1: INSOUND SELECTS ────────────────────────── */}
+      {featuredArtist && featured && (
+        <section className="relative overflow-hidden border-b border-zinc-900">
+          {/* Background */}
+          <div className="absolute inset-0">
+            {featuredArtist.avatar_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={featuredArtist.avatar_url}
+                alt=""
+                className="w-full h-full object-cover opacity-20 blur-2xl scale-110"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/60 via-[#0A0A0A]/80 to-[#0A0A0A]" />
+          </div>
+
+          <div className="relative max-w-7xl mx-auto px-5 md:px-10 py-16 md:py-24">
+            <div className="flex items-center gap-2.5 mb-8">
+              <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">
+                Insound Selects
+              </h2>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-8 md:gap-14 items-start">
+              {/* Artist image */}
+              <div className="w-full md:w-80 flex-shrink-0">
+                <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
+                  {featuredArtist.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={featuredArtist.avatar_url}
+                      alt={featuredArtist.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center text-6xl font-black text-zinc-700"
+                      style={{ background: featuredArtist.accent_colour ?? '#18181b' }}
+                    >
+                      {featuredArtist.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-3">
+                  {featuredArtist.name}
+                </h1>
+
+                {featured.editorial_note && (
+                  <p className="text-zinc-400 text-lg leading-relaxed max-w-xl mb-8">
+                    {featured.editorial_note}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href={`/${featuredArtist.slug}`}
+                    className="inline-flex items-center gap-2 bg-orange-600 text-black font-black px-8 py-4 rounded-full text-sm hover:bg-orange-500 transition-colors"
+                  >
+                    <PlayIcon size={18} />
+                    Play
+                  </Link>
+                  <Link
+                    href={`/${featuredArtist.slug}`}
+                    className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 text-white font-black px-8 py-4 rounded-full text-sm hover:border-zinc-600 transition-colors"
+                  >
+                    View Artist
+                    <ArrowIcon />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Empty state for no featured artist */}
+      {!featured && (
+        <section className="border-b border-zinc-900 py-20">
+          <div className="max-w-7xl mx-auto px-5 md:px-10 text-center">
+            <div className="flex items-center justify-center gap-2.5 mb-6">
+              <span className="w-2 h-2 rounded-full bg-zinc-700" />
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                Insound Selects
+              </h2>
+            </div>
+            <p className="text-zinc-600 text-sm">No featured artist this week. Check back soon.</p>
+          </div>
+        </section>
+      )}
+
+      {/* ── SECTION 2: NEW THIS WEEK ──────────────────────────── */}
+      <section className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-5 md:px-10">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-orange-600" />
+              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">
+                New This Week
+              </h2>
+            </div>
+            <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest hidden sm:block">
+              Albums &amp; EPs first
+            </span>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div
+              className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0"
+              style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+            >
+              <button
+                onClick={() => setGenre('All')}
+                className={`px-4 py-2 rounded-full font-bold text-xs flex-shrink-0 transition-all ${
+                  currentGenre === 'All'
+                    ? 'bg-orange-600 text-black'
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-200'
+                }`}
+              >
+                All
+              </button>
+              {genres.map(g => (
+                <button
+                  key={g}
+                  onClick={() => setGenre(g)}
+                  className={`px-4 py-2 rounded-full font-bold text-xs flex-shrink-0 transition-all ${
+                    currentGenre === g
+                      ? 'bg-orange-600 text-black'
+                      : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-200'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+            <div className="flex-shrink-0">
+              <ViewToggle mode={viewMode} onToggle={setViewMode} />
+            </div>
+          </div>
+
+          {/* Results count */}
+          {filteredReleases.length > 0 && (
+            <p className="text-xs text-zinc-600 font-bold mb-5">
+              Showing {visibleReleases.length} of {filteredReleases.length}
+            </p>
+          )}
+
+          {/* Grid view */}
+          {filteredReleases.length > 0 && viewMode === 'expanded' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
+              {visibleReleases.map(r => {
+                const artist = getArtist(r.artists as Artist | Artist[])
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/${artist.slug}/${r.slug}`}
+                    className="group cursor-pointer"
+                  >
+                    <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
+                      {r.cover_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={r.cover_url}
+                          className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
+                          loading="lazy"
+                          alt={r.title}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-zinc-700">
+                          {r.title.charAt(0)}
+                        </div>
+                      )}
+                      <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        {r.type}
+                      </span>
+                      <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="bg-orange-600 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl">
+                          <PlayIcon size={18} />
+                        </div>
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-sm truncate">{r.title}</h3>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider truncate mt-0.5">
+                      {artist.name}
+                    </p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      {r.genre && (
+                        <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wider">
+                          {r.genre}
+                        </span>
+                      )}
+                      <span className="text-xs font-black text-orange-600 ml-auto">
+                        {price(r.price_pence)}
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Compact/list view */}
+          {filteredReleases.length > 0 && viewMode === 'compact' && (
+            <div className="flex flex-col gap-1">
+              {visibleReleases.map(r => {
+                const artist = getArtist(r.artists as Artist | Artist[])
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/${artist.slug}/${r.slug}`}
+                    className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                      {r.cover_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.cover_url} className="w-full h-full object-cover" loading="lazy" alt={r.title} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-black text-zinc-700">
+                          {r.title.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">
+                      {r.title}
+                    </span>
+                    <span className="hidden md:block text-[13px] text-zinc-500 truncate w-36 flex-shrink-0">
+                      {artist.name}
+                    </span>
+                    <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
+                      {r.type}
+                    </span>
+                    {r.genre && (
+                      <span className="hidden lg:block text-[10px] text-zinc-600 font-bold flex-shrink-0">
+                        {r.genre}
+                      </span>
+                    )}
+                    <span className="flex-1" />
+                    <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
+                      {price(r.price_pence)}
+                    </span>
+                    <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors">
+                      <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {filteredReleases.length === 0 && (
+            <div className="text-center py-20">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-5">
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-zinc-600">
+                  <path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z" />
+                </svg>
+              </div>
+              <p className="font-black text-zinc-400 text-lg mb-2">No new releases this week</p>
+              <p className="text-sm text-zinc-600 mb-5">
+                {currentGenre !== 'All' ? 'Try a different genre filter' : 'Check back soon for fresh music'}
+              </p>
+              {currentGenre !== 'All' && (
+                <button
+                  onClick={() => setGenre('All')}
+                  className="text-xs font-black text-orange-500 hover:text-orange-400 uppercase tracking-widest transition-colors"
+                >
+                  Clear filter
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Load more */}
+          {remaining > 0 && (
+            <div className="text-center mt-10">
+              <button
+                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                className="bg-zinc-900 border border-zinc-800 text-white font-black px-10 py-4 rounded-2xl hover:bg-zinc-800 hover:border-zinc-700 transition-all text-sm uppercase tracking-wider"
+              >
+                Load More
+              </button>
+              <p className="text-xs text-zinc-600 font-bold mt-3">
+                {remaining} more release{remaining !== 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── SECTION 3: ARTISTS RECOMMENDING ARTISTS ───────────── */}
+      {chains.length > 0 && (
+        <section className="py-12 md:py-16 border-t border-zinc-900">
+          <div className="max-w-7xl mx-auto px-5 md:px-10">
+            <div className="flex items-center gap-2.5 mb-8">
+              <span className="w-2 h-2 rounded-full bg-orange-600" />
+              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">
+                Artists Recommending Artists
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {chains.map(chain => (
+                <div
+                  key={chain.recommender.id}
+                  className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-colors"
+                >
+                  {/* Recommender */}
+                  <Link
+                    href={`/${chain.recommender.slug}`}
+                    className="flex items-center gap-3 mb-4 group"
+                  >
+                    <div
+                      className="w-12 h-12 rounded-full overflow-hidden border-2 flex-shrink-0 bg-zinc-800"
+                      style={{ borderColor: chain.recommender.accent_colour ?? '#F56D00' }}
+                    >
+                      {chain.recommender.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={chain.recommender.avatar_url}
+                          alt={chain.recommender.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-sm font-black text-zinc-600">
+                          {chain.recommender.name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-sm truncate group-hover:text-orange-500 transition-colors">
+                        {chain.recommender.name}
+                      </p>
+                      <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">
+                        Recommends
+                      </p>
+                    </div>
+                  </Link>
+
+                  {/* Recommended chain */}
+                  <div className="space-y-2 pl-3 border-l-2 border-zinc-800 ml-5">
+                    {chain.recommended.map(rec => (
+                      <Link
+                        key={rec.id}
+                        href={`/${rec.slug}`}
+                        className="flex items-center gap-3 py-2 group/rec hover:bg-white/[0.02] rounded-lg px-2 -ml-2 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0">
+                          {rec.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={rec.avatar_url} alt={rec.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-zinc-600">
+                              {rec.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-sm font-bold text-zinc-300 truncate group-hover/rec:text-white transition-colors">
+                          {rec.name}
+                        </span>
+                        <span className="ml-auto flex-shrink-0">
+                          <ChevronRight />
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}

@@ -8,8 +8,18 @@ import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
+import { zipSync } from 'fflate'
 
 type SortOption = 'newest' | 'oldest' | 'title' | 'artist'
+type DateRange = 'all' | '7d' | '30d' | '90d' | '1y'
+
+const DATE_RANGE_LABELS: Record<DateRange, string> = {
+  all: 'All Time',
+  '7d': 'Last 7 Days',
+  '30d': 'Last 30 Days',
+  '90d': 'Last 90 Days',
+  '1y': 'Last Year',
+}
 
 interface Props {
   releases: LibraryRelease[]
@@ -18,6 +28,7 @@ interface Props {
 
 export default function LibraryClient({ releases, error }: Props) {
   const [artistFilter, setArtistFilter] = useState<string>('all')
+  const [dateRange, setDateRange] = useState<DateRange>('all')
   const [sort, setSort] = useState<SortOption>('newest')
   const [downloadModal, setDownloadModal] = useState<LibraryRelease | null>(null)
   const [toastText, setToastText] = useState('')
@@ -27,18 +38,27 @@ export default function LibraryClient({ releases, error }: Props) {
   const play = usePlayerStore((s) => s.play)
   const { mode: viewMode, set: setViewMode } = useViewMode()
 
-  // Unique artists for filter dropdown
   const uniqueArtists = useMemo(() => {
     const map = new Map<string, string>()
     releases.forEach((r) => map.set(r.artistId, r.artistName))
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]))
   }, [releases])
 
-  // Filter + sort
   const filtered = useMemo(() => {
     let items = [...releases]
     if (artistFilter !== 'all') {
       items = items.filter((r) => r.artistId === artistFilter)
+    }
+    if (dateRange !== 'all') {
+      const now = Date.now()
+      const ms: Record<string, number> = {
+        '7d': 7 * 86400000,
+        '30d': 30 * 86400000,
+        '90d': 90 * 86400000,
+        '1y': 365 * 86400000,
+      }
+      const cutoff = now - ms[dateRange]
+      items = items.filter((r) => new Date(r.purchasedAt).getTime() >= cutoff)
     }
     switch (sort) {
       case 'newest':
@@ -55,15 +75,14 @@ export default function LibraryClient({ releases, error }: Props) {
         break
     }
     return items
-  }, [releases, artistFilter, sort])
+  }, [releases, artistFilter, dateRange, sort])
 
-  // Stats
-  const totalPence = releases.reduce((s, r) => s + r.amountPence, 0)
-  const totalContributed = formatPriceUtil(totalPence / 100, 'GBP')
+  const primaryCurrency = releases[0]?.displayCurrency ?? 'GBP'
+  const totalAmount = releases.reduce((s, r) => s + r.displayAmount, 0)
+  const totalContributed = formatPriceUtil(totalAmount / 100, primaryCurrency)
   const releasesOwned = releases.length
   const uniqueArtistCount = uniqueArtists.length
 
-  // Toast
   const showToast = useCallback((msg: string) => {
     setToastText(msg)
     setToastVisible(true)
@@ -71,7 +90,6 @@ export default function LibraryClient({ releases, error }: Props) {
     toastTimer.current = setTimeout(() => setToastVisible(false), 2500)
   }, [])
 
-  // Play a release — queue all tracks
   const handlePlay = (release: LibraryRelease) => {
     const queue: PlayerTrack[] = release.tracks.map((t) => ({
       id: t.id,
@@ -91,13 +109,11 @@ export default function LibraryClient({ releases, error }: Props) {
     }
   }
 
-  // Format date
   const formatDate = (iso: string) => {
     const d = new Date(iso)
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen font-display flex items-center justify-center">
@@ -117,7 +133,6 @@ export default function LibraryClient({ releases, error }: Props) {
     )
   }
 
-  // Empty state
   if (releases.length === 0) {
     return (
       <div className="min-h-screen font-display">
@@ -188,6 +203,15 @@ export default function LibraryClient({ releases, error }: Props) {
                 ))}
               </select>
             )}
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value as DateRange)}
+              className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors"
+            >
+              {(Object.keys(DATE_RANGE_LABELS) as DateRange[]).map((key) => (
+                <option key={key} value={key}>{DATE_RANGE_LABELS[key]}</option>
+              ))}
+            </select>
           </div>
           <div className="flex items-center gap-2">
             <select
@@ -204,34 +228,50 @@ export default function LibraryClient({ releases, error }: Props) {
           </div>
         </div>
 
-        {/* Releases */}
-        {viewMode === 'expanded' ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {filtered.map((r) => (
-              <ReleaseCard
-                key={r.purchaseId}
-                release={r}
-                onPlay={() => handlePlay(r)}
-                onDownload={() => setDownloadModal(r)}
-                formatDate={formatDate}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            {filtered.map((r) => (
-              <ReleaseRowCompact
-                key={r.purchaseId}
-                release={r}
-                onPlay={() => handlePlay(r)}
-                onDownload={() => setDownloadModal(r)}
-              />
-            ))}
+        {/* Releases — animated view transition */}
+        <div
+          className="transition-all duration-300 ease-in-out"
+          style={{ opacity: 1 }}
+        >
+          {viewMode === 'expanded' ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 animate-in fade-in duration-300">
+              {filtered.map((r) => (
+                <ReleaseCard
+                  key={r.purchaseId}
+                  release={r}
+                  onPlay={() => handlePlay(r)}
+                  onDownload={() => setDownloadModal(r)}
+                  formatDate={formatDate}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 animate-in fade-in duration-300">
+              {filtered.map((r) => (
+                <ReleaseRowCompact
+                  key={r.purchaseId}
+                  release={r}
+                  onPlay={() => handlePlay(r)}
+                  onDownload={() => setDownloadModal(r)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {filtered.length === 0 && releases.length > 0 && (
+          <div className="text-center py-16">
+            <p className="text-zinc-500 font-medium">No releases match your filters.</p>
+            <button
+              onClick={() => { setArtistFilter('all'); setDateRange('all') }}
+              className="text-orange-600 text-sm font-bold mt-2 hover:text-orange-500 transition-colors"
+            >
+              Clear filters
+            </button>
           </div>
         )}
       </div>
 
-      {/* Download Format Modal */}
       {downloadModal && (
         <FormatSelectorModal
           release={downloadModal}
@@ -240,7 +280,6 @@ export default function LibraryClient({ releases, error }: Props) {
         />
       )}
 
-      {/* Toast */}
       <div
         className={`fixed bottom-20 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 ${
           toastVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
@@ -275,7 +314,7 @@ function LibraryNav() {
   )
 }
 
-/* ── Release Card ────────────────────────────────────────────── */
+/* ── Release Card (expanded grid) ───────────────────────────── */
 
 function ReleaseCard({
   release,
@@ -360,7 +399,7 @@ function ReleaseCard({
           {formatDate(release.purchasedAt)}
         </span>
         <span className="text-[10px] font-black text-orange-600">
-          {formatPriceUtil(release.amountPence / 100, 'GBP')}
+          {formatPriceUtil(release.displayAmount / 100, release.displayCurrency)}
         </span>
       </div>
     </div>
@@ -382,7 +421,6 @@ function ReleaseRowCompact({
 
   return (
     <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
-      {/* Artwork */}
       <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
         {release.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -392,12 +430,10 @@ function ReleaseRowCompact({
         )}
       </div>
 
-      {/* Title */}
       <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">
         {release.releaseTitle}
       </span>
 
-      {/* Artist */}
       <Link
         href={`/${release.artistSlug}`}
         className="hidden md:block text-[13px] text-zinc-500 truncate w-36 flex-shrink-0 hover:text-orange-600 transition-colors"
@@ -405,22 +441,18 @@ function ReleaseRowCompact({
         {release.artistName}
       </Link>
 
-      {/* Genre */}
       {release.genre && (
         <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
           {release.genre}
         </span>
       )}
 
-      {/* Spacer */}
       <span className="flex-1" />
 
-      {/* Price */}
       <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
-        &pound;{(release.amountPence / 100).toFixed(2)}
+        {formatPriceUtil(release.displayAmount / 100, release.displayCurrency)}
       </span>
 
-      {/* Play */}
       {!release.preOrder && (
         <button
           onClick={onPlay}
@@ -434,7 +466,6 @@ function ReleaseRowCompact({
         </button>
       )}
 
-      {/* Download */}
       {!release.preOrder && (
         <button
           onClick={onDownload}
@@ -469,30 +500,63 @@ function FormatSelectorModal({
   const stored = typeof window !== 'undefined' ? localStorage.getItem('insound_dl_format') : null
   const [format, setFormat] = useState<AudioFormat>((stored as AudioFormat) ?? 'wav')
   const [downloading, setDownloading] = useState(false)
+  const isAlbum = release.tracks.length > 1
 
   const handleDownload = async () => {
     setDownloading(true)
     localStorage.setItem('insound_dl_format', format)
 
     try {
-      for (const track of release.tracks) {
-        const res = await fetch(`/api/stream?trackId=${track.id}`)
-        if (!res.ok) continue
-        const { url } = await res.json()
-        if (!url) continue
-
+      if (isAlbum) {
+        const files: Record<string, Uint8Array> = {}
+        for (const track of release.tracks) {
+          const streamRes = await fetch(`/api/stream?trackId=${track.id}`)
+          if (!streamRes.ok) continue
+          const { url } = await streamRes.json()
+          if (!url) continue
+          const audioRes = await fetch(url)
+          if (!audioRes.ok) continue
+          const buf = await audioRes.arrayBuffer()
+          const filename = `${String(track.position).padStart(2, '0')} - ${track.title}.${format}`
+          files[filename] = new Uint8Array(buf)
+        }
+        const zipped = zipSync(files)
+        const blob = new Blob([zipped.buffer as ArrayBuffer], { type: 'application/zip' })
+        const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `${String(track.position).padStart(2, '0')} - ${track.title}.${format}`
-        a.target = '_blank'
+        a.download = `${release.artistName} - ${release.releaseTitle}.zip`
         document.body.appendChild(a)
         a.click()
         a.remove()
+        URL.revokeObjectURL(url)
+      } else {
+        for (const track of release.tracks) {
+          const res = await fetch(`/api/stream?trackId=${track.id}`)
+          if (!res.ok) continue
+          const { url } = await res.json()
+          if (!url) continue
 
-        if (release.tracks.length > 1) {
-          await new Promise((r) => setTimeout(r, 500))
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `${String(track.position).padStart(2, '0')} - ${track.title}.${format}`
+          a.target = '_blank'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
         }
       }
+
+      fetch('/api/library/download-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          releaseId: release.releaseId,
+          format,
+          trackCount: release.tracks.length,
+        }),
+      }).catch(() => {})
+
       showToast(`Downloaded ${release.releaseTitle}`)
     } catch {
       showToast('Download failed — try again')
@@ -514,6 +578,7 @@ function FormatSelectorModal({
         <h3 className="font-bold text-lg mb-1">{release.releaseTitle}</h3>
         <p className="text-zinc-500 text-xs mb-5">
           {release.tracks.length} {release.tracks.length === 1 ? 'track' : 'tracks'} &middot; {release.artistName}
+          {isAlbum && <span className="text-zinc-600"> &middot; Downloads as ZIP</span>}
         </p>
 
         <div className="space-y-2 mb-6">
@@ -544,7 +609,7 @@ function FormatSelectorModal({
             disabled={downloading}
             className="flex-1 bg-orange-600 text-white font-bold text-sm py-3 rounded-full hover:bg-orange-500 transition-colors disabled:opacity-50"
           >
-            {downloading ? 'Downloading...' : 'Download'}
+            {downloading ? (isAlbum ? 'Zipping...' : 'Downloading...') : 'Download'}
           </button>
         </div>
       </div>
