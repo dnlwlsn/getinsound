@@ -5,6 +5,7 @@ import { requireFreshAuth } from '@/lib/fresh-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/email/send'
 
+export const runtime = 'edge'
 function getAdminClient() { return createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,

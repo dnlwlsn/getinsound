@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { requireAdminApi } from '@/lib/admin'
 import { invalidateCache } from '@/lib/feature-flags'
 
+export const runtime = 'edge'
 function getAdminClient() { return createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { requireAdmin } from '@/lib/admin'
 import BroadcastClient from './BroadcastClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Broadcast — Admin',
 }

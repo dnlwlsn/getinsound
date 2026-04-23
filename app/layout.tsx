@@ -6,6 +6,8 @@ import { AppNav } from './components/ui/AppNav'
 import { CurrencyProvider } from './providers/CurrencyProvider'
 import './globals.css'
 
+export const runtime = 'edge'
+
 const montserrat = Montserrat({
   subsets: ['latin'],
   weight: ['400', '600', '700'],

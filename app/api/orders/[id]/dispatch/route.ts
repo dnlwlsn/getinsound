@@ -5,6 +5,7 @@ import { createNotification, shouldSendEmail } from '@/lib/notifications'
 import { sendEmail } from '@/lib/email/send'
 import { buildOrderDispatchedEmail } from '@/lib/email/templates'
 
+export const runtime = 'edge'
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()

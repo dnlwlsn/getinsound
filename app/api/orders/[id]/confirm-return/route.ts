@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
+export const runtime = 'edge'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

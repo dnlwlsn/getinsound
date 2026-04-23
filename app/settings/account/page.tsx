@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AccountSettingsClient } from './AccountSettingsClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Account Settings | Insound',
 }

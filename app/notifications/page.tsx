@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { NotificationsClient } from './NotificationsClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Notifications | Insound',
 }

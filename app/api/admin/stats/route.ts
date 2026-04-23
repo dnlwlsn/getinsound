@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminApi } from '@/lib/admin'
 import { createClient } from '@supabase/supabase-js'
 
+export const runtime = 'edge'
 function getTimeFilter(period: string): string | null {
   const now = new Date()
   switch (period) {

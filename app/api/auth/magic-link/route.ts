@@ -4,6 +4,7 @@ import { buildMagicLinkEmail, type EmailTemplate } from '@/lib/email/templates';
 import { sendEmail } from '@/lib/email/send';
 import { checkRateLimit } from '@/lib/rate-limit';
 
+export const runtime = 'edge'
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
