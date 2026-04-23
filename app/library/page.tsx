@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import LibraryClient from './LibraryClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'My Collection | Insound',
   description:

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { SignupClient } from './SignupClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Join Insound',
   description: 'Sign up to Insound — the music platform that pays artists.',

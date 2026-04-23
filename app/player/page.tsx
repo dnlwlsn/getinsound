@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import PlayerClient from './PlayerClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Now Playing | insound.',
   description:

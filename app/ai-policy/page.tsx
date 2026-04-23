@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'AI Content Policy | Insound',
   description: "Insound's policy on AI-generated content. What's permitted, what isn't, and why.",

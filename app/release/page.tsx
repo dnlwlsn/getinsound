@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import ReleaseClient from './ReleaseClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Release | insound.',
   description:

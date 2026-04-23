@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import DownloadClient from './DownloadClient'
 
+export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Download | insound.',
   description: 'Your Insound download.',
