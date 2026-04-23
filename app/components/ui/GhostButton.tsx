@@ -18,8 +18,8 @@ export function GhostButton({ children, href, size = 'md', className = '', ...re
     bg-transparent ring-1 ring-white/[0.12] text-white ${sizes[size]}
     hover:ring-white/[0.25] hover:bg-white/[0.04] active:scale-[0.98]
     transition-all duration-150 ease-out
-    [html[data-theme=light]_&]:text-zinc-900 [html[data-theme=light]_&]:ring-zinc-300
-    [html[data-theme=light]_&]:hover:ring-zinc-400 [html[data-theme=light]_&]:hover:bg-zinc-100
+
+
     disabled:opacity-50 disabled:pointer-events-none`
 
   if (href) {

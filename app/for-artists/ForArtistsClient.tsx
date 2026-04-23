@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useCurrency } from '../providers/CurrencyProvider'
 
 /* ── Data ─────────────────────────────────────────────────────── */
 
@@ -34,8 +35,8 @@ const COMPETITOR_CARDS = [
     name: 'Streaming vs Insound',
     subtitle: 'How streaming stacks up',
     rows: [
-      { label: 'Artist cut', them: '~£0.003 per stream', us: '~87% after all fees' },
-      { label: 'To earn £1,000', them: '333,000+ streams', us: '~112 sales at £10' },
+      { label: 'Artist cut', them: '~0.003 per stream', us: '~87% after all fees' },
+      { label: 'To earn 1,000', them: '333,000+ streams', us: '~112 sales at 10' },
       { label: 'Pricing control', them: 'None', us: 'You set the price' },
       { label: 'Fan relationship', them: 'Anonymous', us: 'Direct — you own it' },
       { label: "Who it's for", them: 'Everyone', us: 'Independent artists only' },
@@ -68,14 +69,14 @@ const COMPETITOR_CARDS = [
 ]
 
 const FAQ = [
-  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee (1.5% + 20p), shown transparently at checkout. Both fees are permanent." },
+  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee, shown transparently at checkout. Both fees are permanent." },
   { q: 'Does Insound hold my money?', a: 'Never. We use Stripe Connect direct charges — when a fan buys your music, the payment goes directly to your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes.' },
   { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
-  { q: 'Are there any hidden fees?', a: "No. We take a flat 10%. Stripe charges their standard processing fee (1.5% + 20p). On a £10 sale: £8.65 to you, £1.00 to Insound, 35p to Stripe. Both shown at checkout — nothing hidden." },
+  { q: 'Are there any hidden fees?', a: "No. We take a flat 10%. Stripe charges their standard processing fee. Both shown at checkout — nothing hidden." },
   { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
   { q: 'Is there a subscription fee?', a: 'No. It costs nothing to sign up, nothing to upload, and nothing per month. We only make money when you make a sale.' },
   { q: 'What happens if I want to leave?', a: 'You can remove your music at any time. Your Stripe earnings are already in your account — we never hold them. No lock-in, no penalty.' },
-  { q: 'Can I set pay what you want pricing?', a: 'Yes. Every release has a minimum price (£2) and fans can pay more if they choose. Many artists find fans voluntarily pay well above the minimum.' },
+  { q: 'Can I set pay what you want pricing?', a: 'Yes. Every release has a minimum price and fans can pay more if they choose. Many artists find fans voluntarily pay well above the minimum.' },
   { q: 'How do download codes work?', a: 'Coming soon. You\'ll be able to generate unique download codes for gig merch bundles, press, or promotions. Codes will be single-use and trackable from your dashboard.' },
   { q: 'Can I do pre-orders?', a: 'Coming soon. Pre-orders are on our roadmap — fans will be able to pay upfront and get the release on launch day.' },
 ]
@@ -83,6 +84,30 @@ const FAQ = [
 /* ── Component ────────────────────────────────────────────────── */
 
 export function ForArtistsClient() {
+  const { currency, formatPrice, convertPrice } = useCurrency()
+
+  const STATS = [
+    { value: '10%', label: 'Our cut, that’s it' },
+    { value: formatPrice(0), label: 'Monthly fee' },
+    { value: formatPrice(convertPrice(2, 'GBP', currency)), label: 'Minimum sale price' },
+    { value: '100%', label: 'You own your masters' },
+  ]
+
+  const STEPS_DYNAMIC = [
+    { num: '01', title: 'Upload', desc: 'WAV, FLAC, AIFF or MP3. Page live instantly.' },
+    { num: '02', title: 'Set your price', desc: `${formatPrice(convertPrice(2, 'GBP', currency))} minimum, no ceiling. Pay what you want available on every release.` },
+    { num: '03', title: 'Get paid', desc: `We only take 10%. Stripe’s standard processing fee shown at checkout. Everything else is yours, direct to your Stripe account.` },
+    { num: '04', title: 'Own everything', desc: 'Your masters, forever.' },
+  ]
+
+  const WHY_NOW_DYNAMIC = [
+    'Bandcamp sold twice. Artist trust is broken.',
+    `Spotify: ~${formatPrice(convertPrice(0.003, 'GBP', currency))} per stream. 333,000+ to earn ${formatPrice(convertPrice(1000, 'GBP', currency))}.`,
+    'Insound bootstrapped. No investors. No pressure to raise cut.',
+    'We only make money when you make money — 10%, nothing else.',
+    'Stripe’s standard processing fee. Shown at checkout. No markup.',
+  ]
+
   return (
     <main className="bg-[#0A0A0A] text-white min-h-screen">
 
@@ -136,7 +161,7 @@ export function ForArtistsClient() {
             </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
-            {STEPS.map(s => (
+            {STEPS_DYNAMIC.map(s => (
               <div key={s.num} className="bg-white/[0.02] ring-1 ring-white/[0.06] rounded-3xl p-8">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 mb-3">{s.num}</p>
                 <p className="font-display text-xl font-bold mb-2">{s.title}</p>
@@ -161,7 +186,7 @@ export function ForArtistsClient() {
             </h2>
           </div>
           <div className="space-y-4">
-            {WHY_NOW.map((line, i) => (
+            {WHY_NOW_DYNAMIC.map((line, i) => (
               <div key={i} className="flex items-start gap-4 bg-white/[0.02] ring-1 ring-white/[0.06] rounded-2xl p-5">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
                 <p className="text-sm text-zinc-300 leading-relaxed">{line}</p>
@@ -181,6 +206,42 @@ export function ForArtistsClient() {
               &ldquo;10% is permanent. Not a launch offer.<br />Every fee, transparent.&rdquo;
             </p>
           </div>
+        </div>
+      </section>
+
+      <div className="line mx-6" />
+
+      {/* ── MULTI-PRICE-POINT ────────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">
+              Pricing
+            </span>
+            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">
+              More tracks, more value.
+            </h2>
+            <p className="text-zinc-400 text-sm max-w-lg mx-auto mt-4 leading-relaxed">
+              Albums and EPs let you set a single price for a complete body of work. Fans get more music, you earn more per sale.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { type: 'Single', tracks: '1 track', range: `${formatPrice(convertPrice(2, 'GBP', currency))}–${formatPrice(convertPrice(3, 'GBP', currency))}`, desc: 'Great for teasers and lead singles.' },
+              { type: 'EP', tracks: '3–6 tracks', range: `${formatPrice(convertPrice(3, 'GBP', currency))}–${formatPrice(convertPrice(6, 'GBP', currency))}`, desc: 'A focused collection. Strong for first releases.' },
+              { type: 'Album', tracks: '7+ tracks', range: `${formatPrice(convertPrice(5, 'GBP', currency))}–${formatPrice(convertPrice(10, 'GBP', currency))}`, desc: 'Your best opportunity to earn. Fans pay once, get everything.', highlight: true },
+            ].map(item => (
+              <div key={item.type} className={`rounded-3xl p-8 ${item.highlight ? 'bg-orange-600/[0.08] ring-1 ring-orange-600/20' : 'bg-white/[0.02] ring-1 ring-white/[0.06]'}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-1 ${item.highlight ? 'text-orange-400' : 'text-zinc-500'}`}>{item.type}</p>
+                <p className="font-display text-2xl font-bold mb-1">{item.range}</p>
+                <p className="text-zinc-500 text-xs mb-3 font-bold">{item.tracks}</p>
+                <p className="text-sm text-zinc-400 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-zinc-600 text-xs mt-6">
+            You set the price. These are typical ranges — there&apos;s no ceiling.
+          </p>
         </div>
       </section>
 

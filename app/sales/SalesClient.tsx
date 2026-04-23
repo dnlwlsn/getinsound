@@ -4,6 +4,9 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
+
+const GBP = (n: number) => formatPriceUtil(n, 'GBP')
 
 export function SalesClient() {
   const supabase = createClient()
@@ -74,7 +77,7 @@ export function SalesClient() {
             <div className="md:col-span-2 bg-zinc-900 p-8 rounded-2xl border border-zinc-800 flex justify-between items-center gap-4">
               <div>
                 <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">Available for Payout</p>
-                <p className="text-4xl font-black text-orange-600">&pound;0.00</p>
+                <p className="text-4xl font-black text-orange-600">{GBP(0)}</p>
                 <p className="text-xs text-zinc-500 mt-2">Ready to withdraw &middot; Processed in 1&ndash;2 business days</p>
               </div>
               <button onClick={openWithdraw} className="bg-white text-black font-black px-6 py-3.5 rounded-xl hover:bg-orange-600 hover:text-white transition-colors text-sm flex-shrink-0">
@@ -83,7 +86,7 @@ export function SalesClient() {
             </div>
             <div className="bg-zinc-900 p-8 rounded-2xl border border-zinc-800">
               <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">Lifetime Gross</p>
-              <p className="text-4xl font-black">&pound;0.00</p>
+              <p className="text-4xl font-black">{GBP(0)}</p>
               <p className="text-xs text-zinc-500 mt-2">No sales yet</p>
             </div>
           </div>
@@ -107,7 +110,7 @@ export function SalesClient() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 mb-10">
             <div className="flex justify-between items-center mb-8">
               <div><h2 className="font-black text-lg">Revenue</h2><p className="text-zinc-500 text-xs mt-0.5">Last 6 months</p></div>
-              <div className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-zinc-700" /><span className="text-xs text-zinc-600 font-bold">&pound;0 total</span></div>
+              <div className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-zinc-700" /><span className="text-xs text-zinc-600 font-bold">{GBP(0)} total</span></div>
             </div>
             <div className="flex items-end gap-3 h-36">
               {['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map((m) => (
@@ -183,7 +186,7 @@ export function SalesClient() {
                 <div className="bg-zinc-950 rounded-2xl p-5 mb-6 border border-zinc-800 flex justify-between items-center">
                   <div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Available</p>
-                    <p className="text-3xl font-black text-orange-600">&pound;0.00</p>
+                    <p className="text-3xl font-black text-orange-600">{GBP(0)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-zinc-500 font-bold">Arrives in</p>
@@ -192,9 +195,9 @@ export function SalesClient() {
                 </div>
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Amount to Withdraw (&pound;)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Amount to Withdraw (GBP)</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">&pound;</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">£</span>
                       <input type="number" defaultValue="0.00" min={1} step={0.01} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 pl-8 pr-4 outline-none text-white text-sm focus:border-orange-600 transition-colors" />
                     </div>
                   </div>
@@ -224,7 +227,7 @@ export function SalesClient() {
                 </div>
                 <h3 className="text-2xl font-black mb-2">Transfer initiated!</h3>
                 <p className="text-zinc-400 text-sm mb-1">Your funds are on their way.</p>
-                <p className="text-orange-600 font-bold text-sm mb-8">&pound;0.00 &rarr; Your bank account<br/><span className="text-zinc-500 font-normal">Arrives in 1&ndash;2 business days</span></p>
+                <p className="text-orange-600 font-bold text-sm mb-8">{GBP(0)} &rarr; Your bank account<br/><span className="text-zinc-500 font-normal">Arrives in 1&ndash;2 business days</span></p>
                 <button onClick={() => setWithdrawOpen(false)} className="w-full bg-zinc-800 text-white font-bold py-3.5 rounded-2xl hover:bg-zinc-700 transition-colors text-sm">Done</button>
               </div>
             )}

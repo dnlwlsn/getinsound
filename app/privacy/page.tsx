@@ -121,7 +121,7 @@ export default function PrivacyPage() {
           <h3>8.1 localStorage (browser)</h3>
           <table><thead><tr><th>Key</th><th>Purpose</th><th>Duration</th></tr></thead><tbody>
             <tr><td><code>insound_interested</code></td><td>Remembers that you joined the waitlist</td><td>Persistent until cleared</td></tr>
-            <tr><td><code>insound_theme</code></td><td>Remembers your dark/light mode preference</td><td>Persistent until cleared</td></tr>
+            <tr><td><code>insound_view_mode</code></td><td>Remembers your compact/expanded view preference</td><td>Persistent until cleared</td></tr>
           </tbody></table>
           <p>localStorage values are stored entirely in your browser. They are not sent to our servers, not shared with third parties, and can be cleared at any time via your browser settings.</p>
           <h3>8.2 Supabase authentication</h3>

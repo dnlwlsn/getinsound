@@ -35,7 +35,7 @@ export function RoadmapSection({ groups, className = '' }: Props) {
               <span className="w-2 h-2 rounded-full bg-zinc-600" />
             )}
             <h3 className="font-display font-bold text-sm uppercase tracking-wider
-              text-white [html[data-theme=light]_&]:text-zinc-900">
+              text-white">
               {group.title}
             </h3>
           </div>

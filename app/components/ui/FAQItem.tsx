@@ -24,12 +24,12 @@ export function FAQItem({ question, answer, defaultOpen = false }: Props) {
   }, [open])
 
   return (
-    <div className="border-b border-white/[0.06] [html[data-theme=light]_&]:border-zinc-200">
+    <div className="border-b border-white/[0.06]">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between py-5 text-left"
       >
-        <span className="font-display font-bold text-base text-white [html[data-theme=light]_&]:text-zinc-900">
+        <span className="font-display font-bold text-base text-white">
           {question}
         </span>
         <span

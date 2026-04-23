@@ -18,7 +18,7 @@ export function CompetitorCard({ number, name, subtitle, rows, className = '' }:
       <div className="px-6 pt-6 pb-2">
         <p className="text-[9px] font-bold uppercase tracking-[0.2em] t-faint">{number}</p>
         <p className="font-display text-xl font-bold text-white mt-1
-          [html[data-theme=light]_&]:text-zinc-900">
+">
           {name}
         </p>
         <p className="text-[11px] text-zinc-500 mt-0.5">{subtitle}</p>

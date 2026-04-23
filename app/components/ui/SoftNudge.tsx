@@ -13,11 +13,11 @@ export function SoftNudge({
     <div
       className={`flex items-center gap-4 p-4 rounded-2xl
         bg-orange-600/[0.06] ring-1 ring-orange-600/[0.12]
-        [html[data-theme=light]_&]:bg-orange-50 [html[data-theme=light]_&]:ring-orange-200
+
         ${className}`}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white [html[data-theme=light]_&]:text-zinc-900">
+        <p className="text-sm font-semibold text-white">
           {message}
         </p>
         <p className="font-display text-2xl font-bold text-orange-500 tracking-tight mt-0.5">

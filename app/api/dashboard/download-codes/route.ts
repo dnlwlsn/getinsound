@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}))
   const releaseId = body.release_id as string | undefined
-  const count = Math.min(Math.max(body.count || 10, 1), 100) // 1-100 codes per batch
+  const MAX_BATCH = 50
+  const MAX_PER_RELEASE = 200
+  const count = Math.min(Math.max(body.count || 10, 1), MAX_BATCH)
   const expiryDays = body.expiry_days || 90
 
   if (!releaseId) return NextResponse.json({ error: 'release_id required' }, { status: 400 })
@@ -50,8 +52,23 @@ export async function POST(req: NextRequest) {
 
   if (!release) return NextResponse.json({ error: 'Release not found' }, { status: 404 })
 
+  const { count: existingCount } = await supabase
+    .from('download_codes')
+    .select('id', { count: 'exact', head: true })
+    .eq('release_id', releaseId)
+    .eq('artist_id', user.id)
+
+  const currentTotal = existingCount ?? 0
+  if (currentTotal >= MAX_PER_RELEASE) {
+    return NextResponse.json({
+      error: `You've reached the maximum of ${MAX_PER_RELEASE} codes for this release. Contact us if you need more.`,
+    }, { status: 400 })
+  }
+
+  const allowedCount = Math.min(count, MAX_PER_RELEASE - currentTotal)
+
   const expiresAt = new Date(Date.now() + expiryDays * 86400000).toISOString()
-  const codes = Array.from({ length: count }, () => ({
+  const codes = Array.from({ length: allowedCount }, () => ({
     release_id: releaseId,
     artist_id: user.id,
     code: generateCode(),

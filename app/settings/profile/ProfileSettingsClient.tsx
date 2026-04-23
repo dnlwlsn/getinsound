@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { resolveAccent, DEFAULT_ACCENT } from '@/lib/accent'
+import { SettingsTabs } from '@/components/settings/SettingsTabs'
+import { NotificationBell } from '@/app/components/ui/NotificationBell'
+import { ImageUploader } from '@/app/components/ui/ImageUploader'
 
 const ACCENT_COLOURS = [
   '#ea580c', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
@@ -26,15 +29,17 @@ interface ProfileData {
   accent_colour: string | null
   is_public: boolean
   show_purchase_amounts: boolean
+  show_collection: boolean
+  show_wall: boolean
 }
 
-export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }: {
+export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, userId }: {
   profile: ProfileData
   purchases: SettingsPurchase[]
   hiddenPurchaseIds: string[]
+  userId: string
 }) {
   const supabase = createClient()
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const [username, setUsername] = useState(profile.username || '')
   const [bio, setBio] = useState(profile.bio || '')
@@ -42,35 +47,43 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url)
   const [isPublic, setIsPublic] = useState(profile.is_public)
   const [showAmounts, setShowAmounts] = useState(profile.show_purchase_amounts)
+  const [showCollection, setShowCollection] = useState(profile.show_collection)
+  const [showWall, setShowWall] = useState(profile.show_wall)
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set(hiddenPurchaseIds))
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [uploading, setUploading] = useState(false)
 
   const resolvedAccent = resolveAccent(accent)
 
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    setError('')
-
+  async function handleAvatarUpload(file: File) {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError('Not authenticated'); setUploading(false); return }
+    if (!user) throw new Error('Not authenticated')
+
+    // Delete previous avatar files
+    const { data: existing } = await supabase.storage.from('avatars').list(user.id)
+    if (existing?.length) {
+      await supabase.storage.from('avatars').remove(existing.map(f => `${user.id}/${f.name}`))
+    }
 
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
     const path = `${user.id}/avatar.${ext}`
-
-    const { error: uploadErr } = await supabase.storage
-      .from('avatars').upload(path, file, { upsert: true })
-
-    if (uploadErr) { setError(uploadErr.message); setUploading(false); return }
+    const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    if (uploadErr) throw new Error(uploadErr.message)
 
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    setAvatarUrl(publicUrl)
-    setUploading(false)
+    setAvatarUrl(`${publicUrl}?t=${Date.now()}`)
+  }
+
+  async function handleAvatarRemove() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: existing } = await supabase.storage.from('avatars').list(user.id)
+    if (existing?.length) {
+      await supabase.storage.from('avatars').remove(existing.map(f => `${user.id}/${f.name}`))
+    }
+    setAvatarUrl(null)
   }
 
   async function toggleHidePurchase(purchaseId: string) {
@@ -106,20 +119,10 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
     if (!user) { setError('Not authenticated'); setSaving(false); return }
 
     if (trimmedUsername) {
-      // Check username not taken by another fan
       const { data: existingFan } = await supabase
         .from('fan_profiles').select('id').eq('username', trimmedUsername).maybeSingle()
       if (existingFan && existingFan.id !== user.id) {
         setError(`"${trimmedUsername}" is already taken.`)
-        setSaving(false)
-        return
-      }
-
-      // Check username not taken by an artist slug
-      const { data: existingArtist } = await supabase
-        .from('artists').select('id').eq('slug', trimmedUsername).maybeSingle()
-      if (existingArtist) {
-        setError(`"${trimmedUsername}" is not available.`)
         setSaving(false)
         return
       }
@@ -134,6 +137,8 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
         avatar_url: avatarUrl,
         is_public: isPublic,
         show_purchase_amounts: showAmounts,
+        show_collection: showCollection,
+        show_wall: showWall,
       })
       .eq('id', user.id)
 
@@ -157,47 +162,50 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
           style={{ color: resolvedAccent }}>
           insound.
         </Link>
-        {username && (
-          <Link href={`/${username}`}
-            className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
-            View Profile
-          </Link>
-        )}
+        <div className="flex gap-4 items-center">
+          {username && (
+            <Link href={`/@${username}`}
+              className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
+              View Profile
+            </Link>
+          )}
+          <NotificationBell userId={userId} />
+        </div>
       </nav>
 
       <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
         <div className="w-full max-w-lg relative z-10">
-          <h1 className="font-display text-2xl font-bold mb-2">Profile Settings</h1>
-          <p className="text-zinc-500 text-sm mb-8">Customize your public profile.</p>
+          <h1 className="font-display text-2xl font-bold mb-2">Settings</h1>
+          <p className="text-zinc-500 text-sm mb-6">Manage your account.</p>
+
+          <SettingsTabs />
 
           <div className="space-y-8">
 
             {/* ── Avatar ─────────────────────────────────────── */}
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-3">Avatar</label>
-              <div className="flex items-center gap-4">
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
-                ) : (
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold"
-                    style={{ background: `${resolvedAccent}22`, color: resolvedAccent }}>
-                    {username?.[0]?.toUpperCase() || '?'}
-                  </div>
-                )}
-                <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="text-sm font-bold px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors disabled:opacity-50">
-                  {uploading ? 'Uploading...' : 'Upload'}
-                </button>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-              </div>
-            </div>
+            <ImageUploader
+              currentUrl={avatarUrl}
+              onUpload={handleAvatarUpload}
+              onRemove={handleAvatarRemove}
+              aspect={1}
+              maxSizeMB={2}
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              label="Avatar"
+              variant="avatar"
+              accent={resolvedAccent}
+              fallback={
+                <div className="w-full h-full rounded-full flex items-center justify-center text-xl font-bold"
+                  style={{ background: `${resolvedAccent}22`, color: resolvedAccent }}>
+                  {username?.[0]?.toUpperCase() || '?'}
+                </div>
+              }
+            />
 
             {/* ── Username ───────────────────────────────────── */}
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Username</label>
               <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl px-4 focus-within:border-orange-600 transition-colors">
-                <span className="text-zinc-600 text-sm select-none">getinsound.com/</span>
+                <span className="text-zinc-600 text-sm select-none">getinsound.com/@</span>
                 <input type="text" placeholder="your-name" value={username}
                   onChange={e => setUsername(e.target.value)}
                   className="flex-1 bg-transparent py-3.5 outline-none text-white text-sm placeholder-zinc-700" />
@@ -229,12 +237,27 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
 
             {/* ── Privacy ────────────────────────────────────── */}
             <div className="border-t border-zinc-800 pt-8">
-              <h2 className="font-display text-lg font-bold mb-6">Privacy</h2>
+              <h2 className="font-display text-lg font-bold mb-4">Privacy</h2>
+
+              {username && (
+                <a
+                  href={`/@${username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-6 transition-colors"
+                  style={{ color: resolvedAccent }}
+                >
+                  Preview my public profile
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                  </svg>
+                </a>
+              )}
 
               <label className="flex items-center justify-between py-4 cursor-pointer group">
                 <div>
                   <p className="text-sm font-bold group-hover:text-white transition-colors">Make profile public</p>
-                  <p className="text-xs text-zinc-600 mt-1">Your collection will be visible at getinsound.com/{username || 'your-name'}</p>
+                  <p className="text-xs text-zinc-600 mt-1">Your collection will be visible at getinsound.com/@{username || 'your-name'}</p>
                 </div>
                 <button onClick={() => setIsPublic(!isPublic)}
                   className={`w-12 h-7 rounded-full transition-colors relative ${isPublic ? '' : 'bg-zinc-700'}`}
@@ -252,6 +275,30 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
                   className={`w-12 h-7 rounded-full transition-colors relative ${showAmounts ? '' : 'bg-zinc-700'}`}
                   style={showAmounts ? { background: resolvedAccent } : {}}>
                   <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${showAmounts ? 'left-6' : 'left-1'}`} />
+                </button>
+              </label>
+
+              <label className="flex items-center justify-between py-4 cursor-pointer group border-t border-zinc-900">
+                <div>
+                  <p className="text-sm font-bold group-hover:text-white transition-colors">Show collection</p>
+                  <p className="text-xs text-zinc-600 mt-1">Display your full music collection on your public profile</p>
+                </div>
+                <button onClick={() => setShowCollection(!showCollection)}
+                  className={`w-12 h-7 rounded-full transition-colors relative ${showCollection ? '' : 'bg-zinc-700'}`}
+                  style={showCollection ? { background: resolvedAccent } : {}}>
+                  <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${showCollection ? 'left-6' : 'left-1'}`} />
+                </button>
+              </label>
+
+              <label className="flex items-center justify-between py-4 cursor-pointer group border-t border-zinc-900">
+                <div>
+                  <p className="text-sm font-bold group-hover:text-white transition-colors">Show The Wall</p>
+                  <p className="text-xs text-zinc-600 mt-1">Display artist updates on your public profile</p>
+                </div>
+                <button onClick={() => setShowWall(!showWall)}
+                  className={`w-12 h-7 rounded-full transition-colors relative ${showWall ? '' : 'bg-zinc-700'}`}
+                  style={showWall ? { background: resolvedAccent } : {}}>
+                  <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${showWall ? 'left-6' : 'left-1'}`} />
                 </button>
               </label>
             </div>

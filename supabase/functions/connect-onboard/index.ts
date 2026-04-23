@@ -87,6 +87,13 @@ Deno.serve(async (req) => {
         .eq('id', user.id);
     }
 
+    // Sync Stripe's default currency to the artists table
+    const stripeCurrency = (stripeAccount.default_currency || 'gbp').toUpperCase()
+    await admin
+      .from('artists')
+      .update({ default_currency: stripeCurrency })
+      .eq('id', user.id);
+
     if (onboarded) return json({ onboarded: true });
 
     // Not onboarded yet — hand the artist a fresh onboarding link.
