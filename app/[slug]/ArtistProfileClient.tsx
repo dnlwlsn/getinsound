@@ -12,6 +12,7 @@ import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import { SocialLinksRow } from '@/app/components/ui/SocialLinks'
 import { WishlistButton } from '@/app/components/ui/WishlistButton'
 import type { SocialLinks } from '@/lib/verification'
+import { MerchCard } from '@/app/components/ui/MerchCard'
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -54,12 +55,24 @@ interface ArtistBadge {
   metadata?: { position?: number } | null
 }
 
+interface MerchItem {
+  id: string
+  name: string
+  price: number
+  currency: string | null
+  postage: number
+  stock: number
+  photos: string[]
+  variants: string[] | null
+}
+
 interface Props {
   artist: Artist
   releases: Release[]
   badges?: ArtistBadge[]
   verified?: boolean
   socialLinks?: SocialLinks | null
+  merch?: MerchItem[]
 }
 
 /* ── Gradient fallback ────────────────────────────────────────── */
@@ -138,7 +151,7 @@ function isPreorder(release: Release) {
 
 /* ── Component ────────────────────────────────────────────────── */
 
-export default function ArtistProfileClient({ artist, releases, badges = [], verified = false, socialLinks }: Props) {
+export default function ArtistProfileClient({ artist, releases, badges = [], verified = false, socialLinks, merch = [] }: Props) {
   const accent = resolveAccent(artist.accent_colour)
   const { currency, formatPrice, convertPrice } = useCurrency()
   const play = usePlayerStore(s => s.play)
@@ -197,22 +210,6 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
 
   return (
     <main className="flex-1 relative min-h-screen" style={{ '--artist-accent': accent } as React.CSSProperties}>
-      {/* Nav */}
-      <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors font-display">
-          insound.
-        </Link>
-        <div className="hidden md:flex gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-          <Link href="/explore" className="hover:text-orange-500 transition-colors">Explore</Link>
-          <Link href="/why-us" className="hover:text-orange-500 transition-colors">Why Insound</Link>
-          <Link href="/#how-it-works" className="hover:text-orange-500 transition-colors">How It Works</Link>
-        </div>
-        <div className="flex gap-3 items-center">
-          <Link href="/auth" className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block">Sign In</Link>
-          <Link href="/auth" className="bg-orange-600 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">Get Started</Link>
-        </div>
-      </nav>
-
       {/* Banner */}
       <div className="relative h-48 md:h-64 overflow-hidden" style={artist.banner_url ? {} : { background: bannerGradient(artist.id, accent) }}>
         {artist.banner_url && (
@@ -567,6 +564,32 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
           </div>
         )}
       </div>
+
+      {merch.length > 0 && (
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-32">
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-8">Merch</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {merch.map((item) => {
+              const artistCurrency = item.currency || 'GBP'
+              const displayPrice = formatPrice(convertPrice(item.price / 100, artistCurrency, currency))
+              const photo = item.photos?.length > 0 ? item.photos[0] : null
+
+              return (
+                <MerchCard
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  price={displayPrice}
+                  photo={photo}
+                  artistSlug={artist.slug}
+                  soldOut={item.stock <= 0}
+                  accent={accent}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       <div

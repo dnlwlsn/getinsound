@@ -41,16 +41,16 @@ export async function GET(request: NextRequest) {
     supabase.rpc('search_releases', { query: q, max_results: limit }),
   ])
 
-  let artists: ArtistResult[] = (artistsRes.data ?? []).map(({ rank, ...rest }) => rest)
-  let releases: ReleaseResult[] = (releasesRes.data ?? []).map(({ rank, ...rest }) => rest)
+  let artists: ArtistResult[] = (artistsRes.data ?? []).map(({ rank: _, ...rest }: any) => rest)
+  let releases: ReleaseResult[] = (releasesRes.data ?? []).map(({ rank: _, ...rest }: any) => rest)
 
   if (artists.length === 0 && releases.length === 0) {
     const [fuzzyArtists, fuzzyReleases] = await Promise.all([
       supabase.rpc('search_artists_fuzzy', { query: q, max_results: limit }),
       supabase.rpc('search_releases_fuzzy', { query: q, max_results: limit }),
     ])
-    artists = (fuzzyArtists.data ?? []).map(({ rank, ...rest }) => rest)
-    releases = (fuzzyReleases.data ?? []).map(({ rank, ...rest }) => rest)
+    artists = (fuzzyArtists.data ?? []).map(({ rank: _, ...rest }: any) => rest)
+    releases = (fuzzyReleases.data ?? []).map(({ rank: _, ...rest }: any) => rest)
   }
 
   // Batch-fetch founding_artist badges and verification data for returned artists

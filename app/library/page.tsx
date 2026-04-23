@@ -47,28 +47,39 @@ export default async function LibraryPage() {
     return <LibrarySignIn />
   }
 
-  const { data: purchases, error } = await supabase
-    .from('purchases')
-    .select(`
-      id,
-      release_id,
-      amount_pence,
-      fan_currency,
-      fan_amount,
-      paid_at,
-      created_at,
-      pre_order,
-      release_date,
-      releases (
-        id, title, type, cover_url, artist_id, currency,
-        artists ( id, name, slug, accent_colour ),
-        tracks ( id, title, position, duration_sec, audio_path ),
-        release_tags ( tag )
-      )
-    `)
-    .eq('buyer_user_id', user.id)
-    .eq('status', 'paid')
-    .order('paid_at', { ascending: false, nullsFirst: false })
+  const [purchasesResult, ordersResult] = await Promise.all([
+    supabase
+      .from('purchases')
+      .select(`
+        id,
+        release_id,
+        amount_pence,
+        fan_currency,
+        fan_amount,
+        paid_at,
+        created_at,
+        pre_order,
+        release_date,
+        releases (
+          id, title, type, cover_url, artist_id, currency,
+          artists ( id, name, slug, accent_colour ),
+          tracks ( id, title, position, duration_sec, audio_path ),
+          release_tags ( tag )
+        )
+      `)
+      .eq('buyer_user_id', user.id)
+      .eq('status', 'paid')
+      .order('paid_at', { ascending: false, nullsFirst: false }),
+    supabase
+      .from('orders')
+      .select('id, merch_id, variant_selected, amount_paid, amount_paid_currency, tracking_number, carrier, status, created_at, dispatched_at, delivered_at, return_requested_at, merch(name, photos), artists(name, slug, accent_colour)')
+      .eq('fan_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
+
+  const purchases = purchasesResult.data
+  const error = purchasesResult.error
+  const merchOrders = ordersResult.data || []
 
   if (error) {
     return <LibraryClient releases={[]} error={error.message} userId={user.id} />
@@ -177,5 +188,5 @@ export default async function LibraryPage() {
     }
   })
 
-  return <LibraryClient releases={releases} error={null} userId={user.id} wishlist={wishlist} />
+  return <LibraryClient releases={releases} error={null} userId={user.id} wishlist={wishlist} merchOrders={merchOrders as any} />
 }

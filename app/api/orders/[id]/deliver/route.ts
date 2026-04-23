@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createNotification } from '@/lib/notifications'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -38,8 +40,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const merchName = (order.merch as unknown as { name: string } | null)?.name ?? 'your order'
 
-  await supabase.from('notifications').insert({
-    user_id: order.fan_id,
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+
+  await createNotification({
+    supabase: admin,
+    userId: order.fan_id,
     type: 'merch_delivered',
     title: 'Your order has been delivered',
     body: `${merchName} has been marked as delivered. If you have any issues, you can request a return within 14 days.`,

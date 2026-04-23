@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createNotification, shouldSendEmail } from '@/lib/notifications'
+import { sendEmail } from '@/lib/email/send'
+import { buildOrderDispatchedEmail } from '@/lib/email/templates'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -9,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { data: artist } = await supabase
     .from('artists')
-    .select('id')
+    .select('id, name')
     .eq('id', user.id)
     .maybeSingle()
   if (!artist) return NextResponse.json({ error: 'Not an artist' }, { status: 403 })
@@ -46,13 +50,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const merchName = (order.merch as unknown as { name: string } | null)?.name ?? 'your order'
 
-  await supabase.from('notifications').insert({
-    user_id: order.fan_id,
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+
+  await createNotification({
+    supabase: admin,
+    userId: order.fan_id,
     type: 'merch_dispatched',
     title: 'Your order has been dispatched',
     body: `${merchName} is on its way. Tracking: ${tracking_number} (${carrier})`,
     link: '/orders',
   })
+
+  if (await shouldSendEmail({ supabase: admin, userId: order.fan_id, type: 'merch_dispatched' })) {
+    const { data: fanUser } = await admin.auth.admin.getUserById(order.fan_id)
+    if (fanUser?.user?.email) {
+      await sendEmail(
+        fanUser.user.email,
+        `Your order has shipped: ${merchName}`,
+        buildOrderDispatchedEmail(merchName, tracking_number, carrier, artist.name),
+      )
+    }
+  }
 
   return NextResponse.json({ ok: true })
 }

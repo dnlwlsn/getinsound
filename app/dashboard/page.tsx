@@ -11,8 +11,8 @@ export default async function DashboardPage() {
   if (!user) redirect('/signup')
 
   // Parallel queries
-  const [artistRes, accountRes, releasesRes, purchasesRes, codesRes, fanProfileRes] = await Promise.all([
-    supabase.from('artists').select('id, slug, name, bio, avatar_url, banner_url, accent_colour, social_links, first_year_zero_fees, first_year_zero_fees_start, milestone_first_sale, milestone_first_sale_at, milestone_first_sale_shown').eq('id', user.id).maybeSingle(),
+  const [artistRes, accountRes, releasesRes, purchasesRes, codesRes, fanProfileRes, merchRes, ordersRes] = await Promise.all([
+    supabase.from('artists').select('id, slug, name, bio, avatar_url, banner_url, accent_colour, social_links, first_year_zero_fees, first_year_zero_fees_start, milestone_first_sale, milestone_first_sale_at, milestone_first_sale_shown, return_address').eq('id', user.id).maybeSingle(),
     supabase.from('artist_accounts').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('releases')
       .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, created_at, tracks(id, preview_plays, full_plays)')
@@ -30,6 +30,14 @@ export default async function DashboardPage() {
       .select('referral_code, referral_count, first_year_zero_fees, username, is_public')
       .eq('id', user.id)
       .single(),
+    supabase.from('merch')
+      .select('id, name, description, price, currency, postage, stock, variants, dispatch_estimate, photos, is_active, created_at')
+      .eq('artist_id', user.id)
+      .order('created_at', { ascending: false }),
+    supabase.from('orders')
+      .select('id, fan_id, merch_id, variant_selected, amount_paid, amount_paid_currency, shipping_address, tracking_number, carrier, status, created_at, dispatched_at, delivered_at, return_requested_at, merch(name, photos, dispatch_estimate)')
+      .eq('artist_id', user.id)
+      .order('created_at', { ascending: false }),
   ])
 
   const artist = artistRes.data
@@ -38,6 +46,8 @@ export default async function DashboardPage() {
   const purchases = purchasesRes.data || []
   const codes = codesRes.data || []
   const fanProfile = fanProfileRes.data
+  const merchItems = merchRes.data || []
+  const merchOrders = ordersRes.data || []
 
   if (!artist || !account) redirect('/become-an-artist')
 
@@ -138,6 +148,9 @@ export default async function DashboardPage() {
         artistName: artist.name,
         achievedAt: artist.milestone_first_sale_at,
       } : undefined}
+      merchItems={merchItems}
+      merchOrders={merchOrders as any}
+      returnAddress={artist.return_address}
       referral={fanProfile ? {
         code: fanProfile.referral_code,
         count: fanProfile.referral_count,

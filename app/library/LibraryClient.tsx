@@ -10,6 +10,7 @@ import { Badge } from '@/app/components/ui/Badge'
 import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
+import { getTrackingUrl } from '@/lib/carriers'
 import { zipSync } from 'fflate'
 
 type SortOption = 'newest' | 'oldest' | 'title' | 'artist'
@@ -38,15 +39,33 @@ export interface WishlistItem {
   savedAt: string
 }
 
+export interface MerchOrderItem {
+  id: string
+  merch_id: string
+  variant_selected: string | null
+  amount_paid: number
+  amount_paid_currency: string
+  tracking_number: string | null
+  carrier: string | null
+  status: string
+  created_at: string
+  dispatched_at: string | null
+  delivered_at: string | null
+  return_requested_at: string | null
+  merch: { name: string; photos: string[] } | null
+  artists: { name: string; slug: string; accent_colour: string | null } | null
+}
+
 interface Props {
   releases: LibraryRelease[]
   error: string | null
   userId: string
   wishlist?: WishlistItem[]
+  merchOrders?: MerchOrderItem[]
 }
 
-export default function LibraryClient({ releases, error, userId, wishlist = [] }: Props) {
-  const [tab, setTab] = useState<'collection' | 'wishlist'>('collection')
+export default function LibraryClient({ releases, error, userId, wishlist = [], merchOrders = [] }: Props) {
+  const [tab, setTab] = useState<'collection' | 'wishlist' | 'orders'>('collection')
   const [artistFilter, setArtistFilter] = useState<string>('all')
   const [dateRange, setDateRange] = useState<DateRange>('all')
   const [sort, setSort] = useState<SortOption>('newest')
@@ -245,10 +264,79 @@ export default function LibraryClient({ releases, error, userId, wishlist = [] }
           >
             Wishlist ({wishlist.length})
           </button>
+          {merchOrders.length > 0 && (
+            <button
+              onClick={() => setTab('orders')}
+              className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors border-b-2 -mb-px ${
+                tab === 'orders' ? 'border-orange-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              Orders ({merchOrders.length})
+            </button>
+          )}
         </div>
 
         {tab === 'wishlist' && (
           <WishlistTab items={wishlist} />
+        )}
+
+        {tab === 'orders' && (
+          <div className="space-y-4">
+            {merchOrders.map(o => {
+              const merchData = Array.isArray(o.merch) ? o.merch[0] : o.merch
+              const artistData = Array.isArray(o.artists) ? o.artists[0] : o.artists
+              const photo = merchData?.photos?.[0]
+              const trackingUrl = getTrackingUrl(o.carrier, o.tracking_number)
+              const canReturn = o.status === 'delivered' && o.delivered_at &&
+                new Date().getTime() - new Date(o.delivered_at).getTime() < 14 * 24 * 60 * 60 * 1000
+
+              return (
+                <div key={o.id} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
+                    {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{merchData?.name || 'Unknown item'}{o.variant_selected ? ` (${o.variant_selected})` : ''}</p>
+                    {artistData && (
+                      <Link href={`/${artistData.slug}`} className="text-[10px] font-bold hover:text-orange-500 transition-colors" style={{ color: artistData.accent_colour || '#a1a1aa' }}>
+                        {artistData.name}
+                      </Link>
+                    )}
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      {formatPriceUtil(o.amount_paid / 100, o.amount_paid_currency)} · {new Date(o.created_at).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        o.status === 'pending' ? 'bg-zinc-800 text-zinc-400' :
+                        o.status === 'dispatched' ? 'bg-blue-900/50 text-blue-400' :
+                        o.status === 'delivered' ? 'bg-green-900/50 text-green-400' :
+                        o.status === 'return_requested' ? 'bg-yellow-900/50 text-yellow-400' :
+                        o.status === 'returned' ? 'bg-purple-900/50 text-purple-400' :
+                        o.status === 'refunded' ? 'bg-red-900/50 text-red-400' :
+                        'bg-zinc-800 text-zinc-500'
+                      }`}>
+                        {o.status.replace('_', ' ')}
+                      </span>
+                      {trackingUrl && (
+                        <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-blue-400 hover:text-blue-300">
+                          Track parcel
+                        </a>
+                      )}
+                      {canReturn && (
+                        <OrderAction orderId={o.id} action="request-return" label="Request return" />
+                      )}
+                      {o.status === 'pending' && (
+                        <OrderAction orderId={o.id} action="report-problem" label="Report a problem" />
+                      )}
+                      {o.status === 'dispatched' && (
+                        <OrderAction orderId={o.id} action="report-problem" label="Report a problem" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
 
         {tab === 'collection' && <>
@@ -814,5 +902,30 @@ function WishlistTab({ items }: { items: WishlistItem[] }) {
         )
       })}
     </div>
+  )
+}
+
+function OrderAction({ orderId, action, label }: { orderId: string; action: string; label: string }) {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+
+  async function handleClick() {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}/${action}`, { method: 'POST' })
+      const data = await res.json()
+      setResult(data.message || (res.ok ? 'Done' : data.error || 'Failed'))
+    } catch {
+      setResult('Something went wrong')
+    }
+    setLoading(false)
+  }
+
+  if (result) return <span className="text-[10px] text-zinc-500">{result}</span>
+
+  return (
+    <button onClick={handleClick} disabled={loading} className="text-[10px] font-bold text-zinc-400 hover:text-orange-500 transition-colors disabled:opacity-40">
+      {loading ? '...' : label}
+    </button>
   )
 }

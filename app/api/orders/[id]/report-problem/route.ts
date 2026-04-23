@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: order } = await supabase
     .from('orders')
-    .select('id, status, artist_id, fan_id, payment_intent, tracking_number, carrier, dispatched_at, merch ( name )')
+    .select('id, status, artist_id, fan_id, stripe_payment_intent_id, tracking_number, carrier, dispatched_at, merch ( name )')
     .eq('id', id)
     .eq('fan_id', user.id)
     .maybeSingle()
@@ -35,20 +35,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // 14+ days with no tracking — full refund from artist
-    if (!order.payment_intent) {
+    if (!order.stripe_payment_intent_id) {
       return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
     }
 
     let refund: Stripe.Refund
     try {
-      refund = await stripe.refunds.create({ payment_intent: order.payment_intent })
+      refund = await stripe.refunds.create({ payment_intent: order.stripe_payment_intent_id })
     } catch (err) {
       return NextResponse.json({ error: (err as Error).message }, { status: 500 })
     }
 
     await supabase
       .from('orders')
-      .update({ status: 'refunded', refunded_at: new Date().toISOString() })
+      .update({ status: 'refunded' })
       .eq('id', id)
 
     await supabase.from('notifications').insert({
@@ -116,20 +116,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (deliveryStatus === 'undelivered' || deliveryStatus === 'exception') {
     // Lost — issue refund
-    if (!order.payment_intent) {
+    if (!order.stripe_payment_intent_id) {
       return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
     }
 
     let refund: Stripe.Refund
     try {
-      refund = await stripe.refunds.create({ payment_intent: order.payment_intent })
+      refund = await stripe.refunds.create({ payment_intent: order.stripe_payment_intent_id })
     } catch (err) {
       return NextResponse.json({ error: (err as Error).message }, { status: 500 })
     }
 
     await supabase
       .from('orders')
-      .update({ status: 'refunded', refunded_at: new Date().toISOString() })
+      .update({ status: 'refunded' })
       .eq('id', id)
 
     await supabase.from('notifications').insert({

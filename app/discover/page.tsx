@@ -89,8 +89,8 @@ export default async function DiscoverPage() {
 
   return (
     <DiscoverClient
-      featured={featuredRes.data}
-      newReleases={allReleases}
+      featured={featuredRes.data as any}
+      newReleases={allReleases as any}
       recommendations={recommendationsRes.data ?? []}
       fanGenres={fanGenres}
       isLoggedIn={!!user}

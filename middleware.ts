@@ -47,13 +47,13 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+          cookiesToSet.forEach(({ name, value }: { name: string; value: string }) =>
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+          cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options?: Record<string, unknown> }) =>
+            supabaseResponse.cookies.set(name, value, options as any)
           )
         },
       },
@@ -79,8 +79,10 @@ export async function middleware(request: NextRequest) {
 
   // Redirect unauthenticated users away from protected routes
   // Single-segment paths are public profiles (artists: /slug, fans: /@username)
+  // Multi-segment paths under artist slugs (e.g. /slug/merch/id) are also public
   const isProfileRoute = /^\/[^/]+$/.test(path) && !ARTIST_ROUTES.some(r => path.startsWith(r))
-  if (!user && !isProfileRoute && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
+  const isMerchRoute = /^\/[^/]+\/merch\/[^/]+$/.test(path)
+  if (!user && !isProfileRoute && !isMerchRoute && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     return NextResponse.redirect(url)

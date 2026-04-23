@@ -43,6 +43,218 @@ Deno.serve(async (req) => {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      const sessionType = session.metadata?.type;
+
+      // ── Merch order flow ──────────────────────────────────
+      if (sessionType === 'merch') {
+        const merchId = session.metadata?.merch_id;
+        const artistId = session.metadata?.artist_id;
+        const variant = session.metadata?.variant || null;
+        const fanId = session.metadata?.fan_id || null;
+
+        if (!merchId || !artistId) {
+          console.error('Missing merch metadata on session', session.id);
+          return new Response('ok', { status: 200 });
+        }
+
+        // Idempotency
+        const { data: existingOrder } = await admin
+          .from('orders')
+          .select('id')
+          .eq('stripe_checkout_id', session.id)
+          .maybeSingle();
+        if (existingOrder) return new Response('ok', { status: 200 });
+
+        const buyerEmail = (
+          session.customer_details?.email ?? session.customer_email ?? ''
+        ).trim().toLowerCase();
+
+        const amountPaid = session.amount_total ?? 0;
+
+        // Retrieve merch for postage info
+        const { data: merchItem } = await admin
+          .from('merch')
+          .select('name, price, postage, currency')
+          .eq('id', merchId)
+          .single();
+
+        const itemPrice = merchItem?.price ?? 0;
+        const postagePaid = merchItem?.postage ?? 0;
+        const platformPence = Math.round(itemPrice * 0.1);
+
+        // Stripe fee
+        let stripeFeePence = 0;
+        const piId = typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent?.id;
+        if (piId) {
+          try {
+            const pi = await stripe.paymentIntents.retrieve(piId, {
+              expand: ['latest_charge.balance_transaction'],
+            });
+            const charge = pi.latest_charge as Stripe.Charge | null;
+            const bt = charge?.balance_transaction as Stripe.BalanceTransaction | null;
+            if (bt?.fee) stripeFeePence = bt.fee;
+          } catch (e) {
+            console.error('Failed to fetch balance transaction:', (e as Error).message);
+          }
+        }
+
+        const artistReceived = amountPaid - platformPence - stripeFeePence;
+
+        // Progressive fan creation (reuse existing pattern)
+        let userId = fanId;
+        if (!userId && buyerEmail) {
+          const { data: existingUserId } = await admin.rpc('get_user_id_by_email', {
+            lookup_email: buyerEmail,
+          });
+          if (existingUserId) {
+            userId = existingUserId;
+          } else {
+            const { data: newUser } = await admin.auth.admin.createUser({
+              email: buyerEmail,
+              email_confirm: true,
+            });
+            if (newUser?.user) userId = newUser.user.id;
+          }
+        }
+
+        if (!userId) {
+          await logWebhookError(admin, event.type, event.id, 'No fan_id for merch order', { merchId, buyerEmail });
+          return new Response('ok', { status: 200 });
+        }
+
+        // Extract shipping address from Stripe session
+        const shippingDetails = session.shipping_details ?? session.customer_details;
+        const shippingAddress = shippingDetails?.address
+          ? {
+              name: shippingDetails.name || '',
+              line1: shippingDetails.address.line1 || '',
+              line2: shippingDetails.address.line2 || '',
+              city: shippingDetails.address.city || '',
+              postcode: shippingDetails.address.postal_code || '',
+              country: shippingDetails.address.country || '',
+            }
+          : {};
+
+        // Atomic stock decrement
+        const { data: updated, error: stockErr } = await admin.rpc('decrement_merch_stock', {
+          merch_id: merchId,
+        });
+
+        // If stock was already 0, refund
+        if (stockErr || updated === false) {
+          if (piId) {
+            try { await stripe.refunds.create({ payment_intent: piId }); } catch (e) {
+              console.error('Refund failed:', (e as Error).message);
+            }
+          }
+          if (userId) {
+            await admin.from('notifications').insert({
+              user_id: userId,
+              type: 'merch_order',
+              title: `${merchItem?.name || 'Item'} is sold out`,
+              body: 'Your payment has been refunded.',
+              link: '/library',
+            });
+          }
+          return new Response('ok', { status: 200 });
+        }
+
+        // Insert order
+        const { error: orderErr } = await admin
+          .from('orders')
+          .insert({
+            fan_id: userId,
+            artist_id: artistId,
+            merch_id: merchId,
+            variant_selected: variant,
+            amount_paid: amountPaid,
+            amount_paid_currency: merchItem?.currency || 'GBP',
+            artist_received: artistReceived,
+            artist_received_currency: merchItem?.currency || 'GBP',
+            platform_pence: platformPence,
+            stripe_fee_pence: stripeFeePence,
+            postage_paid: postagePaid,
+            shipping_address: shippingAddress,
+            status: 'pending',
+            stripe_payment_intent_id: piId ?? null,
+            stripe_checkout_id: session.id,
+          });
+
+        if (orderErr) {
+          if (orderErr.code === '23505') return new Response('ok', { status: 200 });
+          await logWebhookError(admin, event.type, event.id, `Order insert failed: ${orderErr.message}`, { merchId, artistId });
+          return new Response('ok', { status: 200 });
+        }
+
+        // Check if stock hit 0
+        const { data: currentMerch } = await admin
+          .from('merch')
+          .select('stock')
+          .eq('id', merchId)
+          .single();
+
+        if (currentMerch?.stock === 0 && await shouldNotifyInApp(admin, artistId, 'merch_order')) {
+          await admin.from('notifications').insert({
+            user_id: artistId,
+            type: 'merch_order',
+            title: `${merchItem?.name || 'Item'} is now sold out`,
+            link: '/dashboard',
+          });
+        }
+
+        // Notify artist (in-app, respecting preferences)
+        if (await shouldNotifyInApp(admin, artistId, 'merch_order')) {
+          await admin.from('notifications').insert({
+            user_id: artistId,
+            type: 'merch_order',
+            title: `New merch order: ${merchItem?.name || 'Unknown item'}`,
+            body: `${buyerEmail} ordered${variant ? ` (${variant})` : ''}.`,
+            link: '/dashboard',
+          });
+        }
+
+        // Email artist (respecting preferences)
+        if (await shouldNotifyEmail(admin, artistId, 'merch_order')) {
+          const { data: artistRow } = await admin
+            .from('artists')
+            .select('email, name')
+            .eq('id', artistId)
+            .single();
+          if (artistRow?.email) {
+            const itemName = merchItem?.name || 'Unknown item';
+            const variantLine = variant ? ` (${escapeHtml(variant)})` : '';
+            await sendEmail(
+              artistRow.email,
+              `New merch order: ${itemName}`,
+              buildMerchOrderArtistEmail(itemName, buyerEmail, variantLine),
+            );
+          }
+        }
+
+        // Notify fan (in-app, respecting preferences)
+        if (userId && await shouldNotifyInApp(admin, userId, 'merch_order')) {
+          await admin.from('notifications').insert({
+            user_id: userId,
+            type: 'merch_order',
+            title: `Order confirmed: ${merchItem?.name || 'Your order'}`,
+            body: 'You\'ll be notified when it ships.',
+            link: '/library',
+          });
+        }
+
+        // Email fan
+        await sendEmail(
+          buyerEmail,
+          `Order confirmed: ${merchItem?.name || 'Your order'}`,
+          buildMerchOrderEmail(merchItem?.name || 'Your order', variant),
+        );
+
+        return new Response('ok', { status: 200 });
+      }
+
+      // ── Existing release purchase flow ──────────────────────
       const releaseId = session.metadata?.release_id;
       const artistId = session.metadata?.artist_id;
       const refCode = session.metadata?.ref_code;
@@ -635,6 +847,85 @@ async function upsertFlag(
   for (const email of adminEmails) {
     await sendEmail(email.trim(), subject, html)
   }
+}
+
+function buildMerchOrderEmail(itemName: string, variant: string | null): string {
+  const variantLine = variant ? ` (${escapeHtml(variant)})` : '';
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:60px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0">
+        <tr><td style="padding-bottom:40px;">
+          <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
+        </td></tr>
+        <tr><td style="color:#FAFAFA;font-size:18px;line-height:1.6;padding-bottom:32px;">
+          Your order for ${escapeHtml(itemName)}${variantLine} is confirmed. You'll be notified when it ships.
+        </td></tr>
+        <tr><td style="padding-bottom:48px;">
+          <a href="${SITE_URL}/library" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
+            View your orders &rarr;
+          </a>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
+          If you didn't place this order, please contact us.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+async function shouldNotifyInApp(admin: ReturnType<typeof createClient>, userId: string, type: string): Promise<boolean> {
+  const { data: pref } = await admin
+    .from('notification_preferences')
+    .select('in_app')
+    .eq('user_id', userId)
+    .eq('type', type)
+    .maybeSingle();
+  return !pref || pref.in_app !== false;
+}
+
+async function shouldNotifyEmail(admin: ReturnType<typeof createClient>, userId: string, type: string): Promise<boolean> {
+  const { data: pref } = await admin
+    .from('notification_preferences')
+    .select('email')
+    .eq('user_id', userId)
+    .eq('type', type)
+    .maybeSingle();
+  return !pref || pref.email !== false;
+}
+
+function buildMerchOrderArtistEmail(itemName: string, buyerEmail: string, variantLine: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:60px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0">
+        <tr><td style="padding-bottom:40px;">
+          <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
+        </td></tr>
+        <tr><td style="color:#FAFAFA;font-size:18px;line-height:1.6;padding-bottom:32px;">
+          You have a new order for ${escapeHtml(itemName)}${variantLine} from ${escapeHtml(buyerEmail)}.
+        </td></tr>
+        <tr><td style="padding-bottom:48px;">
+          <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
+            View order &rarr;
+          </a>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
+          Remember to dispatch this order promptly.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
 }
 
 function escapeHtml(str: string): string {

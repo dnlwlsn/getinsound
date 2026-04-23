@@ -44,11 +44,16 @@ export function FanHero({ fan, pinned, badges, stats, accent, editing, isOwner, 
                   <BadgeList badges={globalBadges} />
                 </div>
               )}
-              {stats.supporterSince && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-3">
-                  Supporter since {stats.supporterSince}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  Joined {new Date(fan.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
                 </p>
-              )}
+                {stats.supporterSince && (
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                    Supporter since {stats.supporterSince}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex gap-8 mt-6 pt-6 border-t border-white/[0.04]">

@@ -136,12 +136,12 @@ export default async function ProfilePage({ params }: Props) {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      wallPosts = (posts || []) as typeof wallPosts
+      wallPosts = (posts || []) as unknown as typeof wallPosts
     }
 
     const artistCounts: Record<string, { name: string; count: number }> = {}
     for (const p of visiblePurchases) {
-      const a = p.artists as { slug: string; name: string; accent_colour: string | null }
+      const a = p.artists as unknown as { slug: string; name: string; accent_colour: string | null }
       if (!artistCounts[a.slug]) artistCounts[a.slug] = { name: a.name, count: 0 }
       artistCounts[a.slug].count++
     }

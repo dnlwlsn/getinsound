@@ -35,6 +35,19 @@ export async function createNotification({
   })
 }
 
+export async function shouldSendEmail({
+  supabase, userId, type,
+}: Pick<CreateNotificationParams, 'supabase' | 'userId' | 'type'>): Promise<boolean> {
+  const { data: pref } = await supabase
+    .from('notification_preferences')
+    .select('email')
+    .eq('user_id', userId)
+    .eq('type', type)
+    .maybeSingle()
+
+  return !pref || pref.email !== false
+}
+
 export async function createNotificationBatch({
   supabase, userIds, type, title, body, link,
 }: Omit<CreateNotificationParams, 'userId'> & { userIds: string[] }): Promise<void> {

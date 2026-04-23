@@ -15,6 +15,7 @@ import { PostComposer } from '@/app/components/ui/PostComposer'
 import { SocialAccountsEditor } from '@/app/components/ui/SocialAccountsEditor'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import type { SocialLinks } from '@/lib/verification'
+import { CARRIERS } from '@/lib/carriers'
 
 // ── Types ──────────────────────────────────────────────────────
 type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; banner_url: string | null; accent_colour: string | null; social_links: SocialLinks | null }
@@ -44,18 +45,36 @@ type Milestone = {
   achievedAt: string | null
 }
 
+type MerchItem = {
+  id: string; name: string; description: string; price: number; currency: string
+  postage: number; stock: number; variants: string[] | null; dispatch_estimate: string
+  photos: string[]; is_active: boolean; created_at: string
+}
+
+type MerchOrder = {
+  id: string; fan_id: string; merch_id: string; variant_selected: string | null
+  amount_paid: number; amount_paid_currency: string; shipping_address: any
+  tracking_number: string | null; carrier: string | null; status: string
+  created_at: string; dispatched_at: string | null; delivered_at: string | null
+  return_requested_at: string | null
+  merch: { name: string; photos: string[]; dispatch_estimate: string } | null
+}
+
 type Props = {
   artist: Artist; account: Account; releases: Release[]; stats: Stats
   fans: Fan[]; codesByRelease: Record<string, CodeSummary>
   fanUsername: string | null; fanIsPublic: boolean
   milestone?: Milestone
   referral?: Referral
+  merchItems?: MerchItem[]
+  merchOrders?: MerchOrder[]
+  returnAddress?: any
 }
 
 function pence(n: number) { return formatPriceUtil(n / 100, 'GBP') }
 
 // ── Component ──────────────────────────────────────────────────
-export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral }: Props) {
+export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral, merchItems = [], merchOrders = [], returnAddress }: Props) {
   const supabase = createClient()
   const [rels, setRels] = useState(releases)
   const [payouts, setPayouts] = useState<any[] | null>(null)
@@ -72,6 +91,19 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [posts, setPosts] = useState<{ id: string; post_type: string; content: string; media_url: string | null; created_at: string }[]>([])
   const [postsLoaded, setPostsLoaded] = useState(false)
   const [deletingPost, setDeletingPost] = useState<string | null>(null)
+
+  // Merch state
+  const [merch, setMerch] = useState(merchItems)
+  const [orders, setOrders] = useState(merchOrders)
+  const [merchForm, setMerchForm] = useState({ name: '', description: '', price: '', postage: '0', stock: '', variants: '', dispatch_estimate: 'Ships within 5 days' })
+  const [merchSaving, setMerchSaving] = useState(false)
+  const [orderFilter, setOrderFilter] = useState('all')
+  const [dispatchingOrder, setDispatchingOrder] = useState<string | null>(null)
+  const [dispatchForm, setDispatchForm] = useState({ tracking_number: '', carrier: 'royal_mail' })
+  const [returnAddr, setReturnAddr] = useState<any>(returnAddress || null)
+  const [returnAddrForm, setReturnAddrForm] = useState({ line1: '', line2: '', city: '', postcode: '', country: 'GB' })
+  const [returnAddrSaving, setReturnAddrSaving] = useState(false)
+  const [showReturnAddrForm, setShowReturnAddrForm] = useState(!returnAddress)
 
   const hasPublishedContent = rels.some(r => r.published) || !!artist.bio
 
@@ -227,6 +259,91 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     setCancelTarget(null)
   }
 
+  // ── Merch handlers ─────────────────────────────────────────
+  async function saveReturnAddress() {
+    setReturnAddrSaving(true)
+    try {
+      const res = await fetch('/api/return-address', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ return_address: returnAddrForm }),
+      })
+      if (res.ok) {
+        setReturnAddr(returnAddrForm)
+        setShowReturnAddrForm(false)
+      }
+    } catch {}
+    setReturnAddrSaving(false)
+  }
+
+  async function createMerchItem() {
+    if (!returnAddr) return
+    setMerchSaving(true)
+    try {
+      const variantsArr = merchForm.variants.trim()
+        ? merchForm.variants.split(',').map(v => v.trim()).filter(Boolean)
+        : null
+      const res = await fetch('/api/merch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: merchForm.name,
+          description: merchForm.description,
+          price: Math.round(parseFloat(merchForm.price) * 100),
+          currency: 'GBP',
+          postage: Math.round(parseFloat(merchForm.postage || '0') * 100),
+          stock: parseInt(merchForm.stock),
+          variants: variantsArr,
+          dispatch_estimate: merchForm.dispatch_estimate,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setMerch(prev => [{ ...data, name: merchForm.name, description: merchForm.description, price: Math.round(parseFloat(merchForm.price) * 100), currency: 'GBP', postage: Math.round(parseFloat(merchForm.postage || '0') * 100), stock: parseInt(merchForm.stock), variants: variantsArr, dispatch_estimate: merchForm.dispatch_estimate, photos: [], is_active: true, created_at: new Date().toISOString() }, ...prev])
+        setMerchForm({ name: '', description: '', price: '', postage: '0', stock: '', variants: '', dispatch_estimate: 'Ships within 5 days' })
+      }
+    } catch {}
+    setMerchSaving(false)
+  }
+
+  async function toggleMerchActive(id: string, isActive: boolean) {
+    await fetch(`/api/merch/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: !isActive }),
+    })
+    setMerch(prev => prev.map(m => m.id === id ? { ...m, is_active: !isActive } : m))
+  }
+
+  async function dispatchOrder(orderId: string) {
+    const res = await fetch(`/api/orders/${orderId}/dispatch`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dispatchForm),
+    })
+    if (res.ok) {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'dispatched', tracking_number: dispatchForm.tracking_number, carrier: dispatchForm.carrier, dispatched_at: new Date().toISOString() } : o))
+      setDispatchingOrder(null)
+      setDispatchForm({ tracking_number: '', carrier: 'royal_mail' })
+    }
+  }
+
+  async function markDelivered(orderId: string) {
+    const res = await fetch(`/api/orders/${orderId}/deliver`, { method: 'PATCH' })
+    if (res.ok) {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'delivered', delivered_at: new Date().toISOString() } : o))
+    }
+  }
+
+  async function confirmReturn(orderId: string) {
+    const res = await fetch(`/api/orders/${orderId}/confirm-return`, { method: 'PATCH' })
+    if (res.ok) {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'returned' } : o))
+    }
+  }
+
+  const filteredOrders = orderFilter === 'all' ? orders : orders.filter(o => o.status === orderFilter)
+
   // ── Logout ─────────────────────────────────────────────────
   const router = useRouter()
   const handleLogout = useCallback(async () => {
@@ -347,6 +464,153 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                     onCancelPreorder={cancelPreorder}
                   />
                 ))}
+              </div>
+            )}
+          </Section>
+
+          {/* ── Merch Listings ───────────────��────────────── */}
+          <Section title="Merch" count={merch.filter(m => m.is_active).length}>
+            {/* Return address */}
+            {showReturnAddrForm && (
+              <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 mb-6">
+                <p className="text-xs font-bold text-zinc-400 mb-3">Return address (required before listing merch)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <input placeholder="Address line 1" value={returnAddrForm.line1} onChange={e => setReturnAddrForm(f => ({ ...f, line1: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="Line 2 (optional)" value={returnAddrForm.line2} onChange={e => setReturnAddrForm(f => ({ ...f, line2: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="City" value={returnAddrForm.city} onChange={e => setReturnAddrForm(f => ({ ...f, city: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="Postcode" value={returnAddrForm.postcode} onChange={e => setReturnAddrForm(f => ({ ...f, postcode: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <button onClick={saveReturnAddress} disabled={returnAddrSaving || !returnAddrForm.line1 || !returnAddrForm.city || !returnAddrForm.postcode} className="mt-3 bg-orange-600 text-black font-bold px-4 py-2 rounded-lg text-xs disabled:opacity-40">
+                  {returnAddrSaving ? 'Saving...' : 'Save Address'}
+                </button>
+              </div>
+            )}
+
+            {returnAddr && (
+              <div className="bg-zinc-800/30 border border-zinc-700/30 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-bold text-zinc-400">New merch listing</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <input placeholder="Name" value={merchForm.name} onChange={e => setMerchForm(f => ({ ...f, name: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <textarea placeholder="Description" value={merchForm.description} onChange={e => setMerchForm(f => ({ ...f, description: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm h-20 resize-none" />
+                  <input placeholder="Price (£)" type="number" step="0.01" min="2" value={merchForm.price} onChange={e => setMerchForm(f => ({ ...f, price: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="Postage (£)" type="number" step="0.01" min="0" value={merchForm.postage} onChange={e => setMerchForm(f => ({ ...f, postage: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="Stock" type="number" min="1" value={merchForm.stock} onChange={e => setMerchForm(f => ({ ...f, stock: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="Variants (S, M, L, XL)" value={merchForm.variants} onChange={e => setMerchForm(f => ({ ...f, variants: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="Dispatch estimate" value={merchForm.dispatch_estimate} onChange={e => setMerchForm(f => ({ ...f, dispatch_estimate: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <button onClick={createMerchItem} disabled={merchSaving || !merchForm.name || !merchForm.price || !merchForm.stock} className="mt-3 bg-orange-600 text-black font-bold px-4 py-2 rounded-lg text-xs disabled:opacity-40">
+                  {merchSaving ? 'Creating...' : '+ Add Listing'}
+                </button>
+              </div>
+            )}
+
+            {merch.length === 0 ? (
+              <p className="text-zinc-600 text-sm py-6 text-center">No merch listings yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {merch.map(m => (
+                  <div key={m.id} className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
+                      {m.photos?.[0] ? (
+                        <img src={m.photos[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{m.name}</p>
+                      <p className="text-[10px] text-zinc-500">{pence(m.price)} · {m.stock} in stock{m.variants ? ` · ${(m.variants as string[]).join(', ')}` : ''}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.is_active ? 'bg-green-900/50 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                        {m.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                      <button onClick={() => toggleMerchActive(m.id, m.is_active)} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">
+                        {m.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
+          {/* ── Merch Orders ──────────────────────────────── */}
+          <Section title="Orders" count={orders.length}>
+            <div className="flex gap-2 mb-4 flex-wrap">
+              {['all', 'pending', 'dispatched', 'delivered', 'return_requested', 'returned', 'refunded'].map(s => (
+                <button key={s} onClick={() => setOrderFilter(s)} className={`text-[10px] font-bold px-3 py-1 rounded-full transition-colors ${orderFilter === s ? 'bg-orange-600 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
+                  {s === 'all' ? 'All' : s.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+            {filteredOrders.length === 0 ? (
+              <p className="text-zinc-600 text-sm py-6 text-center">No orders{orderFilter !== 'all' ? ` with status "${orderFilter.replace('_', ' ')}"` : ''}.</p>
+            ) : (
+              <div className="space-y-3">
+                {filteredOrders.map(o => {
+                  const merchData = Array.isArray(o.merch) ? o.merch[0] : o.merch
+                  const photo = merchData?.photos?.[0]
+                  return (
+                    <div key={o.id} className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
+                          {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate">{merchData?.name || 'Unknown item'}{o.variant_selected ? ` (${o.variant_selected})` : ''}</p>
+                          <p className="text-[10px] text-zinc-500">{pence(o.amount_paid)} · {new Date(o.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                          o.status === 'pending' ? 'bg-zinc-800 text-zinc-400' :
+                          o.status === 'dispatched' ? 'bg-blue-900/50 text-blue-400' :
+                          o.status === 'delivered' ? 'bg-green-900/50 text-green-400' :
+                          o.status === 'return_requested' ? 'bg-yellow-900/50 text-yellow-400' :
+                          o.status === 'returned' ? 'bg-purple-900/50 text-purple-400' :
+                          o.status === 'refunded' ? 'bg-red-900/50 text-red-400' :
+                          'bg-zinc-800 text-zinc-500'
+                        }`}>
+                          {o.status.replace('_', ' ')}
+                        </span>
+                      </div>
+
+                      {/* Dispatch form */}
+                      {o.status === 'pending' && dispatchingOrder !== o.id && (
+                        <button onClick={() => setDispatchingOrder(o.id)} className="mt-3 text-[10px] font-bold text-orange-500 hover:text-orange-400">
+                          Mark as dispatched
+                        </button>
+                      )}
+                      {o.status === 'pending' && dispatchingOrder === o.id && (
+                        <div className="mt-3 flex gap-2 items-end">
+                          <input placeholder="Tracking number" value={dispatchForm.tracking_number} onChange={e => setDispatchForm(f => ({ ...f, tracking_number: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs flex-1" />
+                          <select value={dispatchForm.carrier} onChange={e => setDispatchForm(f => ({ ...f, carrier: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs">
+                            {CARRIERS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                          </select>
+                          <button onClick={() => dispatchOrder(o.id)} disabled={!dispatchForm.tracking_number} className="bg-orange-600 text-black font-bold px-3 py-1.5 rounded-lg text-xs disabled:opacity-40">
+                            Dispatch
+                          </button>
+                          <button onClick={() => setDispatchingOrder(null)} className="text-zinc-500 text-xs font-bold">Cancel</button>
+                        </div>
+                      )}
+
+                      {o.status === 'dispatched' && (
+                        <button onClick={() => markDelivered(o.id)} className="mt-3 text-[10px] font-bold text-green-500 hover:text-green-400">
+                          Mark as delivered
+                        </button>
+                      )}
+
+                      {o.status === 'return_requested' && (
+                        <button onClick={() => confirmReturn(o.id)} className="mt-3 text-[10px] font-bold text-purple-500 hover:text-purple-400">
+                          Confirm return & refund
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </Section>

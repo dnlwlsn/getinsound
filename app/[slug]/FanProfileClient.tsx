@@ -73,41 +73,6 @@ export function FanProfileClient({ fan, purchases, pinned, badges, wallPosts, st
 
   return (
     <main className="bg-[#0A0A0A] text-white min-h-screen">
-      <nav className="fixed top-0 left-0 right-0 z-50">
-        <div className="mx-4 mt-4 px-5 py-3 rounded-2xl ring-1 ring-white/[0.05] flex items-center justify-between"
-          style={{ background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-          <Link href="/" className="font-display text-lg font-bold">
-            insound<span style={{ color: accent }}>.</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            {isOwner && (
-              <>
-                <Link href="/settings/profile"
-                  className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
-                  Settings
-                </Link>
-                <button
-                  onClick={() => setEditing(!editing)}
-                  className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full transition-colors"
-                  style={editing
-                    ? { background: accent, color: '#000' }
-                    : { color: accent, border: `1px solid ${accent}33` }
-                  }
-                >
-                  {editing ? 'Done' : 'Edit'}
-                </button>
-              </>
-            )}
-            {!isOwner && (
-              <Link href="/explore"
-                className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
-                Explore
-              </Link>
-            )}
-          </div>
-        </div>
-      </nav>
-
       <div className="max-w-6xl mx-auto px-6 pt-32 pb-24">
         {isOwner && !fan.is_public && (
           <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 flex items-center justify-between gap-4">
