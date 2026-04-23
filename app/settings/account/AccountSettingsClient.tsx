@@ -9,6 +9,7 @@ import { DeleteAccountModal } from '@/components/settings/DeleteAccountModal'
 import { DeletionPendingBanner } from '@/components/settings/DeletionPendingBanner'
 import { NotificationPreferences } from '@/components/settings/NotificationPreferences'
 import { NotificationBell } from '@/app/components/ui/NotificationBell'
+import { ReverifyModal } from '@/components/settings/ReverifyModal'
 
 interface Props {
   userEmail: string
@@ -23,6 +24,12 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
   const [pending, setPending] = useState(pendingDeletion)
   const [downloading, setDownloading] = useState(false)
   const resolvedAccent = resolveAccent(DEFAULT_ACCENT)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailChanging, setEmailChanging] = useState(false)
+  const [emailChangeSuccess, setEmailChangeSuccess] = useState(false)
+  const [emailChangeError, setEmailChangeError] = useState('')
+  const [showReverify, setShowReverify] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'email' | 'delete' | null>(null)
 
   useEffect(() => {
     if (searchParams.get('cancel-deletion') === 'true' && pending) {
@@ -30,15 +37,53 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleConfirm() {
-    const res = await fetch('/api/account/delete', { method: 'POST' })
+  async function handleEmailChange() {
+    setEmailChanging(true)
+    setEmailChangeError('')
+
+    const res = await fetch('/api/account/change-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newEmail }),
+    })
+
+    if (res.status === 403) {
+      const data = await res.json()
+      if (data.code === 'FRESH_AUTH_REQUIRED') {
+        setPendingAction('email')
+        setShowReverify(true)
+        setEmailChanging(false)
+        return
+      }
+    }
+
     if (!res.ok) {
       const data = await res.json()
-      throw new Error(data.error || 'Failed to schedule deletion')
+      setEmailChangeError(data.error || 'Failed to change email')
+      setEmailChanging(false)
+      return
     }
-    const data = await res.json()
-    setPending({ id: data.id, execute_at: data.execute_at })
-    setShowModal(false)
+
+    setEmailChangeSuccess(true)
+    setNewEmail('')
+    setEmailChanging(false)
+  }
+
+  async function handleConfirm() {
+    const res = await fetch('/api/account/delete', { method: 'POST' })
+
+    if (res.status === 403) {
+      const data = await res.json()
+      if (data.code === 'FRESH_AUTH_REQUIRED') {
+        setPendingAction('delete')
+        setShowReverify(true)
+        return
+      }
+    }
+
+    if (res.ok) {
+      window.location.reload()
+    }
   }
 
   async function handleCancel() {
@@ -106,6 +151,39 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
               <p className="text-sm text-zinc-300">{userEmail}</p>
             </div>
 
+            {/* Change email */}
+            <div className="mt-8 pt-8 border-t border-zinc-800">
+              <h2 className="text-lg font-semibold mb-4">Change email</h2>
+              {emailChangeSuccess ? (
+                <p className="text-sm text-green-400">
+                  Email updated. A notification was sent to your previous email.
+                </p>
+              ) : (
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="text-sm text-zinc-400 block mb-1">New email address</label>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      placeholder="new@example.com"
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <button
+                    onClick={handleEmailChange}
+                    disabled={emailChanging || !newEmail}
+                    className="text-sm bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {emailChanging ? 'Updating...' : 'Update email'}
+                  </button>
+                </div>
+              )}
+              {emailChangeError && (
+                <p className="text-sm text-red-400 mt-2">{emailChangeError}</p>
+              )}
+            </div>
+
             <NotificationPreferences isArtist={false} />
 
             {!pending && (
@@ -136,6 +214,22 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
           onCancel={() => setShowModal(false)}
           onDownload={handleDownload}
           downloading={downloading}
+        />
+      )}
+
+      {showReverify && (
+        <ReverifyModal
+          email={userEmail}
+          onVerified={() => {
+            setShowReverify(false)
+            if (pendingAction === 'email') handleEmailChange()
+            if (pendingAction === 'delete') handleConfirm()
+            setPendingAction(null)
+          }}
+          onClose={() => {
+            setShowReverify(false)
+            setPendingAction(null)
+          }}
         />
       )}
     </div>

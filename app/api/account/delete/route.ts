@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireFreshAuth } from '@/lib/fresh-auth'
 
 export const runtime = 'edge'
 
@@ -52,10 +53,13 @@ export async function GET() {
 }
 
 /** POST — create a deletion request */
-export async function POST() {
+export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user }, error: authErr } = await supabase.auth.getUser()
   if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const freshAuthError = await requireFreshAuth(request)
+  if (freshAuthError) return freshAuthError
 
   const { data: artist } = await supabase
     .from('artists')
