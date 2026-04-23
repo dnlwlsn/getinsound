@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 const TABS = [
   { label: 'Profile', href: '/settings/profile' },
   { label: 'Account', href: '/settings/account' },
+  { label: 'Security', href: '/settings/security' },
 ]
 
 export function SettingsTabs() {
