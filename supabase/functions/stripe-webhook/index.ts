@@ -151,6 +151,21 @@ Deno.serve(async (req) => {
         return new Response('ok', { status: 200 });
       }
 
+      // Check for rapid-fire transactions
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+      const { count: recentTxCount } = await admin
+        .from('purchases')
+        .select('id', { count: 'exact', head: true })
+        .eq('artist_id', artistId)
+        .gte('created_at', oneHourAgo)
+
+      if ((recentTxCount || 0) > 50) {
+        await upsertFlag(admin, artistId, 'rapid_transactions', {
+          transaction_count: recentTxCount,
+          window_hours: 1,
+        })
+      }
+
       // Issue download grant (skip for pre-orders — grant issued on release date)
       if (!isPreOrder) {
         const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
@@ -236,9 +251,47 @@ Deno.serve(async (req) => {
               milestone_first_sale_at: new Date().toISOString(),
             })
             .eq('id', artistId);
+
+          await admin
+            .from('fan_badges')
+            .upsert(
+              { user_id: artistId, badge_type: 'first_sale', release_id: releaseId },
+              { onConflict: 'user_id,badge_type,release_id' },
+            );
         }
       } catch (e) {
         console.error('First sale milestone failed:', (e as Error).message);
+      }
+
+      // ── Founding Fan badge (first 1,000 distinct purchasers) ──
+      if (userId) {
+        try {
+          const { data: alreadyHas } = await admin
+            .from('fan_badges')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('badge_type', 'founding_fan')
+            .maybeSingle();
+
+          if (!alreadyHas) {
+            // Count distinct users who have made a purchase (including this one)
+            const { data: distinctResult } = await admin
+              .rpc('count_distinct_purchasers');
+            const distinctCount = distinctResult ?? 0;
+
+            if (distinctCount <= 1000) {
+              await admin
+                .from('fan_badges')
+                .insert({
+                  user_id: userId,
+                  badge_type: 'founding_fan',
+                  metadata: { position: distinctCount },
+                });
+            }
+          }
+        } catch (e) {
+          console.error('Founding fan badge failed:', (e as Error).message);
+        }
       }
 
       // ── Send email via Resend ──
@@ -302,7 +355,7 @@ Deno.serve(async (req) => {
         } else {
           const magicLink = linkData.properties?.action_link;
           if (magicLink) {
-            await sendEmail(buyerEmail, 'Your music is waiting', buildNewAccountEmail(magicLink));
+            await sendEmail(buyerEmail, 'Your music is ready', buildNewAccountEmail(magicLink));
           }
         }
       } else {
@@ -311,6 +364,120 @@ Deno.serve(async (req) => {
           'New music in your library',
           buildExistingAccountEmail(releaseTitle, artistName),
         );
+      }
+    } else if (event.type === 'account.updated') {
+      const account = event.data.object as Stripe.Account;
+
+      if (account.charges_enabled && account.payouts_enabled) {
+        const { data: artistAccount } = await admin
+          .from('artist_accounts')
+          .select('id')
+          .eq('stripe_account_id', account.id)
+          .maybeSingle();
+
+        if (artistAccount) {
+          await admin
+            .from('artist_accounts')
+            .update({
+              stripe_verified: true,
+              stripe_verified_at: new Date().toISOString(),
+            })
+            .eq('id', artistAccount.id);
+        }
+      }
+    } else if (event.type === 'charge.dispute.created') {
+      const dispute = event.data.object;
+      const paymentIntent = typeof dispute.payment_intent === 'string'
+        ? dispute.payment_intent
+        : dispute.payment_intent?.id;
+
+      if (paymentIntent) {
+        const { data: purchase } = await admin
+          .from('purchases')
+          .select('artist_id')
+          .eq('stripe_pi_id', paymentIntent)
+          .maybeSingle()
+
+        if (purchase?.artist_id) {
+          const artistId = purchase.artist_id
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+          const { count: disputeCount } = await admin
+            .from('purchases')
+            .select('id', { count: 'exact', head: true })
+            .eq('artist_id', artistId)
+            .eq('status', 'refunded')
+            .gte('created_at', thirtyDaysAgo)
+
+          const { count: totalCount } = await admin
+            .from('purchases')
+            .select('id', { count: 'exact', head: true })
+            .eq('artist_id', artistId)
+            .gte('created_at', thirtyDaysAgo)
+
+          const chargebacks = (disputeCount || 0) + 1
+          const total = totalCount || 1
+          const rate = chargebacks / total
+
+          if (chargebacks > 10) {
+            await upsertFlag(admin, artistId, 'chargeback_volume', {
+              chargeback_count: chargebacks,
+              window_days: 30,
+            })
+          }
+
+          if (rate > 0.02) {
+            await upsertFlag(admin, artistId, 'high_chargeback_rate', {
+              chargeback_count: chargebacks,
+              total_purchases: total,
+              rate: Math.round(rate * 10000) / 100,
+              window_days: 30,
+            })
+          }
+        }
+      }
+
+    } else if (event.type === 'payout.paid' || event.type === 'payout.failed') {
+      const payout = event.data.object;
+      const stripeAccountId = (event as any).account;
+
+      if (stripeAccountId) {
+        const { data: account } = await admin
+          .from('artist_accounts')
+          .select('id')
+          .eq('stripe_account_id', stripeAccountId)
+          .maybeSingle()
+
+        if (account) {
+          const status = event.type === 'payout.paid' ? 'paid' : 'failed'
+
+          await admin
+            .from('payout_events')
+            .upsert({
+              user_id: account.id,
+              stripe_payout_id: payout.id,
+              status,
+              failure_reason: (payout as any).failure_message || null,
+            }, { onConflict: 'stripe_payout_id' })
+
+          if (status === 'failed') {
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            const { count: failedCount } = await admin
+              .from('payout_events')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', account.id)
+              .eq('status', 'failed')
+              .gte('created_at', thirtyDaysAgo)
+
+            if ((failedCount || 0) >= 3) {
+              await upsertFlag(admin, account.id, 'failed_payouts', {
+                failed_count: failedCount,
+                latest_reason: (payout as any).failure_message || 'unknown',
+                window_days: 30,
+              })
+            }
+          }
+        }
       }
     }
 
@@ -375,13 +542,19 @@ function buildNewAccountEmail(magicLink: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:60px 20px;">
     <tr><td align="center">
       <table width="480" cellpadding="0" cellspacing="0">
+        <tr><td style="padding-bottom:40px;">
+          <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
+        </td></tr>
         <tr><td style="color:#FAFAFA;font-size:18px;line-height:1.6;padding-bottom:32px;">
           Your music is ready to listen.
         </td></tr>
-        <tr><td>
+        <tr><td style="padding-bottom:48px;">
           <a href="${magicLink}" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
             Listen now &rarr;
           </a>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
+          If you didn't request this, you can ignore this email.
         </td></tr>
       </table>
     </td></tr>
@@ -398,19 +571,70 @@ function buildExistingAccountEmail(releaseTitle: string, artistName: string): st
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:60px 20px;">
     <tr><td align="center">
       <table width="480" cellpadding="0" cellspacing="0">
+        <tr><td style="padding-bottom:40px;">
+          <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
+        </td></tr>
         <tr><td style="color:#FAFAFA;font-size:18px;line-height:1.6;padding-bottom:32px;">
           ${escapeHtml(releaseTitle)} by ${escapeHtml(artistName)} is ready to listen.
         </td></tr>
-        <tr><td>
+        <tr><td style="padding-bottom:48px;">
           <a href="${SITE_URL}/library" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
             Listen now &rarr;
           </a>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
+          If you didn't request this, you can ignore this email.
         </td></tr>
       </table>
     </td></tr>
   </table>
 </body>
 </html>`;
+}
+
+async function upsertFlag(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  flagType: string,
+  details: Record<string, unknown>,
+) {
+  const { data: existing } = await admin
+    .from('suspicious_activity_flags')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('flag_type', flagType)
+    .eq('reviewed', false)
+    .maybeSingle()
+
+  if (existing) {
+    await admin
+      .from('suspicious_activity_flags')
+      .update({ details })
+      .eq('id', existing.id)
+    return
+  }
+
+  await admin
+    .from('suspicious_activity_flags')
+    .insert({ user_id: userId, flag_type: flagType, details })
+
+  const { data: artist } = await admin
+    .from('artists')
+    .select('name, slug')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const artistName = artist?.name || 'Unknown artist'
+  const adminEmails = (Deno.env.get('ADMIN_EMAILS') || '').split(',').filter(Boolean)
+
+  const subject = `[Insound] Suspicious activity: ${flagType.replace(/_/g, ' ')}`
+  const html = `<p><strong>${escapeHtml(artistName)}</strong> has been flagged for <strong>${flagType.replace(/_/g, ' ')}</strong>.</p>
+<p>Details: <code>${escapeHtml(JSON.stringify(details))}</code></p>
+<p><a href="${SITE_URL}/admin/flags">Review in admin portal</a></p>`
+
+  for (const email of adminEmails) {
+    await sendEmail(email.trim(), subject, html)
+  }
 }
 
 function escapeHtml(str: string): string {
