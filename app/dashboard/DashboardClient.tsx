@@ -81,6 +81,15 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
 
   // ── Release toggles ─────────────────────────────────────────
   async function toggleField(releaseId: string, field: string, value: any) {
+    if (field === 'published') {
+      const res = await fetch('/api/releases/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ release_id: releaseId, published: value }),
+      })
+      if (res.ok) setRels(prev => prev.map(r => r.id === releaseId ? { ...r, published: value } : r))
+      return
+    }
     const { error } = await supabase.from('releases').update({ [field]: value }).eq('id', releaseId)
     if (!error) setRels(prev => prev.map(r => r.id === releaseId ? { ...r, [field]: value } : r))
   }

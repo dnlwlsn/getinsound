@@ -188,6 +188,24 @@ Deno.serve(async (req) => {
               await admin.functions.invoke('notify-referral-unlock', {
                 body: { user_id: referrer.id },
               });
+
+              // Notify referrer about zero fees unlock
+              const { data: prefRow } = await admin
+                .from('notification_preferences')
+                .select('in_app')
+                .eq('user_id', referrer.id)
+                .eq('type', 'zero_fees_unlocked')
+                .maybeSingle();
+
+              if (!prefRow || prefRow.in_app) {
+                await admin.from('notifications').insert({
+                  user_id: referrer.id,
+                  type: 'zero_fees_unlocked',
+                  title: 'You unlocked zero platform fees!',
+                  body: 'Your referrals hit the threshold — you now pay 0% platform fees on all sales.',
+                  link: '/dashboard',
+                });
+              }
             }
           }
         } catch (e) {
