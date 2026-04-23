@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { resolveAccent, DEFAULT_ACCENT } from '@/lib/accent'
+import { SettingsTabs } from '@/components/settings/SettingsTabs'
 
 const ACCENT_COLOURS = [
   '#ea580c', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
@@ -167,8 +168,10 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
 
       <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
         <div className="w-full max-w-lg relative z-10">
-          <h1 className="font-display text-2xl font-bold mb-2">Profile Settings</h1>
-          <p className="text-zinc-500 text-sm mb-8">Customize your public profile.</p>
+          <h1 className="font-display text-2xl font-bold mb-2">Settings</h1>
+          <p className="text-zinc-500 text-sm mb-6">Manage your account.</p>
+
+          <SettingsTabs />
 
           <div className="space-y-8">
 
@@ -229,7 +232,22 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds }:
 
             {/* ── Privacy ────────────────────────────────────── */}
             <div className="border-t border-zinc-800 pt-8">
-              <h2 className="font-display text-lg font-bold mb-6">Privacy</h2>
+              <h2 className="font-display text-lg font-bold mb-4">Privacy</h2>
+
+              {username && (
+                <a
+                  href={`/${username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-6 transition-colors"
+                  style={{ color: resolvedAccent }}
+                >
+                  Preview my public profile
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                  </svg>
+                </a>
+              )}
 
               <label className="flex items-center justify-between py-4 cursor-pointer group">
                 <div>
