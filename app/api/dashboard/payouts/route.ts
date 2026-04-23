@@ -35,11 +35,9 @@ export async function GET() {
     )
 
     const availablePence = balance.available
-      .filter(b => b.currency === 'gbp')
       .reduce((sum, b) => sum + b.amount, 0)
 
     const pendingPence = balance.pending
-      .filter(b => b.currency === 'gbp')
       .reduce((sum, b) => sum + b.amount, 0)
 
     // Generate Express dashboard link

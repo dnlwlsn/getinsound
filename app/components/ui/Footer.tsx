@@ -1,3 +1,5 @@
+import { CurrencySwitcher } from './CurrencySwitcher'
+
 type FooterLink = {
   label: string
   href: string
@@ -13,11 +15,11 @@ export function Footer({ links = [], className = '' }: Props) {
 
   return (
     <footer className={`border-t border-white/[0.06] py-12 px-6
-      [html[data-theme=light]_&]:border-zinc-200 ${className}`}>
+ ${className}`}>
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
         {/* Waveform logo text (no dot) */}
         <span className="font-display text-lg font-bold text-white
-          [html[data-theme=light]_&]:text-zinc-900">
+">
           insound
         </span>
 
@@ -29,7 +31,7 @@ export function Footer({ links = [], className = '' }: Props) {
                 key={link.href}
                 href={link.href}
                 className="text-xs font-semibold text-zinc-500 hover:text-zinc-300 transition-colors
-                  [html[data-theme=light]_&]:hover:text-zinc-700"
+"
               >
                 {link.label}
               </a>
@@ -38,7 +40,10 @@ export function Footer({ links = [], className = '' }: Props) {
         )}
 
         {/* Copyright */}
-        <p className="text-xs text-zinc-600">&copy; {year} Insound. All rights reserved.</p>
+        <div className="flex items-center gap-4">
+          <CurrencySwitcher />
+          <p className="text-xs text-zinc-600">&copy; {year} Insound. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   )

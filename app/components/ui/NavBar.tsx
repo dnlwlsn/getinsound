@@ -27,7 +27,7 @@ export function NavBar({ logo, links = [], cta, className = '' }: Props) {
         <div className="shrink-0">
           {logo ?? (
             <span className="font-display text-lg font-bold text-white
-              [html[data-theme=light]_&]:text-zinc-900">
+">
               insound
             </span>
           )}
@@ -41,7 +41,7 @@ export function NavBar({ logo, links = [], cta, className = '' }: Props) {
                 key={link.href}
                 href={link.href}
                 className="text-sm font-semibold text-zinc-400 hover:text-white transition-colors
-                  [html[data-theme=light]_&]:text-zinc-500 [html[data-theme=light]_&]:hover:text-zinc-900"
+"
               >
                 {link.label}
               </a>

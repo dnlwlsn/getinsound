@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useCurrency } from '../providers/CurrencyProvider'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://rvsfriqjobwuzzfdiyxg.supabase.co'
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg'
@@ -19,6 +20,7 @@ function calcProfit(price: number) {
 }
 
 export function WhyUsClient() {
+  const { currency, formatPrice, convertPrice } = useCurrency()
   const [price, setPrice] = useState(10)
   const [email, setEmail] = useState('')
   const [stickyEmail, setStickyEmail] = useState('')
@@ -117,7 +119,7 @@ export function WhyUsClient() {
         <div className="max-w-5xl mx-auto px-8">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div><p className="text-2xl md:text-3xl font-black text-orange-600">10%</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Our cut, all-in</p></div>
-            <div><p className="text-2xl md:text-3xl font-black">£0</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Annual fee</p></div>
+            <div><p className="text-2xl md:text-3xl font-black">{formatPrice(0)}</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Annual fee</p></div>
             <div><p className="text-2xl md:text-3xl font-black">Instant</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Payouts</p></div>
           </div>
         </div>
@@ -132,7 +134,7 @@ export function WhyUsClient() {
                 <div>
                   <div className="flex justify-between items-end mb-6">
                     <label htmlFor="priceSlider" className="text-xs font-black uppercase tracking-widest text-zinc-400">If you sell one album for:</label>
-                    <span className="text-4xl font-black text-orange-600">£{price}</span>
+                    <span className="text-4xl font-black text-orange-600">{formatPrice(price)}</span>
                   </div>
                   <input
                     id="priceSlider"
@@ -145,8 +147,8 @@ export function WhyUsClient() {
                     className="w-full h-3 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-orange-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_20px_rgba(234,88,12,0.4)]"
                   />
                   <div className="flex justify-between mt-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest">
-                    <span>£5 min</span>
-                    <span>£100 max</span>
+                    <span>{formatPrice(convertPrice(5, 'GBP', currency))} min</span>
+                    <span>{formatPrice(convertPrice(100, 'GBP', currency))} max</span>
                   </div>
                 </div>
 
@@ -157,15 +159,15 @@ export function WhyUsClient() {
                   </div>
                   <div className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-zinc-800">
                     <span className="text-xs text-zinc-400">Stripe processing</span>
-                    <span className="text-zinc-300 font-black">1.5% + 20p</span>
+                    <span className="text-zinc-300 font-black">Stripe&apos;s standard processing fee</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-zinc-800">
                     <span className="text-xs text-zinc-400">TuneCore annual fee</span>
-                    <span className="text-red-500 font-black">£43.99</span>
+                    <span className="text-red-500 font-black">{formatPrice(convertPrice(43.99, 'GBP', currency))}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-zinc-800">
                     <span className="text-xs text-zinc-400">Avg. Spotify payout</span>
-                    <span className="text-white font-black">£0.0031</span>
+                    <span className="text-white font-black">{currency === 'GBP' ? '£0.003' : formatPrice(convertPrice(0.003, 'GBP', currency))}</span>
                   </div>
                 </div>
               </div>
@@ -173,8 +175,8 @@ export function WhyUsClient() {
               <div className="space-y-6">
                 <div className="bg-orange-600 p-8 rounded-3xl shadow-xl shadow-orange-600/20">
                   <p className="text-[10px] font-black text-emerald-950 uppercase tracking-widest mb-1">Your Insound profit</p>
-                  <p className="text-6xl font-black text-black">£{profit.toFixed(2)}</p>
-                  <p className="mt-4 text-[10px] text-emerald-900 font-bold italic">After our flat 10% and Stripe processing (1.5% + 20p). Paid instantly. No annual subscription.</p>
+                  <p className="text-6xl font-black text-black">{formatPrice(profit)}</p>
+                  <p className="mt-4 text-[10px] text-emerald-900 font-bold italic">After our flat 10% and Stripe&apos;s standard processing fee. Paid instantly. No annual subscription.</p>
                 </div>
 
                 <div className="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
@@ -191,7 +193,7 @@ export function WhyUsClient() {
 
             <div className="mt-12 pt-8 border-t border-zinc-800/50 text-center">
               <p className="text-zinc-500 text-sm italic leading-relaxed">
-                &ldquo;On streaming, your first <span className="text-white font-bold">14,191 streams</span> every year simply pay for your <br className="hidden md:block" /> £43.99 distribution fee. On <span className="text-orange-600 font-bold">insound.</span>, you&apos;re profitable from sale #1.&rdquo;
+                &ldquo;On streaming, your first <span className="text-white font-bold">14,191 streams</span> every year simply pay for your <br className="hidden md:block" /> {formatPrice(convertPrice(43.99, 'GBP', currency))} distribution fee. On <span className="text-orange-600 font-bold">insound.</span>, you&apos;re profitable from sale #1.&rdquo;
               </p>
             </div>
           </div>
@@ -218,8 +220,8 @@ export function WhyUsClient() {
               <tbody className="text-sm">
                 <tr className="border-b border-zinc-800">
                   <td className="p-8 font-bold text-zinc-300">Annual subscription</td>
-                  <td className="p-8 font-black text-white bg-orange-600/5">£0.00</td>
-                  <td className="p-8 text-red-500 font-bold">£43.99 <span className="text-[10px] block opacity-50 font-normal underline">via TuneCore</span></td>
+                  <td className="p-8 font-black text-white bg-orange-600/5">{formatPrice(0)}</td>
+                  <td className="p-8 text-red-500 font-bold">{formatPrice(convertPrice(43.99, 'GBP', currency))} <span className="text-[10px] block opacity-50 font-normal underline">via TuneCore</span></td>
                 </tr>
                 <tr className="border-b border-zinc-800">
                   <td className="p-8 font-bold text-zinc-300">Commission / fee</td>
@@ -234,12 +236,12 @@ export function WhyUsClient() {
                 <tr className="border-b border-zinc-800">
                   <td className="p-8 font-bold text-zinc-300">Withdrawal cost</td>
                   <td className="p-8 font-black text-white bg-orange-600/5">Free</td>
-                  <td className="p-8 text-red-500 font-bold">£1.50 <span className="text-[10px] block opacity-50 font-normal">Per bank transfer</span></td>
+                  <td className="p-8 text-red-500 font-bold">{formatPrice(convertPrice(1.5, 'GBP', currency))} <span className="text-[10px] block opacity-50 font-normal">Per bank transfer</span></td>
                 </tr>
                 <tr>
                   <td className="p-8 font-bold text-zinc-300">Content take-down fee</td>
                   <td className="p-8 font-black text-white bg-orange-600/5">Free</td>
-                  <td className="p-8 text-red-500 font-bold">£10.00+ <span className="text-[10px] block opacity-50 font-normal">On some platforms</span></td>
+                  <td className="p-8 text-red-500 font-bold">{formatPrice(convertPrice(10, 'GBP', currency))}+ <span className="text-[10px] block opacity-50 font-normal">On some platforms</span></td>
                 </tr>
               </tbody>
             </table>

@@ -11,21 +11,33 @@ export default async function DashboardPage() {
   if (!user) redirect('/signup')
 
   // Parallel queries
-  const [artistRes, accountRes, releasesRes, purchasesRes, codesRes] = await Promise.all([
-    supabase.from('artists').select('id, slug, name, bio, avatar_url, accent_colour').eq('id', user.id).maybeSingle(),
+  const [artistRes, accountRes, releasesRes, purchasesRes, codesRes, fanProfileRes, merchRes, ordersRes] = await Promise.all([
+    supabase.from('artists').select('id, slug, name, bio, avatar_url, banner_url, accent_colour, social_links, first_year_zero_fees, first_year_zero_fees_start, milestone_first_sale, milestone_first_sale_at, milestone_first_sale_shown, return_address').eq('id', user.id).maybeSingle(),
     supabase.from('artist_accounts').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('releases')
       .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, created_at, tracks(id, preview_plays, full_plays)')
       .eq('artist_id', user.id)
       .order('created_at', { ascending: false }),
     supabase.from('purchases')
-      .select('id, release_id, buyer_email, amount_pence, artist_pence, platform_pence, stripe_fee_pence, status, paid_at, created_at')
+      .select('id, release_id, buyer_email, buyer_user_id, amount_pence, artist_pence, platform_pence, stripe_fee_pence, status, paid_at, created_at')
       .eq('artist_id', user.id)
       .eq('status', 'paid')
       .order('paid_at', { ascending: false }),
     supabase.from('download_codes')
       .select('id, release_id, code, redeemed_by, redeemed_at')
       .eq('artist_id', user.id),
+    supabase.from('fan_profiles')
+      .select('referral_code, referral_count, first_year_zero_fees, username, is_public')
+      .eq('id', user.id)
+      .single(),
+    supabase.from('merch')
+      .select('id, name, description, price, currency, postage, stock, variants, dispatch_estimate, photos, is_active, created_at')
+      .eq('artist_id', user.id)
+      .order('created_at', { ascending: false }),
+    supabase.from('orders')
+      .select('id, fan_id, merch_id, variant_selected, amount_paid, amount_paid_currency, shipping_address, tracking_number, carrier, status, created_at, dispatched_at, delivered_at, return_requested_at, merch(name, photos, dispatch_estimate)')
+      .eq('artist_id', user.id)
+      .order('created_at', { ascending: false }),
   ])
 
   const artist = artistRes.data
@@ -33,6 +45,9 @@ export default async function DashboardPage() {
   const releases = releasesRes.data || []
   const purchases = purchasesRes.data || []
   const codes = codesRes.data || []
+  const fanProfile = fanProfileRes.data
+  const merchItems = merchRes.data || []
+  const merchOrders = ordersRes.data || []
 
   if (!artist || !account) redirect('/become-an-artist')
 
@@ -62,16 +77,31 @@ export default async function DashboardPage() {
     .reduce((s, r, _, arr) => s + (r.pwyw_minimum_pence || 0) / arr.length, 0)
 
   // Fan list (privacy-safe: hash email for display)
-  const fanMap = new Map<string, { email: string; purchases: typeof purchases; totalPence: number }>()
+  const fanMap = new Map<string, { email: string; userId: string | null; purchases: typeof purchases; totalPence: number }>()
   for (const p of purchases) {
     const existing = fanMap.get(p.buyer_email)
     if (existing) {
       existing.purchases.push(p)
       existing.totalPence += p.amount_pence
     } else {
-      fanMap.set(p.buyer_email, { email: p.buyer_email, purchases: [p], totalPence: p.amount_pence })
+      fanMap.set(p.buyer_email, { email: p.buyer_email, userId: (p as any).buyer_user_id ?? null, purchases: [p], totalPence: p.amount_pence })
     }
   }
+
+  // Batch-fetch founding_fan badges for all fan user IDs
+  const fanUserIds = [...new Set(Array.from(fanMap.values()).map(f => f.userId).filter(Boolean))] as string[]
+  const fanBadgeMap = new Map<string, { badge_type: string; metadata?: { position?: number } | null }>()
+  if (fanUserIds.length > 0) {
+    const { data: fanBadges } = await supabase
+      .from('fan_badges')
+      .select('user_id, badge_type, metadata')
+      .in('user_id', fanUserIds)
+      .eq('badge_type', 'founding_fan')
+    for (const b of fanBadges || []) {
+      fanBadgeMap.set(b.user_id, { badge_type: b.badge_type, metadata: b.metadata as any })
+    }
+  }
+
   const fans = Array.from(fanMap.values())
     .sort((a, b) => b.totalPence - a.totalPence)
     .map(f => ({
@@ -83,6 +113,7 @@ export default async function DashboardPage() {
         amount_pence: p.amount_pence,
         paid_at: p.paid_at,
       })),
+      badge: f.userId ? fanBadgeMap.get(f.userId) ?? null : null,
     }))
 
   // Download codes per release
@@ -111,6 +142,22 @@ export default async function DashboardPage() {
       }}
       fans={fans}
       codesByRelease={Object.fromEntries(codesByRelease)}
+      fanUsername={fanProfile?.username ?? null}
+      fanIsPublic={fanProfile?.is_public ?? false}
+      milestone={artist.milestone_first_sale && !artist.milestone_first_sale_shown ? {
+        artistName: artist.name,
+        achievedAt: artist.milestone_first_sale_at,
+      } : undefined}
+      merchItems={merchItems}
+      merchOrders={merchOrders as any}
+      returnAddress={artist.return_address}
+      referral={fanProfile ? {
+        code: fanProfile.referral_code,
+        count: fanProfile.referral_count,
+        zeroFeesUnlocked: fanProfile.first_year_zero_fees,
+        zeroFeesStart: artist.first_year_zero_fees_start,
+        artistHasZeroFees: artist.first_year_zero_fees,
+      } : undefined}
     />
   )
 }

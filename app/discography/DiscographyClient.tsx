@@ -4,6 +4,9 @@ import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
+import { SoundTagSelector } from '@/app/components/ui/SoundTagSelector'
+import { SOUNDS_SET } from '@/lib/sounds'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -64,7 +67,7 @@ function slugify(value: string): string {
 }
 
 function pence(n: number) {
-  return `£${(n / 100).toFixed(2)}`
+  return formatPriceUtil(n / 100, 'GBP')
 }
 
 function formatDate(iso: string) {
@@ -89,12 +92,13 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
-  const [type, setType] = useState<'single' | 'ep' | 'album'>('single')
+  const [type, setType] = useState<'single' | 'ep' | 'album'>('album')
   const [pricePounds, setPricePounds] = useState('2.00')
   const [pwyw, setPwyw] = useState(false)
   const [pwywMinPounds, setPwywMinPounds] = useState('2.00')
   const [preorder, setPreorder] = useState(false)
   const [releaseDate, setReleaseDate] = useState('')
+  const [soundTags, setSoundTags] = useState<string[]>([])
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [pendingTracks, setPendingTracks] = useState<PendingTrack[]>([])
@@ -109,12 +113,13 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
     setTitle('')
     setSlug('')
     setSlugTouched(false)
-    setType('single')
-    setPricePounds('2.00')
+    setType('album')
+    setPricePounds('7.00')
     setPwyw(false)
     setPwywMinPounds('2.00')
     setPreorder(false)
     setReleaseDate('')
+    setSoundTags([])
     setCoverFile(null)
     setCoverPreview(null)
     setPendingTracks([])
@@ -183,7 +188,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
 
     const pricePence = Math.round(parseFloat(pricePounds) * 100)
     if (isNaN(pricePence) || pricePence < 200) {
-      setError('Minimum price is £2.00.')
+      setError(`Minimum price is ${formatPriceUtil(2, 'GBP')}.`)
       return
     }
 
@@ -220,6 +225,18 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
         .single()
 
       if (relErr) throw new Error(relErr.message)
+
+      // 1b. Save sound tags
+      if (soundTags.length > 0) {
+        const { error: tagErr } = await supabase
+          .from('release_tags')
+          .insert(soundTags.map(tag => ({
+            release_id: release.id,
+            tag: tag.toLowerCase().trim(),
+            is_custom: !SOUNDS_SET.has(tag),
+          })))
+        if (tagErr) throw new Error(tagErr.message)
+      }
 
       // 2. Upload cover art
       if (coverFile) {
@@ -287,7 +304,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
       setError(err instanceof Error ? err.message : 'Something went wrong.')
       setSaving(false)
     }
-  }, [artist.id, slug, title, type, pricePounds, pwyw, pwywMinPounds, preorder, releaseDate, coverFile, pendingTracks, supabase, router])
+  }, [artist.id, slug, title, type, pricePounds, pwyw, pwywMinPounds, preorder, releaseDate, soundTags, coverFile, pendingTracks, supabase, router])
 
   // ── Toggle publish ──────────────────────────────────────────
   async function togglePublish(releaseId: string, current: boolean) {
@@ -503,23 +520,31 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Type</label>
                   <div className="flex gap-2">
-                    {(['single', 'ep', 'album'] as const).map(t => (
+                    {(['album', 'ep', 'single'] as const).map(t => (
                       <button
                         key={t}
                         type="button"
-                        onClick={() => setType(t)}
+                        onClick={() => {
+                          setType(t)
+                          if (t === 'album' && pricePounds === '2.00') setPricePounds('7.00')
+                          if (t === 'ep' && pricePounds === '2.00') setPricePounds('5.00')
+                          if (t === 'single' && (pricePounds === '7.00' || pricePounds === '5.00')) setPricePounds('2.00')
+                        }}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-bold capitalize transition-colors ${type === t ? 'bg-orange-600 text-black' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'}`}
                       >
                         {t === 'ep' ? 'EP' : t}
                       </button>
                     ))}
                   </div>
+                  {type === 'single' && (
+                    <p className="text-[10px] text-zinc-500 mt-1.5">Got more tracks? Albums and EPs tend to earn more per release.</p>
+                  )}
                 </div>
 
                 {/* Price */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Price (£)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Price (GBP)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -529,7 +554,11 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                       onChange={(e) => setPricePounds(e.target.value)}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white focus:border-orange-600 outline-none transition-colors"
                     />
-                    <p className="text-[10px] text-zinc-600 mt-1.5">{pwyw ? 'Suggested price shown to fans.' : 'Fixed price fans pay to download.'} Min £2.</p>
+                    <p className="text-[10px] text-zinc-600 mt-1.5">
+                      {pwyw ? 'Suggested price shown to fans.' : 'Fixed price fans pay to download.'} Min {formatPriceUtil(2, 'GBP')}.
+                      {type === 'album' && ' Most albums sell between £5–£10.'}
+                      {type === 'ep' && ' Most EPs sell between £3–£6.'}
+                    </p>
                   </div>
                   <div className="flex flex-col justify-end">
                     <label className="flex items-center gap-3 cursor-pointer py-3">
@@ -542,7 +571,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
 
                 {pwyw && (
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Minimum price (£)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Minimum price (GBP)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -573,6 +602,9 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                   </div>
                   <p className="text-[10px] text-zinc-600 mt-1.5">{preorder ? 'Fans can buy now and download on release day.' : 'Let fans buy before the release date.'}</p>
                 </div>
+
+                {/* Sound tags */}
+                <SoundTagSelector selected={soundTags} onChange={setSoundTags} />
 
                 {/* Cover art */}
                 <div>

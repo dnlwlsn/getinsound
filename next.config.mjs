@@ -4,12 +4,10 @@ const nextConfig = {
     unoptimized: true,
   },
   typescript: {
-    // This ignores the Supabase Deno/URL import errors
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    // This ensures linting doesn't stop the build
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 };
 

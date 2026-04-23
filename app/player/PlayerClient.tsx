@@ -217,27 +217,6 @@ export default function PlayerClient() {
       `}} />
 
       <div className="min-h-screen flex flex-col relative overflow-hidden">
-        {/* ── Nav ──────────────────────────────────────────────────── */}
-        <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 glass border-b border-zinc-900/80"
-          style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-          <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors font-display">
-            insound.
-          </Link>
-          <div className="hidden md:flex gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-            <Link href="/explore" className="hover:text-orange-500 transition-colors">Explore</Link>
-            <Link href="/why-us" className="hover:text-orange-500 transition-colors">Why Insound</Link>
-            <Link href="/#how-it-works" className="hover:text-orange-500 transition-colors">How It Works</Link>
-          </div>
-          <div className="flex gap-3 items-center">
-            <Link href="/auth" className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block">
-              Sign In
-            </Link>
-            <Link href="/auth" className="bg-orange-600 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">
-              Get Started
-            </Link>
-          </div>
-        </nav>
-
         {/* ── Main player area ────────────────────────────────────── */}
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(234,88,12,0.07),transparent)] pointer-events-none" />

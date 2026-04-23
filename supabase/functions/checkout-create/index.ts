@@ -34,6 +34,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const releaseId: string | undefined = body.release_id;
     const origin: string = body.origin || 'https://getinsound.com';
+    const fanCurrency: string | undefined = body.fan_currency;
+    const fanLocale: string | undefined = body.fan_locale;
+    const refCode: string | undefined = body.ref_code;
     if (!releaseId) return json({ error: 'release_id required' }, 400);
 
     const admin = createClient(
@@ -45,6 +48,7 @@ Deno.serve(async (req) => {
       .from('releases')
       .select(`
         id, slug, title, price_pence, currency, cover_url, published, artist_id,
+        preorder_enabled, release_date,
         artists!inner ( id, slug, name )
       `)
       .eq('id', releaseId)
@@ -71,7 +75,20 @@ Deno.serve(async (req) => {
     if (!unitAmount || unitAmount < 200) {
       return json({ error: 'Invalid price' }, 400);
     }
-    const applicationFee = Math.round((unitAmount * PLATFORM_FEE_BPS) / 10000);
+
+    // Check zero-fees eligibility
+    let applicationFee = Math.round((unitAmount * PLATFORM_FEE_BPS) / 10000);
+
+    const { data: zeroFees } = await admin
+      .rpc('get_artist_zero_fees', { artist_id: release.artist_id })
+      .maybeSingle();
+
+    if (zeroFees?.zero_fees) {
+      const start = zeroFees.fees_start;
+      if (!start || (Date.now() - new Date(start).getTime()) < 365 * 24 * 60 * 60 * 1000) {
+        applicationFee = 0;
+      }
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -81,7 +98,7 @@ Deno.serve(async (req) => {
         {
           quantity: 1,
           price_data: {
-            currency: (release.currency || 'GBP').toLowerCase(),
+            currency: (fanCurrency || release.currency || 'GBP').toLowerCase(),
             unit_amount: unitAmount,
             product_data: {
               name: release.title,
@@ -106,6 +123,10 @@ Deno.serve(async (req) => {
       metadata: {
         release_id: release.id,
         artist_id: artist.id,
+        fan_currency: fanCurrency || release.currency || 'GBP',
+        fan_locale: fanLocale || '',
+        ...(refCode ? { ref_code: refCode } : {}),
+        ...(release.preorder_enabled ? { pre_order: 'true', release_date: release.release_date } : {}),
       },
     });
 

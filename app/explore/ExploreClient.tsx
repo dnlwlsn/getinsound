@@ -4,6 +4,9 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { calculateFees } from '@/app/lib/fees'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useCurrency } from '../providers/CurrencyProvider'
+import { useViewMode } from '@/lib/useViewMode'
+import { ViewToggle } from '@/app/components/ui/ViewToggle'
 
 /* ── Hardcoded mock data ──────────────────────────────────────── */
 
@@ -37,6 +40,9 @@ const TITLES = [
 
 const PRICES = [4.99,5.99,6.50,7.00,7.50,8.00,8.50,9.00,9.50,9.99]
 
+const RELEASE_TYPES = ['album', 'ep', 'single'] as const
+type ReleaseType = typeof RELEASE_TYPES[number]
+
 interface Track {
   id: number
   title: string
@@ -46,10 +52,12 @@ interface Track {
   price: string
   img: string
   isNew: boolean
+  type: ReleaseType
 }
 
 const data: Track[] = Array.from({ length: 80 }, (_, i) => {
   const artist = ARTISTS[i % ARTISTS.length]
+  const types: ReleaseType[] = ['album', 'album', 'ep', 'album', 'single']
   return {
     id: i,
     title: TITLES[i % TITLES.length],
@@ -59,6 +67,7 @@ const data: Track[] = Array.from({ length: 80 }, (_, i) => {
     price: PRICES[i % PRICES.length].toFixed(2),
     img: `https://picsum.photos/seed/mus${i}/400/400`,
     isNew: i < 12,
+    type: types[i % types.length],
   }
 })
 
@@ -96,13 +105,6 @@ function BagIcon() {
     </svg>
   )
 }
-function MusicIcon() {
-  return (
-    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z" />
-    </svg>
-  )
-}
 function PlayIcon({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
@@ -121,9 +123,10 @@ function CheckIcon({ size = 40 }: { size?: number }) {
 /* ── Main Component ───────────────────────────────────────────── */
 
 export default function ExploreClient() {
+  const { currency, formatPrice, convertPrice } = useCurrency()
   const [basket, setBasket] = useState<Track[]>([])
   const [currentGenre, setCurrentGenre] = useState('All')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [currentReleaseType, setCurrentReleaseType] = useState<'albums' | 'all'>('albums')
   const [currentSort, setCurrentSort] = useState('newest')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [cartOpen, setCartOpen] = useState(false)
@@ -132,6 +135,7 @@ export default function ExploreClient() {
   const [toast, setToast] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const { mode: viewMode, set: setViewMode } = useViewMode()
 
   // Register interest state
   const [registered, setRegistered] = useState(false)
@@ -180,20 +184,18 @@ export default function ExploreClient() {
   const filtered = useMemo(() => {
     let items = data.filter(t => {
       const matchesGenre = currentGenre === 'All' || t.genre === currentGenre
-      const q = searchQuery.toLowerCase()
-      const matchesSearch =
-        !q ||
-        t.title.toLowerCase().includes(q) ||
-        t.artist.toLowerCase().includes(q) ||
-        t.genre.toLowerCase().includes(q) ||
-        t.origin.toLowerCase().includes(q)
-      return matchesGenre && matchesSearch
+      const matchesType = currentReleaseType === 'all' || t.type === 'album' || t.type === 'ep'
+      return matchesGenre && matchesType
     })
     if (currentSort === 'price-low') items = [...items].sort((a, b) => +a.price - +b.price)
     else if (currentSort === 'price-high') items = [...items].sort((a, b) => +b.price - +a.price)
     else if (currentSort === 'az') items = [...items].sort((a, b) => a.title.localeCompare(b.title))
+    else {
+      const typeOrder: Record<string, number> = { album: 0, ep: 1, single: 2 }
+      items = [...items].sort((a, b) => (typeOrder[a.type] ?? 2) - (typeOrder[b.type] ?? 2))
+    }
     return items
-  }, [currentGenre, searchQuery, currentSort])
+  }, [currentGenre, currentReleaseType, currentSort])
 
   const visibleItems = filtered.slice(0, visibleCount)
   const remaining = filtered.length - visibleCount
@@ -238,7 +240,7 @@ export default function ExploreClient() {
     const total = basket.reduce((s, t) => s + parseFloat(t.price), 0)
     setTimeout(() => {
       setCartOpen(false)
-      setSuccessAmount({ total: total.toFixed(2), artist: (total - (total * 0.10) - (total * 0.015 + 0.20)).toFixed(2) })
+      setSuccessAmount({ total: formatPrice(convertPrice(total, 'GBP', currency)), artist: formatPrice(convertPrice(total - (total * 0.10) - (total * 0.015 + 0.20), 'GBP', currency)) })
       setSuccessModal(true)
       setBasket([])
       setProcessing(false)
@@ -250,11 +252,7 @@ export default function ExploreClient() {
     setVisibleCount(PAGE_SIZE)
   }, [])
 
-  const headingText = searchQuery
-    ? `Results for "${searchQuery}"`
-    : currentGenre === 'All'
-      ? 'All Releases'
-      : currentGenre
+  const headingText = currentGenre === 'All' ? 'All Releases' : currentGenre
 
   const isInCart = useCallback((id: number) => basket.some(x => x.id === id), [basket])
 
@@ -295,44 +293,17 @@ export default function ExploreClient() {
   /* ── Render ───────────────────────────────────────────────── */
   return (
     <div className="pb-24 font-display">
-      {/* NAV */}
-      <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 py-4 gap-3" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(39,39,42,0.8)' }}>
-        <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
-          insound.
-        </Link>
-        <div className="relative flex-1 max-w-md">
-          <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setVisibleCount(PAGE_SIZE) }}
-            placeholder="Search artists, tracks, genres..."
-            className="bg-zinc-900 border border-zinc-800 rounded-full py-2.5 pl-9 pr-10 text-sm w-full outline-none text-white placeholder-zinc-600 focus:border-orange-600 transition-colors"
-          />
-          {searchQuery && (
-            <button onClick={() => { setSearchQuery(''); setVisibleCount(PAGE_SIZE) }} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">
-              <CloseIcon size={14} />
-            </button>
+      {/* Cart floating button */}
+      <div className="fixed top-4 right-4 z-50">
+        <button onClick={toggleCart} className="bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 relative hover:border-zinc-700 transition-colors">
+          <BagIcon />
+          {basket.length > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-orange-600 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">
+              {basket.length}
+            </span>
           )}
-        </div>
-        <div className="flex gap-2.5 items-center flex-shrink-0">
-          <button onClick={toggleCart} className="bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 relative hover:border-zinc-700 transition-colors">
-            <BagIcon />
-            {basket.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-orange-600 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">
-                {basket.length}
-              </span>
-            )}
-          </button>
-          <Link href="/library" className="text-zinc-500 hover:text-white transition-colors p-2 hidden sm:block" title="My Collection">
-            <MusicIcon />
-          </Link>
-          <Link href="/dashboard" className="bg-zinc-800 h-9 w-9 rounded-full border border-zinc-700 overflow-hidden hover:border-orange-600 transition-colors block flex-shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Dan" className="w-full h-full" alt="Artist avatar" loading="lazy" />
-          </Link>
-        </div>
-      </nav>
+        </button>
+      </div>
 
       {/* FEATURED HERO */}
       <section className="border-b border-zinc-900 bg-zinc-950">
@@ -357,7 +328,7 @@ export default function ExploreClient() {
               <div className="absolute bottom-0 left-0 right-0 p-5">
                 <p className="font-black text-lg leading-tight">{FEATURED[0].title}</p>
                 <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{FEATURED[0].artist} &middot; {FEATURED[0].origin} &middot; {FEATURED[0].genre}</p>
-                <p className="text-orange-600 font-black text-sm mt-2">&pound;{FEATURED[0].price}</p>
+                <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(parseFloat(FEATURED[0].price), 'GBP', currency))}</p>
               </div>
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl">
@@ -379,7 +350,7 @@ export default function ExploreClient() {
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <p className="font-black text-sm leading-tight">{f.title}</p>
                     <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{f.artist}</p>
-                    <p className="text-orange-600 font-black text-xs mt-1.5">&pound;{f.price}</p>
+                    <p className="text-orange-600 font-black text-xs mt-1.5">{formatPrice(convertPrice(parseFloat(f.price), 'GBP', currency))}</p>
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="bg-white/20 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center border border-white/30">
@@ -412,7 +383,15 @@ export default function ExploreClient() {
               </button>
             ))}
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 items-center">
+            <select
+              value={currentReleaseType}
+              onChange={e => { setCurrentReleaseType(e.target.value as 'albums' | 'all'); setVisibleCount(PAGE_SIZE) }}
+              className="bg-zinc-900 border border-zinc-800 rounded-full py-2 px-4 text-xs font-bold text-zinc-400 outline-none focus:border-orange-600 transition-colors cursor-pointer"
+            >
+              <option value="albums">Albums &amp; EPs</option>
+              <option value="all">All releases</option>
+            </select>
             <select
               value={currentSort}
               onChange={e => { setCurrentSort(e.target.value); setVisibleCount(PAGE_SIZE) }}
@@ -423,6 +402,7 @@ export default function ExploreClient() {
               <option value="price-high">Price: High &rarr; Low</option>
               <option value="az">A &rarr; Z</option>
             </select>
+            <ViewToggle mode={viewMode} onToggle={setViewMode} />
           </div>
         </div>
 
@@ -447,8 +427,8 @@ export default function ExploreClient() {
           </div>
         )}
 
-        {/* Grid */}
-        {!loading && filtered.length > 0 && (
+        {/* Grid / List */}
+        {!loading && filtered.length > 0 && viewMode === 'expanded' && (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
             {visibleItems.map(t => {
               const inCart = isInCart(t.id)
@@ -475,7 +455,7 @@ export default function ExploreClient() {
                         onClick={e => addToCart(e, t.id)}
                         className="w-full bg-black/50 border border-white/25 text-white text-[10px] font-black py-2 rounded-full hover:bg-white hover:text-black transition-colors"
                       >
-                        {inCart ? '\u2713 Added' : `+ \u00A3${t.price}`}
+                        {inCart ? '\u2713 Added' : `+ ${formatPrice(convertPrice(parseFloat(t.price), 'GBP', currency))}`}
                       </button>
                     </div>
                   </div>
@@ -483,8 +463,46 @@ export default function ExploreClient() {
                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider truncate mt-0.5">{t.artist}</p>
                   <div className="flex items-center justify-between mt-1.5">
                     <span className="text-[10px] text-zinc-700 font-bold">{t.origin}</span>
-                    <span className="text-xs font-black text-orange-600">&pound;{t.price}</span>
+                    <span className="text-xs font-black text-orange-600">{formatPrice(convertPrice(parseFloat(t.price), 'GBP', currency))}</span>
                   </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && viewMode === 'compact' && (
+          <div className="flex flex-col gap-1">
+            {visibleItems.map(t => {
+              const inCart = isInCart(t.id)
+              return (
+                <div key={t.id} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                  <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={t.img} className="w-full h-full object-cover" loading="lazy" alt={t.title} />
+                  </div>
+                  <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">{t.title}</span>
+                  <span className="hidden md:block text-[13px] text-zinc-500 truncate w-36 flex-shrink-0">{t.artist}</span>
+                  <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
+                    {t.genre}
+                  </span>
+                  <span className="flex-1" />
+                  <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">{formatPrice(convertPrice(parseFloat(t.price), 'GBP', currency))}</span>
+                  <Link
+                    href={`/player?id=${t.id}&title=${encodeURIComponent(t.title)}&artist=${encodeURIComponent(t.artist)}&price=${t.price}&img=${encodeURIComponent(t.img)}`}
+                    className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </Link>
+                  <button
+                    onClick={e => addToCart(e, t.id)}
+                    className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-bold ring-1 ring-white/[0.12] text-white hover:ring-white/[0.25] hover:bg-white/[0.04] transition-all shrink-0"
+                  >
+                    {inCart ? '✓ Added' : `+ ${formatPrice(convertPrice(parseFloat(t.price), 'GBP', currency))}`}
+                  </button>
                 </div>
               )
             })}
@@ -500,7 +518,7 @@ export default function ExploreClient() {
             <p className="font-black text-zinc-400 text-lg mb-2">No results found</p>
             <p className="text-sm text-zinc-600 mb-5">Try a different search or genre</p>
             <button
-              onClick={() => { setSearchQuery(''); setGenre('All') }}
+              onClick={() => setGenre('All')}
               className="text-xs font-black text-orange-500 hover:text-orange-400 uppercase tracking-widest transition-colors"
             >
               Clear filters
@@ -552,7 +570,7 @@ export default function ExploreClient() {
                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{t.artist}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
-                  <p className="font-black text-sm">&pound;{t.price}</p>
+                  <p className="font-black text-sm">{formatPrice(convertPrice(parseFloat(t.price), 'GBP', currency))}</p>
                   <button onClick={() => removeFromCart(t.id)} className="text-zinc-600 hover:text-red-400 text-[10px] font-bold uppercase tracking-wider transition-colors mt-0.5 block">Remove</button>
                 </div>
               </div>
@@ -574,11 +592,11 @@ export default function ExploreClient() {
               <span className="w-1.5 h-1.5 rounded-full bg-orange-600" />
               To artist (after fees)
             </span>
-            <span>&pound;{artistShare.toFixed(2)}</span>
+            <span>{formatPrice(convertPrice(artistShare, 'GBP', currency))}</span>
           </div>
           <div className="flex justify-between font-black text-xl">
             <span>Total</span>
-            <span>&pound;{cartTotal.toFixed(2)}</span>
+            <span>{formatPrice(convertPrice(cartTotal, 'GBP', currency))}</span>
           </div>
           <button
             onClick={handleCheckout}
@@ -606,8 +624,8 @@ export default function ExploreClient() {
             <h3 className="text-2xl font-black mb-2">Purchase complete!</h3>
             <p className="text-zinc-400 text-sm mb-2 leading-relaxed">Your music is downloading. The artist has been paid directly.</p>
             <div className="text-sm mb-8">
-              <span className="text-white font-black block mb-1">Total: &pound;{successAmount.total}</span>
-              <span className="text-orange-500">&pound;{successAmount.artist} transferred directly to the artists.</span>
+              <span className="text-white font-black block mb-1">Total: {successAmount.total}</span>
+              <span className="text-orange-500">{successAmount.artist} transferred directly to the artists.</span>
             </div>
             <Link href="/library" className="block w-full bg-orange-600 text-black font-black py-4 rounded-2xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider mb-3">
               View My Collection
