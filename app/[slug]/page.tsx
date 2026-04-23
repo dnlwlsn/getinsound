@@ -11,7 +11,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params
+  const { slug: rawSlug } = await params
+  const slug = decodeURIComponent(rawSlug)
 
   if (slug.startsWith('@')) {
     const username = slug.slice(1)
@@ -54,7 +55,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProfilePage({ params }: Props) {
-  const { slug } = await params
+  const { slug: rawSlug } = await params
+  const slug = decodeURIComponent(rawSlug)
 
   // ── Fan profile (/@username) ──────────────────────────────────
   if (slug.startsWith('@')) {
@@ -201,7 +203,7 @@ export default async function ProfilePage({ params }: Props) {
 
   if (!artist) notFound()
 
-  const [{ data: releases }, { data: artistBadges }, { data: accountData }] = await Promise.all([
+  const [{ data: releases }, { data: artistBadges }, { data: accountData }, { data: merchItems }] = await Promise.all([
     supabase
       .from('releases')
       .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, tracks(id, title, position, duration_sec), release_tags(tag)')
@@ -218,6 +220,12 @@ export default async function ProfilePage({ params }: Props) {
       .select('stripe_verified, independence_confirmed')
       .eq('id', artist.id)
       .maybeSingle(),
+    supabase
+      .from('merch')
+      .select('id, name, price, currency, postage, stock, photos, variants')
+      .eq('artist_id', artist.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false }),
   ])
 
   const releaseCount = (releases || []).length
@@ -233,6 +241,7 @@ export default async function ProfilePage({ params }: Props) {
       badges={artistBadges || []}
       verified={isVerified}
       socialLinks={artist.social_links}
+      merch={merchItems || []}
     />
   )
 }
