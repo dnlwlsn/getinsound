@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "build:css:legacy": "tailwindcss -i ./src/input.css -o ./tailwind.css --minify",
-    "pages:build": "npx vercel build && rm -rf .vercel/output/functions/_error.func && npx @cloudflare/next-on-pages --skip-build",
+    "pages:build": "npx @cloudflare/next-on-pages || (rm -rf .vercel/output/functions/_error.func && npx @cloudflare/next-on-pages --skip-build)",
     "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-01-01 --compatibility-flag=nodejs_compat"
   },
   "dependencies": {
