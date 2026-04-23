@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   const refCode = request.cookies.get('insound_ref')?.value
@@ -23,10 +24,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
-  // IP rate limit: max 3 referral signups per IP per hour
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  const { data: allowed } = await supabase.rpc('check_signup_rate', { ip })
-  if (allowed === false) {
+  const ip = getClientIp(request.headers)
+  const ipHash = await hashIp(ip)
+  const rateLimited = await checkRateLimit(ipHash, 'signup', 5, 1)
+  if (rateLimited) {
     const response = NextResponse.json({ ok: true })
     response.cookies.delete('insound_ref')
     return response
