@@ -43,16 +43,24 @@ export default function AuthClient() {
     e.preventDefault()
     setMagicError('')
     setMagicBusy(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email: magicEmail.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/welcome`,
-      },
-    })
-    if (error) {
-      setMagicError(error.message)
-    } else {
-      setMagicSent(true)
+    try {
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: magicEmail.trim(),
+          template: 'signin',
+          redirectTo: '/auth/callback?next=/welcome',
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setMagicError(data.error || 'Failed to send magic link.')
+      } else {
+        setMagicSent(true)
+      }
+    } catch {
+      setMagicError('Something went wrong. Please try again.')
     }
     setMagicBusy(false)
   }

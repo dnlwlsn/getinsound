@@ -6,8 +6,8 @@ import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { generateGradient } from '@/lib/gradient'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
-import { SearchInput } from '@/app/components/ui/SearchInput'
-import { NotificationBell } from '@/app/components/ui/NotificationBell'
+import { Badge } from '@/app/components/ui/Badge'
+import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { zipSync } from 'fflate'
@@ -23,13 +23,30 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
   '1y': 'Last Year',
 }
 
+export interface WishlistItem {
+  wishlistId: string
+  releaseId: string
+  releaseSlug: string
+  title: string
+  type: string
+  coverUrl: string | null
+  pricePence: number
+  currency: string
+  artistName: string
+  artistSlug: string
+  accentColour: string | null
+  savedAt: string
+}
+
 interface Props {
   releases: LibraryRelease[]
   error: string | null
   userId: string
+  wishlist?: WishlistItem[]
 }
 
-export default function LibraryClient({ releases, error, userId }: Props) {
+export default function LibraryClient({ releases, error, userId, wishlist = [] }: Props) {
+  const [tab, setTab] = useState<'collection' | 'wishlist'>('collection')
   const [artistFilter, setArtistFilter] = useState<string>('all')
   const [dateRange, setDateRange] = useState<DateRange>('all')
   const [sort, setSort] = useState<SortOption>('newest')
@@ -37,6 +54,7 @@ export default function LibraryClient({ releases, error, userId }: Props) {
   const [toastText, setToastText] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [expandedReleases, setExpandedReleases] = useState<Set<string>>(new Set())
 
   const play = usePlayerStore((s) => s.play)
   const { mode: viewMode, set: setViewMode } = useViewMode()
@@ -93,8 +111,8 @@ export default function LibraryClient({ releases, error, userId }: Props) {
     toastTimer.current = setTimeout(() => setToastVisible(false), 2500)
   }, [])
 
-  const handlePlay = (release: LibraryRelease) => {
-    const queue: PlayerTrack[] = release.tracks.map((t) => ({
+  const buildQueue = useCallback((release: LibraryRelease): PlayerTrack[] => {
+    return release.tracks.map((t) => ({
       id: t.id,
       title: t.title,
       artistName: release.artistName,
@@ -107,10 +125,30 @@ export default function LibraryClient({ releases, error, userId }: Props) {
       accentColour: release.accentColour,
       purchased: true,
     }))
+  }, [])
+
+  const handlePlay = (release: LibraryRelease) => {
+    const queue = buildQueue(release)
     if (queue.length > 0) {
       play(queue[0], queue)
     }
   }
+
+  const handlePlayTrack = useCallback((release: LibraryRelease, trackIndex: number) => {
+    const queue = buildQueue(release)
+    if (queue[trackIndex]) {
+      play(queue[trackIndex], queue)
+    }
+  }, [buildQueue, play])
+
+  const toggleExpanded = useCallback((releaseId: string) => {
+    setExpandedReleases(prev => {
+      const next = new Set(prev)
+      if (next.has(releaseId)) next.delete(releaseId)
+      else next.add(releaseId)
+      return next
+    })
+  }, [])
 
   const formatDate = (iso: string) => {
     const d = new Date(iso)
@@ -139,7 +177,6 @@ export default function LibraryClient({ releases, error, userId }: Props) {
   if (releases.length === 0) {
     return (
       <div className="min-h-screen font-display">
-        <LibraryNav userId={userId} />
         <div className="flex items-center justify-center min-h-[70vh] relative">
           <div className="absolute inset-0 opacity-30" style={{ background: generateGradient('empty', 'state').css }} />
           <div className="text-center relative z-10 px-8">
@@ -159,7 +196,6 @@ export default function LibraryClient({ releases, error, userId }: Props) {
 
   return (
     <div className="min-h-screen font-display pb-24">
-      <LibraryNav userId={userId} />
 
       <div className="max-w-6xl mx-auto px-8 py-12">
         {/* Header + Stats */}
@@ -191,6 +227,31 @@ export default function LibraryClient({ releases, error, userId }: Props) {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-1 mb-8 border-b border-zinc-800">
+          <button
+            onClick={() => setTab('collection')}
+            className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors border-b-2 -mb-px ${
+              tab === 'collection' ? 'border-orange-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Collection ({releases.length})
+          </button>
+          <button
+            onClick={() => setTab('wishlist')}
+            className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors border-b-2 -mb-px ${
+              tab === 'wishlist' ? 'border-orange-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Wishlist ({wishlist.length})
+          </button>
+        </div>
+
+        {tab === 'wishlist' && (
+          <WishlistTab items={wishlist} />
+        )}
+
+        {tab === 'collection' && <>
         {/* Filter / Sort bar */}
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div className="flex gap-2 flex-wrap">
@@ -254,7 +315,10 @@ export default function LibraryClient({ releases, error, userId }: Props) {
                 <ReleaseRowCompact
                   key={r.purchaseId}
                   release={r}
+                  expanded={expandedReleases.has(r.releaseId)}
+                  onToggleExpand={() => toggleExpanded(r.releaseId)}
                   onPlay={() => handlePlay(r)}
+                  onPlayTrack={(idx) => handlePlayTrack(r, idx)}
                   onDownload={() => setDownloadModal(r)}
                 />
               ))}
@@ -273,6 +337,7 @@ export default function LibraryClient({ releases, error, userId }: Props) {
             </button>
           </div>
         )}
+        </>}
       </div>
 
       {downloadModal && (
@@ -291,37 +356,6 @@ export default function LibraryClient({ releases, error, userId }: Props) {
         {toastText}
       </div>
     </div>
-  )
-}
-
-/* ── Nav ─────────────────────────────────────────────────────── */
-
-function LibraryNav({ userId }: { userId: string }) {
-  return (
-    <nav className="flex justify-between items-center gap-3 px-8 py-5 border-b border-zinc-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
-      <Link
-        href="/"
-        className="text-xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors"
-      >
-        insound.
-      </Link>
-      <SearchInput className="flex-1 max-w-md hidden md:block" />
-      <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      </Link>
-      <div className="flex gap-4 items-center">
-        <Link
-          href="/explore"
-          className="text-xs font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors"
-        >
-          Explore
-        </Link>
-        <NotificationBell userId={userId} />
-      </div>
-    </nav>
   )
 }
 
@@ -399,12 +433,16 @@ function ReleaseCard({
       </div>
 
       <h3 className="font-bold text-sm truncate">{release.releaseTitle}</h3>
-      <Link
-        href={`/${release.artistSlug}`}
-        className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-0.5 truncate block hover:text-orange-600 transition-colors"
-      >
-        {release.artistName}
-      </Link>
+      <div className="flex items-center gap-1 mt-0.5">
+        <Link
+          href={`/${release.artistSlug}`}
+          className="text-[10px] text-zinc-500 font-black uppercase tracking-widest truncate hover:text-orange-600 transition-colors"
+        >
+          {release.artistName}
+        </Link>
+        {release.artistVerified && <VerifiedTick size={12} />}
+        {release.artistBadge && <Badge type={release.artistBadge.badge_type} position={release.artistBadge.metadata?.position} size="xs" />}
+      </div>
       <div className="flex items-center justify-between mt-1.5">
         <span className="text-[10px] text-zinc-600 font-bold">
           {formatDate(release.purchasedAt)}
@@ -419,71 +457,154 @@ function ReleaseCard({
 
 /* ── Compact Row ────────────────────────────────────────────── */
 
+function formatDuration(sec: number | null): string {
+  if (!sec) return ''
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 function ReleaseRowCompact({
   release,
+  expanded,
+  onToggleExpand,
   onPlay,
+  onPlayTrack,
   onDownload,
 }: {
   release: LibraryRelease
+  expanded: boolean
+  onToggleExpand: () => void
   onPlay: () => void
+  onPlayTrack: (trackIndex: number) => void
   onDownload: () => void
 }) {
   const gradient = release.coverUrl ? null : generateGradient(release.artistId, release.releaseId)
+  const isMultiTrack = release.releaseType !== 'single' && release.tracks.length > 1
 
   return (
-    <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
-      <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
-        {release.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={release.coverUrl} className="w-full h-full object-cover" loading="lazy" alt={release.releaseTitle} />
-        ) : (
-          <div className="w-full h-full" style={{ background: gradient?.css }} />
+    <div className="rounded-xl">
+      <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+        {isMultiTrack && (
+          <button
+            onClick={onToggleExpand}
+            className="w-5 h-5 flex items-center justify-center shrink-0 text-zinc-500 hover:text-white transition-colors"
+            aria-label={expanded ? 'Collapse tracks' : 'Expand tracks'}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              className={`transition-transform duration-200 ${expanded ? 'rotate-45' : ''}`}
+            >
+              <line x1="7" y1="2" x2="7" y2="12" />
+              <line x1="2" y1="7" x2="12" y2="7" />
+            </svg>
+          </button>
+        )}
+
+        <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+          {release.coverUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={release.coverUrl} className="w-full h-full object-cover" loading="lazy" alt={release.releaseTitle} />
+          ) : (
+            <div className="w-full h-full" style={{ background: gradient?.css }} />
+          )}
+        </div>
+
+        <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">
+          {release.releaseTitle}
+        </span>
+
+        <span className="hidden md:flex items-center gap-1 w-36 flex-shrink-0">
+          <Link
+            href={`/${release.artistSlug}`}
+            className="text-[13px] text-zinc-500 truncate hover:text-orange-600 transition-colors"
+          >
+            {release.artistName}
+          </Link>
+          {release.artistBadge && <Badge type={release.artistBadge.badge_type} position={release.artistBadge.metadata?.position} size="xs" />}
+        </span>
+
+        {release.tags.length > 0 && (
+          <span className="hidden lg:flex gap-1 flex-shrink-0">
+            {release.tags.map(tag => (
+              <span key={tag} className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider bg-zinc-800/60 px-1.5 py-0.5 rounded-full">
+                {tag}
+              </span>
+            ))}
+          </span>
+        )}
+
+        <span className="flex-1" />
+
+        <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
+          {formatPriceUtil(release.displayAmount / 100, release.displayCurrency)}
+        </span>
+
+        {!release.preOrder && (
+          <button
+            onClick={onPlay}
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors"
+            style={{ background: release.accentColour ?? '#ea580c' }}
+            aria-label="Play"
+          >
+            <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+        )}
+
+        {!release.preOrder && (
+          <button
+            onClick={onDownload}
+            className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-bold bg-transparent ring-1 ring-white/[0.12] text-white hover:ring-white/[0.25] hover:bg-white/[0.04] transition-all shrink-0"
+          >
+            &darr; Download
+          </button>
         )}
       </div>
 
-      <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">
-        {release.releaseTitle}
-      </span>
-
-      <Link
-        href={`/${release.artistSlug}`}
-        className="hidden md:block text-[13px] text-zinc-500 truncate w-36 flex-shrink-0 hover:text-orange-600 transition-colors"
-      >
-        {release.artistName}
-      </Link>
-
-      {release.genre && (
-        <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
-          {release.genre}
-        </span>
-      )}
-
-      <span className="flex-1" />
-
-      <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
-        {formatPriceUtil(release.displayAmount / 100, release.displayCurrency)}
-      </span>
-
-      {!release.preOrder && (
-        <button
-          onClick={onPlay}
-          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors"
-          style={{ background: release.accentColour ?? '#ea580c' }}
-          aria-label="Play"
+      {isMultiTrack && (
+        <div
+          className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
+          style={{ maxHeight: expanded ? `${release.tracks.length * 40 + 8}px` : '0px' }}
         >
-          <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </button>
-      )}
-
-      {!release.preOrder && (
-        <button
-          onClick={onDownload}
-          className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-bold bg-transparent ring-1 ring-white/[0.12] text-white hover:ring-white/[0.25] hover:bg-white/[0.04] transition-all shrink-0"
-        >
-          &darr; Download
-        </button>
+          <div className="pl-11 md:pl-12 pr-3 pb-2">
+            {release.tracks.map((track, idx) => (
+              <div
+                key={track.id}
+                className="group/track flex items-center gap-3 h-10 px-3 rounded-lg hover:bg-[#181818] transition-colors"
+              >
+                <span className="text-[11px] text-zinc-600 font-bold w-5 text-right shrink-0">
+                  {track.position}
+                </span>
+                <span className="text-[13px] text-zinc-300 truncate min-w-0 flex-1">
+                  {track.title}
+                </span>
+                <span className="text-[11px] text-zinc-600 font-medium shrink-0">
+                  {formatDuration(track.durationSec)}
+                </span>
+                {!release.preOrder && (
+                  <button
+                    onClick={() => onPlayTrack(idx)}
+                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 opacity-0 group-hover/track:opacity-100 transition-opacity"
+                    style={{ background: release.accentColour ?? '#ea580c' }}
+                    aria-label={`Play ${track.title}`}
+                  >
+                    <svg width="10" height="10" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )
@@ -624,6 +745,74 @@ function FormatSelectorModal({
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ── Wishlist Tab ────────────────────────────────────────────── */
+
+function WishlistTab({ items }: { items: WishlistItem[] }) {
+  const [wishlist, setWishlist] = useState(items)
+
+  async function remove(releaseId: string) {
+    const res = await fetch('/api/wishlist', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ release_id: releaseId }),
+    })
+    if (res.ok) setWishlist(prev => prev.filter(w => w.releaseId !== releaseId))
+  }
+
+  if (wishlist.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-zinc-400 font-medium mb-2">Your wishlist is empty.</p>
+        <p className="text-zinc-600 text-sm">Heart a release to save it for later.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {wishlist.map(w => {
+        const gradient = w.coverUrl ? null : generateGradient(w.artistSlug, w.releaseId)
+        return (
+          <div key={w.wishlistId} className="flex items-center gap-4 bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+            <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
+              {w.coverUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={w.coverUrl} alt={w.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full" style={gradient ? { background: gradient.css } : undefined} />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <Link href={`/${w.artistSlug}`} className="hover:underline">
+                <p className="text-sm font-bold text-white truncate">{w.title}</p>
+                <p className="text-xs text-zinc-500">{w.artistName}</p>
+              </Link>
+            </div>
+            <span className="text-sm font-bold text-white flex-shrink-0">
+              {formatPriceUtil(w.pricePence / 100, w.currency)}
+            </span>
+            <Link
+              href={`/${w.artistSlug}`}
+              className="bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-orange-500 transition-colors flex-shrink-0"
+            >
+              Buy
+            </Link>
+            <button
+              onClick={() => remove(w.releaseId)}
+              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
+              aria-label="Remove from wishlist"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        )
+      })}
     </div>
   )
 }

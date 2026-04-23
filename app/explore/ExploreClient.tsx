@@ -7,7 +7,6 @@ import Image from 'next/image'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
-import { SearchInput } from '@/app/components/ui/SearchInput'
 
 /* ── Hardcoded mock data ──────────────────────────────────────── */
 
@@ -103,13 +102,6 @@ function BagIcon() {
   return (
     <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
       <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-    </svg>
-  )
-}
-function MusicIcon() {
-  return (
-    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z" />
     </svg>
   )
 }
@@ -301,36 +293,17 @@ export default function ExploreClient() {
   /* ── Render ───────────────────────────────────────────────── */
   return (
     <div className="pb-24 font-display">
-      {/* NAV */}
-      <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 py-4 gap-3" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(39,39,42,0.8)' }}>
-        <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
-          insound.
-        </Link>
-        <SearchInput className="flex-1 max-w-md hidden md:block" />
-        <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </Link>
-        <div className="flex gap-2.5 items-center flex-shrink-0">
-          <button onClick={toggleCart} className="bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 relative hover:border-zinc-700 transition-colors">
-            <BagIcon />
-            {basket.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-orange-600 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">
-                {basket.length}
-              </span>
-            )}
-          </button>
-          <Link href="/library" className="text-zinc-500 hover:text-white transition-colors p-2 hidden sm:block" title="My Collection">
-            <MusicIcon />
-          </Link>
-          <Link href="/dashboard" className="bg-zinc-800 h-9 w-9 rounded-full border border-zinc-700 overflow-hidden hover:border-orange-600 transition-colors block flex-shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Dan" className="w-full h-full" alt="Artist avatar" loading="lazy" />
-          </Link>
-        </div>
-      </nav>
+      {/* Cart floating button */}
+      <div className="fixed top-4 right-4 z-50">
+        <button onClick={toggleCart} className="bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 relative hover:border-zinc-700 transition-colors">
+          <BagIcon />
+          {basket.length > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-orange-600 text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">
+              {basket.length}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* FEATURED HERO */}
       <section className="border-b border-zinc-900 bg-zinc-950">

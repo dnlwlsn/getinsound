@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Montserrat } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { PlayerBar } from './components/PlayerBar'
+import { AppNav } from './components/ui/AppNav'
 import { CurrencyProvider } from './providers/CurrencyProvider'
 import './globals.css'
 
@@ -10,9 +11,6 @@ const montserrat = Montserrat({
   weight: ['400', '600', '700'],
   variable: '--font-montserrat',
 })
-
-// Injected before paint to prevent theme flash
-const themeScript = `(function(){var s=localStorage.getItem('insound_theme')||(window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');if(s==='light')document.documentElement.setAttribute('data-theme','light');})();`
 
 export const metadata: Metadata = {
   title: 'insound. — Music That Pays Artists',
@@ -41,13 +39,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const initialCurrency = cookieStore.get('insound_currency')?.value || 'GBP'
 
   return (
-    <html lang="en" className={montserrat.variable} suppressHydrationWarning>
-      <head>
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+    <html lang="en" className={`dark ${montserrat.variable}`}>
+      <head />
       <body>
         <CurrencyProvider initialLocale={initialLocale} initialCurrency={initialCurrency}>
+          <AppNav />
           {children}
         </CurrencyProvider>
         <PlayerBar />

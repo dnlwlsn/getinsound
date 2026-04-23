@@ -36,7 +36,7 @@ export function WelcomeClient() {
 
         <div className="grid sm:grid-cols-2 gap-4 max-w-lg mx-auto">
           <Link
-            href="/welcome/share"
+            href="/discover"
             onClick={markSeen}
             className="bg-zinc-900 ring-1 ring-white/[0.06] rounded-3xl p-8 text-center hover:ring-white/[0.15] transition-all group"
           >

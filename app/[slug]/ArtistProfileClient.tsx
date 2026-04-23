@@ -7,6 +7,11 @@ import { resolveAccent } from '@/lib/accent'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
+import { BadgeList } from '@/app/components/ui/Badge'
+import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
+import { SocialLinksRow } from '@/app/components/ui/SocialLinks'
+import { WishlistButton } from '@/app/components/ui/WishlistButton'
+import type { SocialLinks } from '@/lib/verification'
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -31,6 +36,7 @@ interface Release {
   preorder_enabled: boolean
   release_date: string | null
   tracks: Track[]
+  release_tags?: { tag: string }[]
 }
 
 interface Artist {
@@ -39,12 +45,21 @@ interface Artist {
   name: string
   bio: string | null
   avatar_url: string | null
+  banner_url: string | null
   accent_colour: string | null
+}
+
+interface ArtistBadge {
+  badge_type: string
+  metadata?: { position?: number } | null
 }
 
 interface Props {
   artist: Artist
   releases: Release[]
+  badges?: ArtistBadge[]
+  verified?: boolean
+  socialLinks?: SocialLinks | null
 }
 
 /* ── Gradient fallback ────────────────────────────────────────── */
@@ -123,7 +138,7 @@ function isPreorder(release: Release) {
 
 /* ── Component ────────────────────────────────────────────────── */
 
-export default function ArtistProfileClient({ artist, releases }: Props) {
+export default function ArtistProfileClient({ artist, releases, badges = [], verified = false, socialLinks }: Props) {
   const accent = resolveAccent(artist.accent_colour)
   const { currency, formatPrice, convertPrice } = useCurrency()
   const play = usePlayerStore(s => s.play)
@@ -199,7 +214,11 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
       </nav>
 
       {/* Banner */}
-      <div className="relative h-48 md:h-64 overflow-hidden" style={{ background: bannerGradient(artist.id, accent) }}>
+      <div className="relative h-48 md:h-64 overflow-hidden" style={artist.banner_url ? {} : { background: bannerGradient(artist.id, accent) }}>
+        {artist.banner_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={artist.banner_url} alt="" className="w-full h-full object-cover" />
+        )}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#09090b_100%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#09090b] to-transparent" />
       </div>
@@ -219,12 +238,17 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
           </div>
           <div className="text-center sm:text-left flex-1">
             <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: accent }}>Artist</p>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight font-display text-white">
-              {artist.name}
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight font-display text-white">
+                {artist.name}
+              </h1>
+              {verified && <VerifiedTick size={20} />}
+              {badges.length > 0 && <BadgeList badges={badges} />}
+            </div>
             {artist.bio && (
               <p className="text-zinc-400 mt-3 text-sm leading-relaxed max-w-lg">{artist.bio}</p>
             )}
+            {socialLinks && <SocialLinksRow links={socialLinks} />}
             {releases.length > 0 && (
               <p className="text-zinc-600 text-xs mt-2 font-bold">
                 {releases.length} release{releases.length === 1 ? '' : 's'}
@@ -273,6 +297,13 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
                             {release.title}
                           </Link>
                           <span className="hidden md:block text-[10px] font-black uppercase tracking-widest text-zinc-500 flex-shrink-0">{typeLabel(release.type)}</span>
+                          {release.release_tags && release.release_tags.length > 0 && (
+                            <span className="hidden lg:flex gap-1 flex-shrink-0">
+                              {release.release_tags.map(({ tag }) => (
+                                <span key={tag} className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider bg-zinc-800/60 px-1.5 py-0.5 rounded-full">{tag}</span>
+                              ))}
+                            </span>
+                          )}
                           {preorder && (
                             <span className="hidden lg:inline-flex text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border flex-shrink-0" style={{ color: accent, borderColor: `${accent}44` }}>
                               Pre-order
@@ -280,6 +311,7 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
                           )}
                           <span className="flex-1" />
                           <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
+                          <WishlistButton releaseId={release.id} size={16} />
                           <button
                             onClick={() => {
                               if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -331,6 +363,7 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
                             )}
                             <span className="flex-1" />
                             <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
+                            <WishlistButton releaseId={release.id} size={16} />
                             <button
                               onClick={() => {
                                 if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -393,6 +426,15 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
                               <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="hover:opacity-80 transition-opacity">
                                 <h2 className="text-xl md:text-2xl font-black tracking-tight font-display">{release.title}</h2>
                               </Link>
+                              {release.release_tags && release.release_tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {release.release_tags.map(({ tag }) => (
+                                    <span key={tag} className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500 bg-zinc-800/60 rounded-full">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                               {preorder && release.release_date && (
                                 <p className="text-zinc-500 text-xs mt-1 font-medium">
                                   Releases {new Date(release.release_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -456,7 +498,7 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
                             </div>
                           )}
 
-                          <div className="mt-4">
+                          <div className="mt-4 flex items-center gap-3">
                             <Link
                               href={`/release?a=${artist.slug}&r=${release.slug}`}
                               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors"
@@ -468,6 +510,7 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
                               </svg>
                               {preorder ? 'Pre-order' : 'Buy'} {price.label}
                             </Link>
+                            <WishlistButton releaseId={release.id} size={20} />
                           </div>
                         </div>
                       </div>
@@ -484,21 +527,28 @@ export default function ArtistProfileClient({ artist, releases }: Props) {
                     const preorder = isPreorder(release)
 
                     return (
-                      <Link key={release.id} href={`/release?a=${artist.slug}&r=${release.slug}`} className="group">
-                        <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 mb-2.5 transition-transform group-hover:scale-[1.02]">
-                          {release.cover_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={release.cover_url} alt={release.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full" style={{ background: generateGradient(artist.id, release.id) }} />
-                          )}
+                      <div key={release.id} className="group">
+                        <Link href={`/release?a=${artist.slug}&r=${release.slug}`}>
+                          <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 mb-2.5 transition-transform group-hover:scale-[1.02] relative">
+                            {release.cover_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={release.cover_url} alt={release.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full" style={{ background: generateGradient(artist.id, release.id) }} />
+                            )}
+                          </div>
+                        </Link>
+                        <div className="flex items-center justify-between">
+                          <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="min-w-0 flex-1">
+                            <p className="font-bold text-sm text-white truncate group-hover:opacity-80 transition-opacity">{release.title}</p>
+                          </Link>
+                          <WishlistButton releaseId={release.id} size={16} />
                         </div>
-                        <p className="font-bold text-sm text-white truncate group-hover:opacity-80 transition-opacity">{release.title}</p>
                         <p className="text-xs mt-0.5 font-semibold" style={{ color: accent }}>
                           {price.label}
                           {preorder && <span className="text-zinc-600 ml-1.5">Pre-order</span>}
                         </p>
-                      </Link>
+                      </div>
                     )
                   })}
                 </div>

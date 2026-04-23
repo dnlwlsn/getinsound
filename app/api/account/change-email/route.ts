@@ -5,9 +5,10 @@ import { requireFreshAuth } from '@/lib/fresh-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/email/send'
 
-const supabaseAdmin = createAdminClient(
+function getAdminClient() { return createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
+) }
 )
 
 export async function POST(request: NextRequest) {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'New email is the same as current' }, { status: 400 })
   }
 
-  const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { email })
+  const { error } = await getAdminClient().auth.admin.updateUserById(user.id, { email })
   if (error) {
     console.error('Email change failed:', error.message)
     return NextResponse.json({ error: 'Failed to update email' }, { status: 500 })

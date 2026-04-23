@@ -4,10 +4,12 @@ import { buildMagicLinkEmail, type EmailTemplate } from '@/lib/email/templates';
 import { sendEmail } from '@/lib/email/send';
 import { checkRateLimit } from '@/lib/rate-limit';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com';
 
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
   const rateLimited = await checkRateLimit(email, 'magic_link', 3, 1)
   if (rateLimited) return rateLimited
 
-  const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+  const { data: linkData, error: linkErr } = await getAdminClient().auth.admin.generateLink({
     type: 'magiclink',
     email,
     options: {

@@ -3,9 +3,10 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 const FRESH_AUTH_WINDOW_MS = 15 * 60 * 1000
 
-const supabaseAdmin = createAdminClient(
+function getAdminClient() { return createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
+) }
 )
 
 export async function requireFreshAuth(
@@ -19,7 +20,7 @@ export async function requireFreshAuth(
     )
   }
 
-  const { data: session } = await supabaseAdmin
+  const { data: session } = await getAdminClient()
     .from('user_sessions')
     .select('last_verified_at')
     .eq('id', sessionId)

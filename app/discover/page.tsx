@@ -42,7 +42,8 @@ export default async function DiscoverPage() {
       .from('releases')
       .select(`
         id, slug, title, type, cover_url, genre, price_pence, created_at,
-        artists!inner ( id, name, slug, accent_colour )
+        artists!inner ( id, name, slug, accent_colour ),
+        release_tags ( tag )
       `)
       .eq('published', true)
       .gte('created_at', sevenDaysAgo)
@@ -66,13 +67,34 @@ export default async function DiscoverPage() {
 
   const fanGenres = fanPrefsRes.data?.map((p: { genre: string }) => p.genre) ?? []
 
+  const allReleases = newReleasesRes.data ?? []
+  const artistIds = [...new Set(allReleases.map(r => {
+    const a = Array.isArray(r.artists) ? r.artists[0] : r.artists
+    return (a as { id: string }).id
+  }).filter(Boolean))]
+
+  const badgeMap: Record<string, { badge_type: string; metadata?: { position?: number } | null }> = {}
+  if (artistIds.length > 0) {
+    const { data: badges } = await supabase
+      .from('fan_badges')
+      .select('user_id, badge_type, metadata')
+      .in('user_id', artistIds)
+      .in('badge_type', ['founding_artist', 'first_sale'])
+    for (const b of badges || []) {
+      if (!badgeMap[b.user_id] || b.badge_type === 'founding_artist') {
+        badgeMap[b.user_id] = { badge_type: b.badge_type, metadata: b.metadata as any }
+      }
+    }
+  }
+
   return (
     <DiscoverClient
       featured={featuredRes.data}
-      newReleases={newReleasesRes.data ?? []}
+      newReleases={allReleases}
       recommendations={recommendationsRes.data ?? []}
       fanGenres={fanGenres}
       isLoggedIn={!!user}
+      artistBadges={badgeMap}
     />
   )
 }

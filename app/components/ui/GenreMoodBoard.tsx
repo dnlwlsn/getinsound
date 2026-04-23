@@ -1,15 +1,9 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { SOUNDS, type Sound } from '@/lib/sounds'
 
-const GENRES = [
-  'Indie', 'Alternative', 'Electronic', 'Hip-Hop',
-  'Folk', 'Ambient', 'Post-Rock', 'Jazz',
-  'Soul', 'Punk', 'Metal', 'Classical',
-  'R&B', 'Experimental', 'Singer-Songwriter', 'World',
-] as const
-
-export type Genre = (typeof GENRES)[number]
+export type Genre = Sound
 
 const MIN_SELECTIONS = 3
 const MAX_SELECTIONS = 5
@@ -20,10 +14,10 @@ interface GenreMoodBoardProps {
 }
 
 export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
-  const [selected, setSelected] = useState<Set<Genre>>(new Set())
+  const [selected, setSelected] = useState<Set<Sound>>(new Set())
   const [saving, setSaving] = useState(false)
 
-  const toggle = useCallback((genre: Genre) => {
+  const toggle = useCallback((genre: Sound) => {
     setSelected(prev => {
       const next = new Set(prev)
       if (next.has(genre)) {
@@ -69,7 +63,7 @@ export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
 
         {/* Genre grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full mb-8">
-          {GENRES.map(genre => {
+          {SOUNDS.map(genre => {
             const isSelected = selected.has(genre)
             const atMax = selected.size >= MAX_SELECTIONS && !isSelected
             return (

@@ -103,7 +103,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
         onFocus={() => { if (query.trim().length >= 2 && results) setOpen(true) }}
         placeholder="Search artists, releases, genres..."
         className="bg-zinc-900 border border-zinc-800 rounded-full py-2.5 pl-10 pr-10 text-sm w-full outline-none text-white placeholder-zinc-600 focus:border-orange-600 transition-colors
-          [html[data-theme=light]_&]:bg-zinc-100 [html[data-theme=light]_&]:border-zinc-200 [html[data-theme=light]_&]:text-zinc-900 [html[data-theme=light]_&]:placeholder-zinc-400 [html[data-theme=light]_&]:focus:border-orange-500"
+"
       />
 
       {query && (
@@ -121,7 +121,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
       {/* Dropdown */}
       {open && query.trim().length >= 2 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50
-          [html[data-theme=light]_&]:bg-white [html[data-theme=light]_&]:border-zinc-200">
+">
 
           {loading && (
             <div className="px-4 py-3 text-xs text-zinc-500 text-center">Searching...</div>
@@ -144,7 +144,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
                       href={`/${a.slug}`}
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors
-                        [html[data-theme=light]_&]:hover:bg-zinc-50"
+"
                     >
                       {a.avatar_url ? (
                         <img src={a.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/[0.1]" />
@@ -154,7 +154,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-white truncate [html[data-theme=light]_&]:text-zinc-900">{a.name}</p>
+                        <p className="text-sm font-bold text-white truncate">{a.name}</p>
                         {a.bio && (
                           <p className="text-xs text-zinc-500 truncate">{a.bio.slice(0, 60)}</p>
                         )}
@@ -165,7 +165,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
               )}
 
               {results.releases.length > 0 && (
-                <div className={results.artists.length > 0 ? 'border-t border-zinc-800 [html[data-theme=light]_&]:border-zinc-200' : ''}>
+                <div className={results.artists.length > 0 ? 'border-t border-zinc-800' : ''}>
                   <div className="px-4 pt-3 pb-1 text-[10px] font-black uppercase tracking-widest text-zinc-500">Releases</div>
                   {results.releases.map(r => (
                     <Link
@@ -173,7 +173,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
                       href={`/release?a=${r.artist_slug}&r=${r.slug}`}
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors
-                        [html[data-theme=light]_&]:hover:bg-zinc-50"
+"
                     >
                       {r.cover_url ? (
                         <img src={r.cover_url} alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/[0.1]" />
@@ -181,7 +181,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
                         <div className="w-8 h-8 rounded-lg bg-zinc-800 ring-1 ring-white/[0.1]" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-white truncate [html[data-theme=light]_&]:text-zinc-900">{r.title}</p>
+                        <p className="text-sm font-bold text-white truncate">{r.title}</p>
                         <p className="text-xs text-zinc-500 truncate">{r.artist_name}</p>
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 shrink-0">{r.type}</span>
@@ -194,7 +194,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
                 href={`/search?q=${encodeURIComponent(query.trim())}`}
                 onClick={() => setOpen(false)}
                 className="block px-4 py-3 text-xs font-bold text-orange-600 hover:text-orange-500 text-center border-t border-zinc-800 transition-colors
-                  [html[data-theme=light]_&]:border-zinc-200"
+"
               >
                 View all results
               </Link>

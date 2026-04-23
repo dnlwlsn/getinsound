@@ -60,8 +60,8 @@ export function PayWhatYouWant({
           className="w-full pl-9 pr-4 py-3 rounded-xl font-display font-bold text-lg
             bg-white/[0.04] ring-1 ring-white/[0.08] text-white
             focus:outline-none focus:ring-[#F56D00]
-            [html[data-theme=light]_&]:bg-zinc-50 [html[data-theme=light]_&]:ring-zinc-200
-            [html[data-theme=light]_&]:text-zinc-900 [html[data-theme=light]_&]:focus:ring-[#F56D00]
+
+
             transition-all duration-150"
         />
       </div>

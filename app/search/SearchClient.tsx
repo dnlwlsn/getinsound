@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { SearchInput } from '@/app/components/ui/SearchInput'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { useViewMode } from '@/lib/useViewMode'
 import { useCurrency } from '@/app/providers/CurrencyProvider'
+import { Badge } from '@/app/components/ui/Badge'
+import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 
 type ArtistResult = {
   id: string
@@ -15,6 +16,8 @@ type ArtistResult = {
   avatar_url: string | null
   bio: string | null
   release_count: number
+  badge?: { badge_type: string; metadata?: { position?: number } | null } | null
+  verified?: boolean
 }
 
 type ReleaseResult = {
@@ -68,28 +71,7 @@ export default function SearchClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] [html[data-theme=light]_&]:bg-white">
-      {/* Nav */}
-      <nav
-        className="sticky top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 py-4 gap-3"
-        style={{
-          background: 'rgba(9,9,11,0.88)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(39,39,42,0.8)',
-        }}
-      >
-        <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
-          insound.
-        </Link>
-        <SearchInput className="flex-1 max-w-md" />
-        <div className="flex gap-2.5 items-center flex-shrink-0">
-          <Link href="/explore" className="text-xs font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors hidden sm:block">
-            Explore
-          </Link>
-        </div>
-      </nav>
-
+    <div className="min-h-screen bg-[#09090b]">
       {/* Results */}
       <div className="max-w-6xl mx-auto px-5 md:px-10 py-10">
         {loading && (
@@ -123,8 +105,8 @@ export default function SearchClient() {
                       <div className="flex items-center gap-4 p-4 rounded-2xl
                         bg-white/[0.02] ring-1 ring-white/[0.06]
                         hover:ring-white/[0.12] transition-all duration-150
-                        [html[data-theme=light]_&]:bg-zinc-50 [html[data-theme=light]_&]:ring-zinc-200
-                        [html[data-theme=light]_&]:hover:ring-zinc-300"
+
+"
                       >
                         {a.avatar_url ? (
                           <img src={a.avatar_url} alt={a.name} className="w-12 h-12 rounded-full object-cover ring-1 ring-white/[0.1]" />
@@ -134,9 +116,13 @@ export default function SearchClient() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="font-display font-bold text-sm text-white truncate [html[data-theme=light]_&]:text-zinc-900">
-                            {a.name}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-display font-bold text-sm text-white truncate">
+                              {a.name}
+                            </p>
+                            {a.verified && <VerifiedTick size={14} />}
+                            {a.badge && <Badge type={a.badge.badge_type} position={a.badge.metadata?.position} size="xs" />}
+                          </div>
                           {a.bio && <p className="text-xs text-zinc-500 truncate">{a.bio.slice(0, 80)}</p>}
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">
@@ -170,11 +156,11 @@ export default function SearchClient() {
                             <div className="w-full h-full bg-zinc-800" />
                           )}
                         </div>
-                        <h3 className="text-sm font-bold text-white truncate [html[data-theme=light]_&]:text-zinc-900">{r.title}</h3>
+                        <h3 className="text-sm font-bold text-white truncate">{r.title}</h3>
                         <p className="text-xs text-zinc-500 truncate">{r.artist_name}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{r.type}</span>
-                          <span className="text-xs font-bold text-white [html[data-theme=light]_&]:text-zinc-900">
+                          <span className="text-xs font-bold text-white">
                             {displayPrice(r.price_pence, r.currency)}
                           </span>
                         </div>
@@ -188,7 +174,7 @@ export default function SearchClient() {
                         key={r.id}
                         href={`/release?a=${r.artist_slug}&r=${r.slug}`}
                         className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] ring-1 ring-white/[0.06] hover:ring-white/[0.12] transition-all
-                          [html[data-theme=light]_&]:bg-zinc-50 [html[data-theme=light]_&]:ring-zinc-200 [html[data-theme=light]_&]:hover:ring-zinc-300"
+"
                       >
                         {r.cover_url ? (
                           <img src={r.cover_url} alt={r.title} className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/[0.1]" />
@@ -196,11 +182,11 @@ export default function SearchClient() {
                           <div className="w-10 h-10 rounded-lg bg-zinc-800 ring-1 ring-white/[0.1]" />
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-bold text-white truncate [html[data-theme=light]_&]:text-zinc-900">{r.title}</p>
+                          <p className="text-sm font-bold text-white truncate">{r.title}</p>
                           <p className="text-xs text-zinc-500 truncate">{r.artist_name}</p>
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 shrink-0">{r.type}</span>
-                        <span className="text-xs font-bold text-white shrink-0 [html[data-theme=light]_&]:text-zinc-900">
+                        <span className="text-xs font-bold text-white shrink-0">
                           {displayPrice(r.price_pence, r.currency)}
                         </span>
                       </Link>

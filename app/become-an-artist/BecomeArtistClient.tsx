@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { RESERVED_SLUGS } from '@/lib/reserved-slugs'
 
 const ACCENT_COLOURS = [
   '#ea580c', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
@@ -54,6 +55,11 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
 
     if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(trimmedSlug)) {
       setError('URL must be 3-40 characters: lowercase letters, numbers, hyphens.')
+      setStep(1)
+      return
+    }
+    if (RESERVED_SLUGS.has(trimmedSlug)) {
+      setError(`"${trimmedSlug}" is reserved. Try another.`)
       setStep(1)
       return
     }
@@ -109,6 +115,12 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
         .from('fan_profiles')
         .update({ has_seen_welcome: true })
         .eq('id', user.id)
+
+      // Award founding_artist badge if eligible (waitlist position ≤ 50)
+      try {
+        const res = await fetch('/api/badges/founding-artist', { method: 'POST' })
+        if (!res.ok) console.error('Founding artist badge check failed')
+      } catch {}
 
       router.push('/dashboard')
     } catch (err) {

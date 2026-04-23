@@ -3,12 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'edge'
 
-const VALID_GENRES = new Set([
-  'Indie', 'Alternative', 'Electronic', 'Hip-Hop',
-  'Folk', 'Ambient', 'Post-Rock', 'Jazz',
-  'Soul', 'Punk', 'Metal', 'Classical',
-  'R&B', 'Experimental', 'Singer-Songwriter', 'World',
-])
+import { SOUNDS_SET } from '@/lib/sounds'
+
+const VALID_GENRES = SOUNDS_SET
 
 /** POST /api/fan-preferences — save genre selections or skip */
 export async function POST(request: Request) {

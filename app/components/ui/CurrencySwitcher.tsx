@@ -27,10 +27,10 @@ export function CurrencySwitcher() {
           border border-zinc-800 rounded px-2 py-1 cursor-pointer
           focus:outline-none focus:border-[#F56D00] focus:text-zinc-200
           transition-colors appearance-none
-          [html[data-theme=light]_&]:border-zinc-300
-          [html[data-theme=light]_&]:text-zinc-600
-          [html[data-theme=light]_&]:hover:text-zinc-900
-          [html[data-theme=light]_&]:focus:border-[#F56D00]"
+
+
+
+"
         aria-label="Select currency"
       >
         {SUPPORTED_CURRENCIES.map(({ code, label }) => (

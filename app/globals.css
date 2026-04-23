@@ -18,18 +18,6 @@
   --border-subtle: rgba(255,255,255,0.05);
 }
 
-[data-theme="light"] {
-  --bg: #f7f7f8;
-  --fg: #18181b;
-  --fg-muted: #52525b;
-  --fg-subtle: #71717a;
-  --fg-faint: #a1a1aa;
-  --card-bg: #ffffff;
-  --input-bg: #ffffff;
-  --nav-bg: rgba(247,247,248,0.82);
-  --line-color: rgba(0,0,0,0.07);
-  --border-subtle: rgba(0,0,0,0.06);
-}
 
 /* ── Base ────────────────────────────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -110,8 +98,6 @@ body::after {
 /* ── Comparison cards ────────────────────────────────────────── */
 .col-bad  { background: rgba(239,68,68,0.03);  border-color: rgba(239,68,68,0.12); }
 .col-good { background: rgba(234,88,12,0.04);  border-color: rgba(234,88,12,0.14); }
-[data-theme="light"] .col-bad  { background: rgba(239,68,68,0.04);  border-color: rgba(239,68,68,0.2); }
-[data-theme="light"] .col-good { background: rgba(234,88,12,0.05);  border-color: rgba(234,88,12,0.22); }
 
 .compare-cards {
   display: flex;
@@ -131,7 +117,6 @@ body::after {
   background: #0a0a0a;
   border-color: rgba(255,255,255,0.06);
 }
-[data-theme="light"] .compare-card { background: #fafafa; border-color: rgba(0,0,0,0.08); }
 .compare-snap-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.25rem; }
 .compare-snap-dots span { width: 6px; height: 6px; border-radius: 9999px; background: rgba(255,255,255,0.15); }
 
@@ -152,9 +137,6 @@ body::after {
 /* ── Phone device ────────────────────────────────────────────── */
 .phone-device {
   box-shadow: 0 0 0 1px rgba(255,255,255,0.18), 0 0 40px rgba(255,255,255,0.06), 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.1);
-}
-[data-theme="light"] .phone-device {
-  box-shadow: 0 20px 60px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(0,0,0,0.06);
 }
 
 /* ── Device track interaction ────────────────────────────────── */
@@ -179,7 +161,6 @@ body::after {
   -webkit-backdrop-filter: blur(24px);
   transition: background 0.3s ease;
 }
-[data-theme="light"] #navInner { box-shadow: 0 8px 40px rgba(0,0,0,0.08); --tw-ring-color: rgba(0,0,0,0.08); }
 
 /* ── Cards / inputs / helpers ────────────────────────────────── */
 .card     { background: var(--card-bg); transition: background 0.3s ease; }
@@ -194,7 +175,6 @@ input[type=email]:focus { outline: none; border-color: #ea580c; }
 .t-faint  { color: var(--fg-faint); }
 
 footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
-#themeToggle { transition: background 0.2s ease, color 0.2s ease; }
 
 /* ── Calculator slider ───────────────────────────────────────── */
 .calc-slider {
@@ -253,31 +233,12 @@ footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
 .roadmap-list.done li::before { display: none; }
 .roadmap-list.done svg { position: absolute; left: 0; top: 0.45em; }
 .roadmap-list.active li::before { background: #ea580c; }
-[data-theme="light"] .roadmap-list li { color: #18181b; }
-[data-theme="light"] .roadmap-list.done li { color: #a1a1aa; }
 
-/* ── Light theme text overrides ──────────────────────────────── */
-[data-theme="light"] .hero-dot { color: rgba(0,0,0,0.18); }
-[data-theme="light"] .text-white { color: #18181b !important; }
-[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3 { color: #18181b; }
-[data-theme="light"] .text-zinc-400 { color: #52525b !important; }
-[data-theme="light"] .text-zinc-500 { color: #71717a !important; }
-[data-theme="light"] .text-zinc-600 { color: #a1a1aa !important; }
-[data-theme="light"] .text-zinc-700 { color: #71717a !important; }
-[data-theme="light"] .border-zinc-900 { border-color: rgba(0,0,0,0.08) !important; }
-[data-theme="light"] .border-zinc-900\/60 { border-color: rgba(0,0,0,0.06) !important; }
-[data-theme="light"] .ring-white\/\[0\.05\] { --tw-ring-color: rgba(0,0,0,0.07) !important; }
-[data-theme="light"] .ring-white\/\[0\.06\] { --tw-ring-color: rgba(0,0,0,0.08) !important; }
-[data-theme="light"] .ring-white\/\[0\.08\] { --tw-ring-color: rgba(0,0,0,0.1) !important; }
-[data-theme="light"] #navInner .text-white\/25 { color: rgba(0,0,0,0.2) !important; }
-[data-theme="light"] .shadow-\[0_8px_40px_rgba\(0\,0\,0\,0\.5\)\] { box-shadow: 0 8px 40px rgba(0,0,0,0.1) !important; }
-[data-theme="light"] .stat-label { color: #71717a; }
-
-/* ── Dark mode zinc boosts ───────────────────────────────────── */
-html:not([data-theme="light"]) .text-zinc-400 { color: rgba(255,255,255,0.7) !important; }
-html:not([data-theme="light"]) .text-zinc-500 { color: rgba(255,255,255,0.58) !important; }
-html:not([data-theme="light"]) .text-zinc-600 { color: rgba(255,255,255,0.46) !important; }
-html:not([data-theme="light"]) .text-zinc-700 { color: rgba(255,255,255,0.32) !important; }
+/* ── Zinc overrides ──────────────────────────────────────────── */
+.text-zinc-400 { color: rgba(255,255,255,0.7) !important; }
+.text-zinc-500 { color: rgba(255,255,255,0.58) !important; }
+.text-zinc-600 { color: rgba(255,255,255,0.46) !important; }
+.text-zinc-700 { color: rgba(255,255,255,0.32) !important; }
 
 /* ── Orange opacity utilities ────────────────────────────────── */
 .bg-orange-600\/10   { background-color: rgba(234,88,12,0.1)  !important; }

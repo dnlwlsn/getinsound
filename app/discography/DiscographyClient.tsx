@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
+import { SoundTagSelector } from '@/app/components/ui/SoundTagSelector'
+import { SOUNDS_SET } from '@/lib/sounds'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -96,6 +98,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
   const [pwywMinPounds, setPwywMinPounds] = useState('2.00')
   const [preorder, setPreorder] = useState(false)
   const [releaseDate, setReleaseDate] = useState('')
+  const [soundTags, setSoundTags] = useState<string[]>([])
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [pendingTracks, setPendingTracks] = useState<PendingTrack[]>([])
@@ -116,6 +119,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
     setPwywMinPounds('2.00')
     setPreorder(false)
     setReleaseDate('')
+    setSoundTags([])
     setCoverFile(null)
     setCoverPreview(null)
     setPendingTracks([])
@@ -222,6 +226,18 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
 
       if (relErr) throw new Error(relErr.message)
 
+      // 1b. Save sound tags
+      if (soundTags.length > 0) {
+        const { error: tagErr } = await supabase
+          .from('release_tags')
+          .insert(soundTags.map(tag => ({
+            release_id: release.id,
+            tag: tag.toLowerCase().trim(),
+            is_custom: !SOUNDS_SET.has(tag),
+          })))
+        if (tagErr) throw new Error(tagErr.message)
+      }
+
       // 2. Upload cover art
       if (coverFile) {
         setUploadProgress('Uploading cover art...')
@@ -288,7 +304,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
       setError(err instanceof Error ? err.message : 'Something went wrong.')
       setSaving(false)
     }
-  }, [artist.id, slug, title, type, pricePounds, pwyw, pwywMinPounds, preorder, releaseDate, coverFile, pendingTracks, supabase, router])
+  }, [artist.id, slug, title, type, pricePounds, pwyw, pwywMinPounds, preorder, releaseDate, soundTags, coverFile, pendingTracks, supabase, router])
 
   // ── Toggle publish ──────────────────────────────────────────
   async function togglePublish(releaseId: string, current: boolean) {
@@ -586,6 +602,9 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                   </div>
                   <p className="text-[10px] text-zinc-600 mt-1.5">{preorder ? 'Fans can buy now and download on release day.' : 'Let fans buy before the release date.'}</p>
                 </div>
+
+                {/* Sound tags */}
+                <SoundTagSelector selected={soundTags} onChange={setSoundTags} />
 
                 {/* Cover art */}
                 <div>

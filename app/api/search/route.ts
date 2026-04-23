@@ -53,6 +53,39 @@ export async function GET(request: NextRequest) {
     releases = (fuzzyReleases.data ?? []).map(({ rank, ...rest }) => rest)
   }
 
+  // Batch-fetch founding_artist badges and verification data for returned artists
+  const artistIds = artists.map(a => a.id)
+  let artistBadgeMap: Record<string, { badge_type: string; metadata?: any }> = {}
+  let verifiedSet = new Set<string>()
+  if (artistIds.length > 0) {
+    const [{ data: badges }, { data: accounts }] = await Promise.all([
+      supabase
+        .from('fan_badges')
+        .select('user_id, badge_type, metadata')
+        .in('user_id', artistIds)
+        .eq('badge_type', 'founding_artist'),
+      supabase
+        .from('artist_accounts')
+        .select('id, stripe_verified, independence_confirmed')
+        .in('id', artistIds),
+    ])
+    for (const b of badges || []) {
+      artistBadgeMap[b.user_id] = { badge_type: b.badge_type, metadata: b.metadata }
+    }
+    for (const acc of accounts || []) {
+      if (acc.stripe_verified && acc.independence_confirmed) {
+        const artist = artists.find(a => a.id === acc.id)
+        if (artist && artist.release_count > 0) verifiedSet.add(acc.id)
+      }
+    }
+  }
+
+  const artistsWithBadges = artists.map(a => ({
+    ...a,
+    badge: artistBadgeMap[a.id] ?? null,
+    verified: verifiedSet.has(a.id),
+  }))
+
   const { data: { user } } = await supabase.auth.getUser()
   supabase.rpc('log_search', {
     p_user_id: user?.id ?? null,
@@ -60,5 +93,5 @@ export async function GET(request: NextRequest) {
     p_results_count: artists.length + releases.length,
   }).then(() => {})
 
-  return NextResponse.json({ artists, releases })
+  return NextResponse.json({ artists: artistsWithBadges, releases })
 }

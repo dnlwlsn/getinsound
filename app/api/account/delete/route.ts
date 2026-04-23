@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
   const userType = artist ? 'artist' : 'fan'
 
-  const { data: request, error: insertErr } = await supabase
+  const { data: delRequest, error: insertErr } = await supabase
     .from('account_deletion_requests')
     .insert({ user_id: user.id, user_type: userType })
     .select('id, execute_at')
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
   // Send confirmation email via Resend
   const cancelUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'}/settings/account?cancel-deletion=true`
-  const executeDate = new Date(request.execute_at).toLocaleDateString('en-GB', {
+  const executeDate = new Date(delRequest.execute_at).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     console.error('Deletion confirmation email failed:', (e as Error).message)
   }
 
-  return NextResponse.json({ id: request.id, execute_at: request.execute_at })
+  return NextResponse.json({ id: delRequest.id, execute_at: delRequest.execute_at })
 }
 
 /** DELETE — cancel a pending deletion request */

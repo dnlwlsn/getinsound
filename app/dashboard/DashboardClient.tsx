@@ -4,15 +4,20 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ColourPicker } from '@/app/components/ui/ColourPicker'
+import { ImageUploader } from '@/app/components/ui/ImageUploader'
 import { SoftNudge } from '@/app/components/ui/SoftNudge'
 import { generateGradientDataUri } from '@/lib/gradient'
 import { referralShareUrl, twitterShareUrl, whatsappShareUrl, emailShareUrl } from '@/lib/referral'
 import { isZeroFeesActive } from '@/app/lib/fees'
 import { NotificationBell } from '@/app/components/ui/NotificationBell'
+import { Badge } from '@/app/components/ui/Badge'
+import { PostComposer } from '@/app/components/ui/PostComposer'
+import { SocialAccountsEditor } from '@/app/components/ui/SocialAccountsEditor'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
+import type { SocialLinks } from '@/lib/verification'
 
 // ── Types ──────────────────────────────────────────────────────
-type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; accent_colour: string | null }
+type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; banner_url: string | null; accent_colour: string | null; social_links: SocialLinks | null }
 type Account = { id: string; email: string; stripe_account_id: string | null; stripe_onboarded: boolean }
 type Track = { id: string; preview_plays: number; full_plays: number }
 type Release = {
@@ -26,7 +31,7 @@ type Stats = {
   totalPreviewPlays: number; totalFullPlays: number; uniqueFans: number
   avgPaidPence: number; avgMinPence: number
 }
-type Fan = { displayEmail: string; purchaseCount: number; totalPence: number; purchases: { release_id: string; amount_pence: number; paid_at: string | null }[] }
+type Fan = { displayEmail: string; purchaseCount: number; totalPence: number; purchases: { release_id: string; amount_pence: number; paid_at: string | null }[]; badge?: { badge_type: string; metadata?: { position?: number } | null } | null }
 type CodeSummary = { total: number; redeemed: number }
 
 type Referral = {
@@ -62,6 +67,11 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [accentSaving, setAccentSaving] = useState(false)
   const [showArtistTooltip, setShowArtistTooltip] = useState(false)
   const [showMilestone, setShowMilestone] = useState(!!milestone)
+  const [artistAvatarUrl, setArtistAvatarUrl] = useState(artist.avatar_url)
+  const [artistBannerUrl, setArtistBannerUrl] = useState(artist.banner_url)
+  const [posts, setPosts] = useState<{ id: string; post_type: string; content: string; media_url: string | null; created_at: string }[]>([])
+  const [postsLoaded, setPostsLoaded] = useState(false)
+  const [deletingPost, setDeletingPost] = useState<string | null>(null)
 
   const hasPublishedContent = rels.some(r => r.published) || !!artist.bio
 
@@ -112,6 +122,74 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     setAccentSaving(true)
     await supabase.from('artists').update({ accent_colour: colour }).eq('id', artist.id)
     setAccentSaving(false)
+  }
+
+  // ── Posts ───────────────────────────────────────────────────
+  async function loadPosts() {
+    if (postsLoaded) return
+    const res = await fetch('/api/posts')
+    const data = await res.json().catch(() => ({ posts: [] }))
+    setPosts(data.posts || [])
+    setPostsLoaded(true)
+  }
+
+  async function deletePost(postId: string) {
+    setDeletingPost(postId)
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' })
+      if (res.ok) setPosts(prev => prev.filter(p => p.id !== postId))
+    } catch {}
+    setDeletingPost(null)
+  }
+
+  // ── Artist avatar upload ────────────────────────────────────
+  async function handleArtistAvatarUpload(file: File) {
+    const { data: existing } = await supabase.storage.from('avatars').list(artist.id)
+    if (existing?.length) {
+      await supabase.storage.from('avatars').remove(existing.map(f => `${artist.id}/${f.name}`))
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `${artist.id}/avatar.${ext}`
+    const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    if (uploadErr) throw new Error(uploadErr.message)
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+    const url = `${publicUrl}?t=${Date.now()}`
+    await supabase.from('artists').update({ avatar_url: url }).eq('id', artist.id)
+    setArtistAvatarUrl(url)
+  }
+
+  async function handleArtistAvatarRemove() {
+    const { data: existing } = await supabase.storage.from('avatars').list(artist.id)
+    if (existing?.length) {
+      await supabase.storage.from('avatars').remove(existing.map(f => `${artist.id}/${f.name}`))
+    }
+    await supabase.from('artists').update({ avatar_url: null }).eq('id', artist.id)
+    setArtistAvatarUrl(null)
+  }
+
+  // ── Artist banner upload ───────────────────────────────────
+  async function handleBannerUpload(file: File) {
+    const { data: existing } = await supabase.storage.from('banners').list(artist.id)
+    if (existing?.length) {
+      await supabase.storage.from('banners').remove(existing.map(f => `${artist.id}/${f.name}`))
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `${artist.id}/banner.${ext}`
+    const { error: uploadErr } = await supabase.storage.from('banners').upload(path, file, { upsert: true })
+    if (uploadErr) throw new Error(uploadErr.message)
+    const { data: { publicUrl } } = supabase.storage.from('banners').getPublicUrl(path)
+    const url = `${publicUrl}?t=${Date.now()}`
+    await supabase.from('artists').update({ banner_url: url }).eq('id', artist.id)
+    setArtistBannerUrl(url)
+  }
+
+  async function handleBannerRemove() {
+    const { data: existing } = await supabase.storage.from('banners').list(artist.id)
+    if (existing?.length) {
+      await supabase.storage.from('banners').remove(existing.map(f => `${artist.id}/${f.name}`))
+    }
+    await supabase.from('artists').update({ banner_url: null }).eq('id', artist.id)
+    setArtistBannerUrl(null)
   }
 
   // ── Cancel pre-order ────────────────────────────────────────
@@ -273,6 +351,65 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
             )}
           </Section>
 
+          {/* ── Post to Supporters ─────────────────────────── */}
+          <Section title="Post to your supporters">
+            <PostComposer
+              artistId={artist.id}
+              artistName={artist.name}
+              onPostCreated={(post) => {
+                setPosts(prev => [post, ...prev])
+                setPostsLoaded(true)
+              }}
+            />
+            {!postsLoaded ? (
+              <button onClick={loadPosts} className="mt-4 text-sm text-orange-500 hover:text-orange-400 font-bold transition-colors">
+                Load previous posts
+              </button>
+            ) : posts.length > 0 ? (
+              <div className="mt-5 space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Previous posts</p>
+                {posts.map(p => (
+                  <div key={p.id} className="flex items-start gap-4 bg-black/20 rounded-xl p-4 ring-1 ring-white/[0.04]">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/[0.04] text-zinc-500">
+                          {p.post_type === 'voice_note' ? 'Voice Note' : p.post_type}
+                        </span>
+                        <span className="text-[10px] text-zinc-600">{new Date(p.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap line-clamp-3">{p.content}</p>
+                      {p.media_url && p.post_type === 'photo' && (
+                        <img src={p.media_url} alt="" className="mt-2 h-16 w-16 rounded-lg object-cover" />
+                      )}
+                      {p.media_url && (p.post_type === 'demo' || p.post_type === 'voice_note') && (
+                        <div className="mt-2 flex items-center gap-2 text-[10px] text-zinc-500">
+                          <svg width="12" height="12" fill="#F56D00" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                          Audio attached
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => deletePost(p.id)}
+                      disabled={deletingPost === p.id}
+                      className="shrink-0 text-zinc-600 hover:text-red-400 disabled:opacity-50 transition-colors p-1"
+                      title="Delete post"
+                    >
+                      {deletingPost === p.id ? (
+                        <span className="text-[10px] text-zinc-500">...</span>
+                      ) : (
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : postsLoaded ? (
+              <p className="mt-4 text-zinc-600 text-sm">No posts yet. Share your first update with your fans.</p>
+            ) : null}
+          </Section>
+
           {/* ── 3. Payout History ──────────────────────────── */}
           <Section title="Payout History">
             {!payouts ? (
@@ -319,7 +456,10 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                           {fan.displayEmail[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-bold">{fan.displayEmail}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-bold">{fan.displayEmail}</p>
+                            {fan.badge && <Badge type={fan.badge.badge_type} position={fan.badge.metadata?.position} size="xs" />}
+                          </div>
                           <p className="text-[10px] text-zinc-500">{fan.purchaseCount} purchase{fan.purchaseCount !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
@@ -395,6 +535,53 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                 })}
               </div>
             )}
+          </Section>
+
+          {/* ── Profile Images ────────────────────────────── */}
+          <Section title="Profile Images">
+            <div className="space-y-8">
+              <ImageUploader
+                currentUrl={artistAvatarUrl}
+                onUpload={handleArtistAvatarUpload}
+                onRemove={handleArtistAvatarRemove}
+                aspect={1}
+                maxSizeMB={2}
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                label="Artist Avatar"
+                variant="avatar"
+                accent={artist.accent_colour || '#F56D00'}
+                fallback={
+                  <div className="w-full h-full rounded-full flex items-center justify-center text-2xl font-black text-zinc-600"
+                    style={{ background: `linear-gradient(135deg, ${artist.accent_colour || '#F56D00'}33, ${artist.accent_colour || '#F56D00'}11)` }}>
+                    {artist.name.charAt(0)}
+                  </div>
+                }
+              />
+              <ImageUploader
+                currentUrl={artistBannerUrl}
+                onUpload={handleBannerUpload}
+                onRemove={handleBannerRemove}
+                aspect={3}
+                maxSizeMB={5}
+                accept="image/jpeg,image/png,image/webp"
+                label="Banner"
+                recommendedSize="Recommended: 1500×500px (3:1 ratio)"
+                variant="banner"
+                accent={artist.accent_colour || '#F56D00'}
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs font-bold"
+                    style={{ background: `linear-gradient(135deg, ${artist.accent_colour || '#F56D00'}22 0%, #09090b 40%, #09090b 60%, ${artist.accent_colour || '#F56D00'}11 100%)` }}>
+                    No banner set
+                  </div>
+                }
+              />
+            </div>
+          </Section>
+
+          {/* ── Social Accounts ──────────────────────────── */}
+          <Section title="Social Accounts">
+            <p className="text-zinc-500 text-sm mb-4">Link your social profiles to build trust and help fans find you elsewhere.</p>
+            <SocialAccountsEditor initial={artist.social_links || {}} />
           </Section>
 
           {/* ── Accent Colour ──────────────────────────────── */}

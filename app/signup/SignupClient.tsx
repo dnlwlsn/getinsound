@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 export function SignupClient() {
   const searchParams = useSearchParams()
@@ -15,8 +14,6 @@ export function SignupClient() {
   const [sending, setSending] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
-  const supabase = createClient()
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = email.trim()
@@ -27,18 +24,26 @@ export function SignupClient() {
 
     const redirectPath = intent === 'artist' ? '/become-an-artist' : '/welcome'
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${redirectPath}`,
-      },
-    })
-
-    if (error) {
-      setErrorMsg(error.message)
+    try {
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: trimmed,
+          template: 'signin',
+          redirectTo: `/auth/callback?next=${redirectPath}`,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setErrorMsg(data.error || 'Failed to send magic link.')
+        setPhase('error')
+      } else {
+        setPhase('sent')
+      }
+    } catch {
+      setErrorMsg('Something went wrong. Please try again.')
       setPhase('error')
-    } else {
-      setPhase('sent')
     }
     setSending(false)
   }

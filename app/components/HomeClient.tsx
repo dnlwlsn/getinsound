@@ -9,7 +9,7 @@ import { useCurrency } from '../providers/CurrencyProvider'
 /* ── Supabase config ─────────────────────────────────────────── */
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://rvsfriqjobwuzzfdiyxg.supabase.co'
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg'
-const TOTAL_SPOTS = 1000
+const TOTAL_SPOTS = 50
 
 /* ── Typewriter items ────────────────────────────────────────── */
 const COST_ITEMS = [
@@ -39,13 +39,10 @@ const TRACKS = [
 const isValidEmail = (e: string) => !!e && /\S+@\S+\.\S+/.test(e)
 
 export default function HomeClient() {
-  /* Theme */
-  const [isLight, setIsLight]       = useState(false)
-
   /* Waitlist */
   const [wPhase, setWPhase]         = useState<'form' | 'success' | 'overflow'>('form')
   const [ovPhase, setOvPhase]       = useState<'form' | 'success'>('form')
-  const [spacesLeft, setSpacesLeft] = useState(1000)
+  const [spacesLeft, setSpacesLeft] = useState(50)
 
   /* Form inputs */
   const [heroEmail, setHeroEmail]                   = useState('')
@@ -82,18 +79,6 @@ export default function HomeClient() {
 
   /* Hero email ref for focus-pop */
   const heroEmailRef = useRef<HTMLInputElement>(null)
-
-  /* ── Theme init ──────────────────────────────────────────────── */
-  useEffect(() => {
-    setIsLight(document.documentElement.getAttribute('data-theme') === 'light')
-  }, [])
-
-  function toggleTheme() {
-    const next = !isLight
-    setIsLight(next)
-    document.documentElement.setAttribute('data-theme', next ? 'light' : 'dark')
-    localStorage.setItem('insound_theme', next ? 'light' : 'dark')
-  }
 
   /* ── Scroll reveals ──────────────────────────────────────────── */
   useEffect(() => {
@@ -306,15 +291,6 @@ export default function HomeClient() {
             insound<span className="text-white/25 hero-dot">.</span>
           </span>
           <div className="flex items-center gap-3">
-            <button id="themeToggle" onClick={toggleTheme} aria-label="Toggle light/dark mode"
-              className="w-9 h-9 rounded-full flex items-center justify-center ring-1 ring-white/[0.08] hover:ring-white/20 text-zinc-400 hover:text-white">
-              <svg className={isLight ? 'hidden' : ''} width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-              </svg>
-              <svg className={isLight ? '' : 'hidden'} width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            </button>
             <Link href="/signup"
               className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
               Get started
@@ -373,7 +349,7 @@ export default function HomeClient() {
             {/* Overflow */}
             {wPhase === 'overflow' && (
               <div className="text-left">
-                <h3 className="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em] text-white mb-2 text-center">The founding 1,000 are in.</h3>
+                <h3 className="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em] text-white mb-2 text-center">The founding 50 are in.</h3>
                 <p className="text-zinc-400 text-sm leading-relaxed mb-6 text-center">Leave your email and we&apos;ll let you know when we open to everyone.</p>
                 {ovPhase === 'form' ? (
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -915,10 +891,32 @@ export default function HomeClient() {
 
           <div className="grid md:grid-cols-2 gap-4 reveal">
 
-            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
+            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:col-span-2">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-6">Completed</p>
               <ul className="roadmap-list done">
-                {['Artist music upload (WAV, FLAC, AIFF, MP3).', 'Stripe Connect direct payments — we never hold your money.', 'Artist pages with sharing and track downloads.', 'Founding artist waitlist (1,000 spaces).'].map((item, i) => (
+                {[
+                  'Artist music upload (WAV, FLAC, AIFF, MP3).',
+                  'Stripe Connect direct payments.',
+                  'Artist pages with sharing and track downloads.',
+                  'Founding artist waitlist (1,000 spaces).',
+                  'Persistent music player.',
+                  'Artist dashboard and analytics.',
+                  'Pay what you want pricing.',
+                  'Unified signup — one account, upgrade to sell.',
+                  'Referral system — invite 5, unlock zero fees for a year.',
+                  'Pre-orders with automatic unlock.',
+                  'Multi-currency and locale detection.',
+                  'Genre mood board for fans.',
+                  'Generative artwork and artist accent colours.',
+                  'Pages for artists, fans, and press.',
+                  'Fan libraries with streaming and download.',
+                  'Search — find artists and releases.',
+                  'Insound Selects — human-curated discovery.',
+                  'Frictionless fan accounts — buy without signing up.',
+                  'First sale milestone celebrations.',
+                  'In-app notifications.',
+                  'Album and EP-first pricing guidance.',
+                ].map((item, i) => (
                   <li key={i}>
                     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                     {item}
@@ -930,7 +928,12 @@ export default function HomeClient() {
             <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-6">In progress</p>
               <ul className="roadmap-list active">
-                {['Persistent music player.', 'Fan libraries — your purchased music, always available.', 'Artist dashboard and analytics.', 'Frictionless fan accounts — buy music without signing up.', 'Pay what you want pricing.'].map((item, i) => (
+                {[
+                  'Founding Artist and Founding Fan badges.',
+                  'Play tracking and detailed analytics.',
+                  'Download code redemption.',
+                  'Artist posts to supporters.',
+                ].map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
@@ -939,7 +942,13 @@ export default function HomeClient() {
             <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6">Coming soon</p>
               <ul className="roadmap-list">
-                {['Artist-fulfilled merch with tracked shipping.', 'Insound Selects — human-curated discovery.', 'Genre mood board for fans.', 'Artist recommendation profiles.', 'First sale milestone moment for artists.', 'Pre-orders.', 'Private and unlisted releases.', 'Download codes for gigs and merch.'].map((item, i) => (
+                {[
+                  'Artist-fulfilled merch with tracked shipping.',
+                  'Download codes for gigs and vinyl.',
+                  'Private and unlisted releases.',
+                  'Account deletion and data portability.',
+                  'Security hardening.',
+                ].map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
@@ -948,13 +957,19 @@ export default function HomeClient() {
             <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6">On the roadmap</p>
               <ul className="roadmap-list">
-                {['Progressive Web App (PWA).', 'Taste-based discovery (once we have the data).', 'Embedded player.', 'Pages for artists, fans, and press.'].map((item, i) => (
+                {[
+                  'Progressive Web App (PWA).',
+                  'Taste-based discovery (once we have the data).',
+                  'Public fan profiles.',
+                  'Embedded player for artist websites.',
+                  'Admin broadcast portal.',
+                ].map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
             </div>
 
-            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:col-span-2">
+            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6">If there&apos;s demand</p>
               <ul className="roadmap-list">
                 <li>
@@ -1009,7 +1024,7 @@ export default function HomeClient() {
 
             {wPhase === 'overflow' && (
               <div className="mb-4">
-                <h3 className="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em] text-white mb-2">The founding 1,000 are in.</h3>
+                <h3 className="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em] text-white mb-2">The founding 50 are in.</h3>
                 <p className="text-zinc-400 text-sm leading-relaxed mb-6 max-w-sm mx-auto">Leave your email and we&apos;ll let you know when we open to everyone.</p>
                 {ovPhase === 'form' ? (
                   <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">

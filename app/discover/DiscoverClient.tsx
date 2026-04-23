@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
-import { SearchInput } from '@/app/components/ui/SearchInput'
+import { Badge } from '@/app/components/ui/Badge'
+import { WishlistButton } from '@/app/components/ui/WishlistButton'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -27,6 +28,7 @@ interface Release {
   price_pence: number
   created_at?: string
   artists: Artist | Artist[]
+  release_tags?: { tag: string }[]
 }
 
 interface Featured {
@@ -51,6 +53,7 @@ interface Props {
   recommendations: Recommendation[]
   fanGenres: string[]
   isLoggedIn: boolean
+  artistBadges?: Record<string, { badge_type: string; metadata?: { position?: number } | null }>
 }
 
 const PAGE_SIZE = 12
@@ -87,30 +90,80 @@ function getArtist(a: Artist | Artist[]): Artist {
   return Array.isArray(a) ? a[0] : a
 }
 
-function getGenres(releases: Release[]): string[] {
+function getTags(r: Release): string[] {
+  return r.release_tags?.map(t => t.tag) ?? (r.genre ? [r.genre] : [])
+}
+
+function getAllSounds(releases: Release[]): string[] {
   const set = new Set<string>()
-  releases.forEach(r => { if (r.genre) set.add(r.genre) })
+  releases.forEach(r => getTags(r).forEach(t => set.add(t)))
   return Array.from(set).sort()
 }
 
 /* ── Main Component ──────────────────────────────────────────── */
 
-export default function DiscoverClient({ featured, newReleases, recommendations, fanGenres, isLoggedIn }: Props) {
+interface TrackItem {
+  id: string
+  title: string
+  position: number
+  duration_sec: number | null
+}
+
+function formatDuration(sec: number | null): string {
+  if (!sec) return ''
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+export default function DiscoverClient({ featured, newReleases, recommendations, fanGenres, isLoggedIn, artistBadges = {} }: Props) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const { mode: viewMode, set: setViewMode } = useViewMode()
   const [currentGenre, setCurrentGenre] = useState('All')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [expandedReleases, setExpandedReleases] = useState<Set<string>>(new Set())
+  const [trackCache, setTrackCache] = useState<Record<string, TrackItem[]>>({})
+  const [loadingTracks, setLoadingTracks] = useState<Set<string>>(new Set())
 
-  const genres = useMemo(() => getGenres(newReleases), [newReleases])
+  const toggleExpanded = useCallback(async (releaseId: string) => {
+    setExpandedReleases(prev => {
+      const next = new Set(prev)
+      if (next.has(releaseId)) {
+        next.delete(releaseId)
+      } else {
+        next.add(releaseId)
+      }
+      return next
+    })
+
+    if (!trackCache[releaseId] && !loadingTracks.has(releaseId)) {
+      setLoadingTracks(prev => new Set(prev).add(releaseId))
+      try {
+        const res = await fetch(`/api/releases/tracks?releaseId=${releaseId}`)
+        if (res.ok) {
+          const tracks: TrackItem[] = await res.json()
+          setTrackCache(prev => ({ ...prev, [releaseId]: tracks }))
+        }
+      } finally {
+        setLoadingTracks(prev => {
+          const next = new Set(prev)
+          next.delete(releaseId)
+          return next
+        })
+      }
+    }
+  }, [trackCache, loadingTracks])
+
+  const genres = useMemo(() => getAllSounds(newReleases), [newReleases])
 
   const filteredReleases = useMemo(() => {
     let items = newReleases
     if (currentGenre !== 'All') {
-      items = items.filter(r => r.genre === currentGenre)
+      items = items.filter(r => getTags(r).includes(currentGenre))
     }
     if (fanGenres.length > 0 && currentGenre === 'All') {
-      const preferred = items.filter(r => r.genre && fanGenres.includes(r.genre))
-      const rest = items.filter(r => !r.genre || !fanGenres.includes(r.genre))
+      const preferred = items.filter(r => getTags(r).some(t => fanGenres.includes(t)))
+      const rest = items.filter(r => !getTags(r).some(t => fanGenres.includes(t)))
       items = [...preferred, ...rest]
     }
     return items
@@ -145,48 +198,6 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
 
   return (
     <div className="min-h-screen font-display">
-      {/* NAV */}
-      <nav
-        className="sticky top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 py-4 gap-3"
-        style={{
-          background: 'rgba(9,9,11,0.88)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(39,39,42,0.8)',
-        }}
-      >
-        <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">
-          insound.
-        </Link>
-        <SearchInput className="flex-1 max-w-md hidden md:block" />
-        <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </Link>
-        <div className="flex gap-5 items-center text-sm font-bold">
-          <Link href="/explore" className="text-zinc-500 hover:text-white transition-colors hidden sm:block">
-            Explore
-          </Link>
-          <Link href="/discover" className="text-white">
-            Discover
-          </Link>
-          {isLoggedIn ? (
-            <Link href="/library" className="text-zinc-500 hover:text-white transition-colors">
-              Library
-            </Link>
-          ) : (
-            <Link
-              href="/signup"
-              className="bg-orange-600 text-black font-black px-5 py-2 rounded-full text-xs hover:bg-orange-500 transition-colors"
-            >
-              Sign Up
-            </Link>
-          )}
-        </div>
-      </nav>
-
       {/* ── SECTION 1: INSOUND SELECTS ────────────────────────── */}
       {featuredArtist && featured && (
         <section className="relative overflow-hidden border-b border-zinc-900">
@@ -345,49 +356,59 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
               {visibleReleases.map(r => {
                 const artist = getArtist(r.artists as Artist | Artist[])
                 return (
-                  <Link
-                    key={r.id}
-                    href={`/${artist.slug}/${r.slug}`}
-                    className="group cursor-pointer"
-                  >
-                    <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
-                      {r.cover_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={r.cover_url}
-                          className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
-                          loading="lazy"
-                          alt={r.title}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-zinc-700">
-                          {r.title.charAt(0)}
-                        </div>
-                      )}
-                      <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        {r.type}
-                      </span>
-                      <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="bg-orange-600 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl">
-                          <PlayIcon size={18} />
+                  <div key={r.id} className="group cursor-pointer">
+                    <Link href={`/${artist.slug}/${r.slug}`}>
+                      <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
+                        {r.cover_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={r.cover_url}
+                            className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
+                            loading="lazy"
+                            alt={r.title}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-3xl font-black text-zinc-700">
+                            {r.title.charAt(0)}
+                          </div>
+                        )}
+                        <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          {r.type}
+                        </span>
+                        <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-orange-600 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl">
+                            <PlayIcon size={18} />
+                          </div>
                         </div>
                       </div>
+                    </Link>
+                    <div className="flex items-center justify-between">
+                      <Link href={`/${artist.slug}/${r.slug}`} className="min-w-0 flex-1">
+                        <h3 className="font-bold text-sm truncate">{r.title}</h3>
+                      </Link>
+                      <WishlistButton releaseId={r.id} size={16} />
                     </div>
-                    <h3 className="font-bold text-sm truncate">{r.title}</h3>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider truncate mt-0.5">
-                      {artist.name}
-                    </p>
-                    <div className="flex items-center justify-between mt-1.5">
-                      {r.genre && (
-                        <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-wider">
-                          {r.genre}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider truncate">
+                        {artist.name}
+                      </p>
+                      {artistBadges[artist.id] && <Badge type={artistBadges[artist.id].badge_type} position={artistBadges[artist.id].metadata?.position} size="xs" />}
+                    </div>
+                    {getTags(r).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {getTags(r).map(tag => (
+                          <span key={tag} className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider bg-zinc-800/60 px-1.5 py-0.5 rounded-full">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-1">
                       <span className="text-xs font-black text-orange-600 ml-auto">
                         {price(r.price_pence)}
                       </span>
                     </div>
-                  </Link>
+                  </div>
                 )
               })}
             </div>
@@ -398,46 +419,109 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
             <div className="flex flex-col gap-1">
               {visibleReleases.map(r => {
                 const artist = getArtist(r.artists as Artist | Artist[])
+                const isMultiTrack = r.type === 'album' || r.type === 'ep'
+                const isExpanded = expandedReleases.has(r.id)
+                const tracks = trackCache[r.id]
+                const isLoading = loadingTracks.has(r.id)
                 return (
-                  <Link
-                    key={r.id}
-                    href={`/${artist.slug}/${r.slug}`}
-                    className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
-                      {r.cover_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={r.cover_url} className="w-full h-full object-cover" loading="lazy" alt={r.title} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs font-black text-zinc-700">
-                          {r.title.charAt(0)}
-                        </div>
+                  <div key={r.id} className="rounded-xl">
+                    <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                      {isMultiTrack && (
+                        <button
+                          onClick={() => toggleExpanded(r.id)}
+                          className="w-5 h-5 flex items-center justify-center shrink-0 text-zinc-500 hover:text-white transition-colors"
+                          aria-label={isExpanded ? 'Collapse tracks' : 'Expand tracks'}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 14 14"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            className={`transition-transform duration-200 ${isExpanded ? 'rotate-45' : ''}`}
+                          >
+                            <line x1="7" y1="2" x2="7" y2="12" />
+                            <line x1="2" y1="7" x2="12" y2="7" />
+                          </svg>
+                        </button>
                       )}
-                    </div>
-                    <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">
-                      {r.title}
-                    </span>
-                    <span className="hidden md:block text-[13px] text-zinc-500 truncate w-36 flex-shrink-0">
-                      {artist.name}
-                    </span>
-                    <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
-                      {r.type}
-                    </span>
-                    {r.genre && (
-                      <span className="hidden lg:block text-[10px] text-zinc-600 font-bold flex-shrink-0">
-                        {r.genre}
+                      <Link href={`/${artist.slug}/${r.slug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                        {r.cover_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r.cover_url} className="w-full h-full object-cover" loading="lazy" alt={r.title} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs font-black text-zinc-700">
+                            {r.title.charAt(0)}
+                          </div>
+                        )}
+                      </Link>
+                      <Link href={`/${artist.slug}/${r.slug}`} className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0 hover:text-orange-500 transition-colors">
+                        {r.title}
+                      </Link>
+                      <span className="hidden md:flex items-center gap-1 text-[13px] text-zinc-500 truncate w-36 flex-shrink-0">
+                        {artist.name}
+                        {artistBadges[artist.id] && <Badge type={artistBadges[artist.id].badge_type} position={artistBadges[artist.id].metadata?.position} size="xs" />}
                       </span>
-                    )}
-                    <span className="flex-1" />
-                    <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
-                      {price(r.price_pence)}
-                    </span>
-                    <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors">
-                      <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
+                      <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
+                        {r.type}
+                      </span>
+                      {getTags(r).length > 0 && (
+                        <span className="hidden lg:flex gap-1 flex-shrink-0">
+                          {getTags(r).map(tag => (
+                            <span key={tag} className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider bg-zinc-800/60 px-1.5 py-0.5 rounded-full">
+                              {tag}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                      <span className="flex-1" />
+                      <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
+                        {price(r.price_pence)}
+                      </span>
+                      <WishlistButton releaseId={r.id} size={16} />
+                      <Link
+                        href={`/${artist.slug}/${r.slug}`}
+                        className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
+                      >
+                        <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </Link>
                     </div>
-                  </Link>
+
+                    {isMultiTrack && (
+                      <div
+                        className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
+                        style={{ maxHeight: isExpanded ? `${(tracks?.length ?? 3) * 40 + 8}px` : '0px' }}
+                      >
+                        <div className="pl-11 md:pl-12 pr-3 pb-2">
+                          {isLoading && !tracks && (
+                            <div className="flex items-center gap-2 h-10 px-3">
+                              <span className="text-[11px] text-zinc-600">Loading tracks…</span>
+                            </div>
+                          )}
+                          {tracks?.map(track => (
+                            <div
+                              key={track.id}
+                              className="flex items-center gap-3 h-10 px-3 rounded-lg hover:bg-[#181818] transition-colors"
+                            >
+                              <span className="text-[11px] text-zinc-600 font-bold w-5 text-right shrink-0">
+                                {track.position}
+                              </span>
+                              <span className="text-[13px] text-zinc-300 truncate min-w-0 flex-1">
+                                {track.title}
+                              </span>
+                              <span className="text-[11px] text-zinc-600 font-medium shrink-0">
+                                {formatDuration(track.duration_sec)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
@@ -453,7 +537,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
               </div>
               <p className="font-black text-zinc-400 text-lg mb-2">No new releases this week</p>
               <p className="text-sm text-zinc-600 mb-5">
-                {currentGenre !== 'All' ? 'Try a different genre filter' : 'Check back soon for fresh music'}
+                {currentGenre !== 'All' ? 'Try a different sound filter' : 'Check back soon for fresh music'}
               </p>
               {currentGenre !== 'All' && (
                 <button
