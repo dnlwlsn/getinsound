@@ -306,7 +306,13 @@ export default function ExploreClient() {
         <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
           insound.
         </Link>
-        <SearchInput className="flex-1 max-w-md" />
+        <SearchInput className="flex-1 max-w-md hidden md:block" />
+        <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </Link>
         <div className="flex gap-2.5 items-center flex-shrink-0">
           <button onClick={toggleCart} className="bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 relative hover:border-zinc-700 transition-colors">
             <BagIcon />

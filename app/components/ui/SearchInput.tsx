@@ -37,7 +37,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const fetchResults = useCallback((q: string) => {
     abortRef.current?.abort()
