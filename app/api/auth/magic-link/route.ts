@@ -11,7 +11,7 @@ const supabaseAdmin = createClient(
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com';
 
-const VALID_TEMPLATES: EmailTemplate[] = ['signin', 'purchase', 'redeem'];
+const VALID_TEMPLATES: EmailTemplate[] = ['signin', 'purchase', 'redeem', 'reverify'];
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
