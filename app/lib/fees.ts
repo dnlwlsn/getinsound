@@ -94,3 +94,59 @@ export function isZeroFeesActive(
   const monthsRemaining = Math.ceil(msRemaining / (30 * 24 * 60 * 60 * 1000))
   return { active: true, monthsRemaining }
 }
+
+export interface MerchFeeResult {
+  insoundFee: number
+  stripeFee: number
+  artistReceives: number
+  totalCharged: number
+}
+
+export function calculateMerchFees(
+  itemPrice: number,
+  postage: number,
+  fanRegion: string,
+  artistRegion: string,
+  fanCurrency: string,
+  artistCurrency: string,
+): MerchFeeResult {
+  const totalCharged = round2(itemPrice + postage)
+  const insoundFee = round2(itemPrice * INSOUND_RATE)
+
+  const artistRegionKey = getRegion(artistRegion)
+  const fanRegionKey = getRegion(fanRegion)
+  const rate = STRIPE_RATES[artistRegionKey]
+
+  const baseStripeFee = round2(totalCharged * rate.percent + rate.fixed)
+  const internationalFee = fanRegionKey !== artistRegionKey
+    ? round2(totalCharged * INTERNATIONAL_SURCHARGE)
+    : 0
+  const conversionFee = fanCurrency !== artistCurrency
+    ? round2(totalCharged * CONVERSION_FEE_RATE)
+    : 0
+  const stripeFee = round2(baseStripeFee + internationalFee + conversionFee)
+
+  const artistReceives = round2(totalCharged - insoundFee - stripeFee)
+
+  return { insoundFee, stripeFee, artistReceives, totalCharged }
+}
+
+export function calculateMerchFeesPence(
+  itemPricePence: number,
+  postagePence: number,
+  fanRegion: string,
+  artistRegion: string,
+  fanCurrency: string,
+  artistCurrency: string,
+): { insoundFee: number; stripeFee: number; artistReceives: number; totalCharged: number } {
+  const result = calculateMerchFees(
+    itemPricePence / 100, postagePence / 100,
+    fanRegion, artistRegion, fanCurrency, artistCurrency,
+  )
+  return {
+    insoundFee: Math.round(result.insoundFee * 100),
+    stripeFee: Math.round(result.stripeFee * 100),
+    artistReceives: Math.round(result.artistReceives * 100),
+    totalCharged: Math.round(result.totalCharged * 100),
+  }
+}
