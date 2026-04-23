@@ -31,4 +31,5 @@ INSERT INTO fan_follows (user_id, artist_id)
 SELECT DISTINCT p.buyer_user_id, p.artist_id
 FROM purchases p
 WHERE p.status = 'paid'
+  AND p.buyer_user_id IS NOT NULL
 ON CONFLICT DO NOTHING;
