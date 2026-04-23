@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
+import { SearchInput } from '@/app/components/ui/SearchInput'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -146,7 +147,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
     <div className="min-h-screen font-display">
       {/* NAV */}
       <nav
-        className="sticky top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 py-4"
+        className="sticky top-0 w-full z-50 flex justify-between items-center px-5 md:px-10 py-4 gap-3"
         style={{
           background: 'rgba(9,9,11,0.88)',
           backdropFilter: 'blur(20px)',
@@ -156,6 +157,13 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
       >
         <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">
           insound.
+        </Link>
+        <SearchInput className="flex-1 max-w-md hidden md:block" />
+        <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
         </Link>
         <div className="flex gap-5 items-center text-sm font-bold">
           <Link href="/explore" className="text-zinc-500 hover:text-white transition-colors hidden sm:block">

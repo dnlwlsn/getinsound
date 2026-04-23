@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
+import { SearchInput } from '@/app/components/ui/SearchInput'
 
 /* ── Hardcoded mock data ──────────────────────────────────────── */
 
@@ -134,7 +135,6 @@ export default function ExploreClient() {
   const [basket, setBasket] = useState<Track[]>([])
   const [currentGenre, setCurrentGenre] = useState('All')
   const [currentReleaseType, setCurrentReleaseType] = useState<'albums' | 'all'>('albums')
-  const [searchQuery, setSearchQuery] = useState('')
   const [currentSort, setCurrentSort] = useState('newest')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [cartOpen, setCartOpen] = useState(false)
@@ -193,14 +193,7 @@ export default function ExploreClient() {
     let items = data.filter(t => {
       const matchesGenre = currentGenre === 'All' || t.genre === currentGenre
       const matchesType = currentReleaseType === 'all' || t.type === 'album' || t.type === 'ep'
-      const q = searchQuery.toLowerCase()
-      const matchesSearch =
-        !q ||
-        t.title.toLowerCase().includes(q) ||
-        t.artist.toLowerCase().includes(q) ||
-        t.genre.toLowerCase().includes(q) ||
-        t.origin.toLowerCase().includes(q)
-      return matchesGenre && matchesType && matchesSearch
+      return matchesGenre && matchesType
     })
     if (currentSort === 'price-low') items = [...items].sort((a, b) => +a.price - +b.price)
     else if (currentSort === 'price-high') items = [...items].sort((a, b) => +b.price - +a.price)
@@ -210,7 +203,7 @@ export default function ExploreClient() {
       items = [...items].sort((a, b) => (typeOrder[a.type] ?? 2) - (typeOrder[b.type] ?? 2))
     }
     return items
-  }, [currentGenre, currentReleaseType, searchQuery, currentSort])
+  }, [currentGenre, currentReleaseType, currentSort])
 
   const visibleItems = filtered.slice(0, visibleCount)
   const remaining = filtered.length - visibleCount
@@ -267,11 +260,7 @@ export default function ExploreClient() {
     setVisibleCount(PAGE_SIZE)
   }, [])
 
-  const headingText = searchQuery
-    ? `Results for "${searchQuery}"`
-    : currentGenre === 'All'
-      ? 'All Releases'
-      : currentGenre
+  const headingText = currentGenre === 'All' ? 'All Releases' : currentGenre
 
   const isInCart = useCallback((id: number) => basket.some(x => x.id === id), [basket])
 
@@ -317,21 +306,7 @@ export default function ExploreClient() {
         <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
           insound.
         </Link>
-        <div className="relative flex-1 max-w-md">
-          <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setVisibleCount(PAGE_SIZE) }}
-            placeholder="Search artists, tracks, genres..."
-            className="bg-zinc-900 border border-zinc-800 rounded-full py-2.5 pl-9 pr-10 text-sm w-full outline-none text-white placeholder-zinc-600 focus:border-orange-600 transition-colors"
-          />
-          {searchQuery && (
-            <button onClick={() => { setSearchQuery(''); setVisibleCount(PAGE_SIZE) }} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">
-              <CloseIcon size={14} />
-            </button>
-          )}
-        </div>
+        <SearchInput className="flex-1 max-w-md" />
         <div className="flex gap-2.5 items-center flex-shrink-0">
           <button onClick={toggleCart} className="bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 relative hover:border-zinc-700 transition-colors">
             <BagIcon />
@@ -564,7 +539,7 @@ export default function ExploreClient() {
             <p className="font-black text-zinc-400 text-lg mb-2">No results found</p>
             <p className="text-sm text-zinc-600 mb-5">Try a different search or genre</p>
             <button
-              onClick={() => { setSearchQuery(''); setGenre('All') }}
+              onClick={() => setGenre('All')}
               className="text-xs font-black text-orange-500 hover:text-orange-400 uppercase tracking-widest transition-colors"
             >
               Clear filters

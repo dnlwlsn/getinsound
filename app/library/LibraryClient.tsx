@@ -6,6 +6,7 @@ import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { generateGradient } from '@/lib/gradient'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
+import { SearchInput } from '@/app/components/ui/SearchInput'
 import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { zipSync } from 'fflate'
@@ -295,12 +296,19 @@ export default function LibraryClient({ releases, error }: Props) {
 
 function LibraryNav() {
   return (
-    <nav className="flex justify-between items-center px-8 py-5 border-b border-zinc-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
+    <nav className="flex justify-between items-center gap-3 px-8 py-5 border-b border-zinc-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
       <Link
         href="/"
         className="text-xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors"
       >
         insound.
+      </Link>
+      <SearchInput className="flex-1 max-w-md hidden md:block" />
+      <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
       </Link>
       <div className="flex gap-4 items-center">
         <Link
