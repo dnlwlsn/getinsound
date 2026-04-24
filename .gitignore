@@ -12,6 +12,9 @@ out/
 # Claude Code
 .claude/
 
+# Wrangler
+.wrangler/
+
 # Environment
 .env.local
 .env*.local
