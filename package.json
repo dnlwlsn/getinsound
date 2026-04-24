@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "build:css:legacy": "tailwindcss -i ./src/input.css -o ./tailwind.css --minify",
-    "pages:build": "opennextjs-cloudflare build && cp .open-next/worker.js .open-next/assets/_worker.js",
+    "pages:build": "opennextjs-cloudflare build && mv .open-next/worker.js .open-next/_worker.js",
     "pages:dev": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
