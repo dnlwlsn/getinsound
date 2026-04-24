@@ -63,7 +63,7 @@ interface Artist { id: string; slug: string; name: string; bio: string; avatar_u
 
 type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'error'
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TM4GsGkY3otnyNsltYWVo9N1xWEzKEUa8B4XjPlmSnP5VLCKAnkTebfHM8QOkmLTxyxxhNKQ4iJ9karlBfo5jEv007Ts2uEgI'
+const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 export default function ReleaseClient() {
   const searchParams = useSearchParams()
