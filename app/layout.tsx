@@ -5,6 +5,7 @@ import { PlayerBar } from './components/PlayerBar'
 import { AppNav } from './components/ui/AppNav'
 import { CurrencyProvider } from './providers/CurrencyProvider'
 import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistration'
+import { InstallBanner } from './components/pwa/InstallBanner'
 import './globals.css'
 
 export const runtime = 'edge'
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </CurrencyProvider>
         <PlayerBar />
         <ServiceWorkerRegistration />
+        <InstallBanner />
       </body>
     </html>
   )
