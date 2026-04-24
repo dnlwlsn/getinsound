@@ -8,38 +8,6 @@ import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 
-/* ── Hardcoded mock data ──────────────────────────────────────── */
-
-const ARTISTS = [
-  { name: 'YOUTH', genre: 'Indie', origin: 'Manchester' },
-  { name: 'The Glass Echo', genre: 'Indie', origin: 'London' },
-  { name: 'Neon Velour', genre: 'Electronic', origin: 'Bristol' },
-  { name: 'Manchester Skies', genre: 'Indie', origin: 'Manchester' },
-  { name: 'Luna Park', genre: 'Lo-Fi', origin: 'Edinburgh' },
-  { name: 'Digital Ghost', genre: 'Electronic', origin: 'London' },
-  { name: 'Coastal Kids', genre: 'Indie', origin: 'Brighton' },
-  { name: 'Static Bloom', genre: 'Lo-Fi', origin: 'Cardiff' },
-  { name: 'Solaris', genre: 'Electronic', origin: 'London' },
-  { name: 'Midnight Runners', genre: 'Lo-Fi', origin: 'Glasgow' },
-  { name: 'Pale Orbit', genre: 'Electronic', origin: 'Liverpool' },
-  { name: 'The Rooks', genre: 'Indie', origin: 'Leeds' },
-  { name: 'Velvet Hum', genre: 'Lo-Fi', origin: 'Brighton' },
-  { name: 'Frequency', genre: 'Hip-Hop', origin: 'Manchester' },
-  { name: 'Sea Glass', genre: 'Jazz', origin: 'Cornwall' },
-  { name: 'Raven Black', genre: 'Hip-Hop', origin: 'London' },
-  { name: 'Blue Smoke', genre: 'Jazz', origin: 'Edinburgh' },
-] as const
-
-const TITLES = [
-  'Summer Haze','Lost in the City','Neon Lights','After Hours','Fading Fast',
-  'Electric Love','Silent Echo','Golden Hour','Night Shift','Concrete Jungle',
-  'Northern Rain','Midnight Drive','Echoes','Shoreline','Binary Dreams',
-  'Orbit','Ember','Dusk','Static Wave','3AM','Solstice','Undertow','Pulse',
-  'Drift','Horizon',
-]
-
-const PRICES = [4.99,5.99,6.50,7.00,7.50,8.00,8.50,9.00,9.50,9.99]
-
 const RELEASE_TYPES = ['album', 'ep', 'single'] as const
 type ReleaseType = typeof RELEASE_TYPES[number]
 
@@ -55,32 +23,12 @@ interface Track {
   type: ReleaseType
 }
 
-const data: Track[] = Array.from({ length: 80 }, (_, i) => {
-  const artist = ARTISTS[i % ARTISTS.length]
-  const types: ReleaseType[] = ['album', 'album', 'ep', 'album', 'single']
-  return {
-    id: i,
-    title: TITLES[i % TITLES.length],
-    artist: artist.name,
-    genre: artist.genre,
-    origin: artist.origin,
-    price: PRICES[i % PRICES.length].toFixed(2),
-    img: `https://picsum.photos/seed/mus${i}/400/400`,
-    isNew: i < 12,
-    type: types[i % types.length],
-  }
-})
+const data: Track[] = []
 
 const GENRES = ['All','Indie','Electronic','Lo-Fi','Hip-Hop','Jazz'] as const
 const PAGE_SIZE = 20
 
-const FEATURED = [
-  { id: 0, title: 'Indie Summer', artist: 'YOUTH', origin: 'Manchester', genre: 'Indie', price: '9.00', img: 'https://picsum.photos/seed/mus0/600/600' },
-  { id: 2, title: 'Electric Love', artist: 'Neon Velour', price: '7.50', img: 'https://picsum.photos/seed/mus2/600/600' },
-  { id: 4, title: 'Golden Hour', artist: 'Luna Park', price: '6.50', img: 'https://picsum.photos/seed/mus4/600/600' },
-  { id: 5, title: 'Binary Dreams', artist: 'Digital Ghost', price: '8.50', img: 'https://picsum.photos/seed/mus5/600/600' },
-  { id: 9, title: '3AM', artist: 'Midnight Runners', price: '5.99', img: 'https://picsum.photos/seed/mus9/600/600' },
-]
+const FEATURED: { id: number; title: string; artist: string; origin?: string; genre?: string; price: string; img: string }[] = []
 
 /* ── Icons (inline SVG helpers) ───────────────────────────────── */
 

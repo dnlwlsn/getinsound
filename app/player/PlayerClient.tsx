@@ -5,14 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { usePlayerStore, type Track } from '@/lib/stores/player'
 
-/* ── Mock track catalogue (used for "More from this artist") ──── */
-const allTracks = [
-  { id: '0', title: 'Indie Summer', artist: 'YOUTH', artistSlug: 'youth', price: '9.00', img: 'https://picsum.photos/seed/mus0/600/600' },
-  { id: '1', title: 'Northern Rain', artist: 'YOUTH', artistSlug: 'youth', price: '7.00', img: 'https://picsum.photos/seed/mus1/600/600' },
-  { id: '2', title: 'Midnight Drive', artist: 'YOUTH', artistSlug: 'youth', price: '8.00', img: 'https://picsum.photos/seed/mus3/600/600' },
-  { id: '3', title: 'Electric Love', artist: 'Neon Velour', artistSlug: 'neon-velour', price: '7.50', img: 'https://picsum.photos/seed/mus2/600/600' },
-  { id: '4', title: 'Golden Hour', artist: 'Luna Park', artistSlug: 'luna-park', price: '6.50', img: 'https://picsum.photos/seed/mus4/600/600' },
-]
+const allTracks: { id: string; title: string; artist: string; artistSlug: string; price: string; img: string }[] = []
 
 /* ── Helpers ───────────────────────────────────────────────────── */
 function formatTime(s: number) {
@@ -50,11 +43,11 @@ export default function PlayerClient() {
 
   /* Track data from URL params */
   const trackId = searchParams.get('id') || '0'
-  const title = searchParams.get('title') || 'Indie Summer'
-  const artist = searchParams.get('artist') || 'YOUTH'
-  const artistSlug = searchParams.get('artistSlug') || 'youth'
+  const title = searchParams.get('title') || 'Untitled'
+  const artist = searchParams.get('artist') || 'Unknown Artist'
+  const artistSlug = searchParams.get('artistSlug') || ''
   const price = searchParams.get('price') || '5.99'
-  const img = searchParams.get('img') || 'https://picsum.photos/seed/mus0/600/600'
+  const img = searchParams.get('img') || ''
   const accent = searchParams.get('accent') || '#F56D00'
 
   /* Player store */

@@ -26,14 +26,7 @@ const COST_ITEMS = [
 ]
 
 /* ── Phone mockup tracks ─────────────────────────────────────── */
-const TRACKS = [
-  { name: 'Midnight Drive', type: 'Album', year: '2026', price: 8,  color1: '#ea580c', color2: '#431407', glow: '234,88,12' },
-  { name: 'Ghost Signal',   type: 'Single',year: '2026', price: 5,  color1: '#1d4ed8', color2: '#0f172a', glow: '29,78,216' },
-  { name: 'Neon Requiem',   type: 'EP',    year: '2025', price: 10, color1: '#7c3aed', color2: '#1a0533', glow: '124,58,237' },
-  { name: 'Tender Light',   type: 'Album', year: '2025', price: 9,  color1: '#059669', color2: '#022c22', glow: '5,150,105' },
-  { name: 'Fading Out',     type: 'Single',year: '2025', price: 4,  color1: '#dc2626', color2: '#1c0505', glow: '220,38,38' },
-  { name: 'Golden Hour',    type: 'EP',    year: '2025', price: 7,  color1: '#d97706', color2: '#1a0f00', glow: '217,119,6' },
-]
+const TRACKS: { name: string; type: string; year: string; price: number; color1: string; color2: string; glow: string }[] = []
 
 /* ── Email validation ────────────────────────────────────────── */
 const isValidEmail = (e: string) => !!e && /\S+@\S+\.\S+/.test(e)
@@ -73,8 +66,8 @@ export default function HomeClient() {
 
   /* Phone mockup */
   const [phoneTime, setPhoneTime]   = useState('9:41')
-  const [activeTrack, setActiveTrack] = useState(TRACKS[0].name)
-  const [banner, setBanner]         = useState({ color1: TRACKS[0].color1, color2: TRACKS[0].color2, glow: TRACKS[0].glow })
+  const [activeTrack, setActiveTrack] = useState(TRACKS[0]?.name ?? '')
+  const [banner, setBanner]         = useState({ color1: TRACKS[0]?.color1 ?? '#ea580c', color2: TRACKS[0]?.color2 ?? '#431407', glow: TRACKS[0]?.glow ?? '234,88,12' })
   const [basket, setBasket]         = useState<string[]>([])
 
   /* Hero email ref for focus-pop */
