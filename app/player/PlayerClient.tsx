@@ -216,9 +216,9 @@ export default function PlayerClient() {
         .bars-paused .bar1, .bars-paused .bar2, .bars-paused .bar3, .bars-paused .bar4 { animation-play-state: paused; }
       `}} />
 
-      <div className="min-h-screen flex flex-col relative overflow-hidden">
+      <div className="min-h-screen flex flex-col relative overflow-x-hidden">
         {/* ── Main player area ────────────────────────────────────── */}
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex flex-col items-center justify-center px-5 py-6">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(234,88,12,0.07),transparent)] pointer-events-none" />
 
           <div className="relative z-10 w-full max-w-sm mx-auto">
@@ -310,12 +310,12 @@ export default function PlayerClient() {
               </button>
               <button
                 onClick={togglePlay}
-                className="bg-white text-black w-20 h-20 rounded-full flex items-center justify-center hover:bg-orange-600 hover:scale-105 transition-all shadow-2xl shadow-orange-600/20"
+                className="bg-white text-black w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center hover:bg-orange-600 hover:scale-105 transition-all shadow-2xl shadow-orange-600/20"
               >
                 {isPlaying ? (
-                  <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                  <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
                 ) : (
-                  <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                  <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                 )}
               </button>
               <button onClick={nextTrack} className="text-zinc-400 hover:text-white transition-colors p-2">
@@ -505,28 +505,28 @@ export default function PlayerClient() {
           </div>
         </section>
 
-        {/* ── Sticky register bar ───────────────────────────────── */}
+        {/* ── Sticky register bar (hidden on mobile to avoid overlap) ── */}
         <div
-          className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800 px-5 py-3.5"
+          className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800 px-5 py-3.5 hidden sm:block"
           style={{
             transform: stickyBarVisible && !stickyBarDismissed && !registered ? 'translateY(0)' : 'translateY(100%)',
             transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)',
           }}
         >
-          <div className="max-w-4xl mx-auto flex items-center gap-4 flex-wrap sm:flex-nowrap">
-            <div className="hidden sm:block flex-1 min-w-0">
+          <div className="max-w-4xl mx-auto flex items-center gap-4">
+            <div className="flex-1 min-w-0">
               <p className="font-black text-sm text-white">Get early access to Insound</p>
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Founding member rates — locked forever</p>
             </div>
             {!registered ? (
-              <div className="flex gap-2 flex-1 sm:flex-initial">
+              <div className="flex gap-2">
                 <input
                   type="email"
                   value={stickyEmail}
                   onChange={e => { setStickyEmail(e.target.value); setStickyEmailError(false) }}
                   onKeyDown={e => { if (e.key === 'Enter') submitInterest(stickyEmail, 'sticky') }}
                   placeholder="your@email.com"
-                  className={`flex-1 sm:w-52 bg-zinc-800 border ${stickyEmailError ? 'border-red-500' : 'border-zinc-700'} focus:border-orange-600 focus:outline-none rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 transition-colors`}
+                  className={`w-52 bg-zinc-800 border ${stickyEmailError ? 'border-red-500' : 'border-zinc-700'} focus:border-orange-600 focus:outline-none rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 transition-colors`}
                 />
                 <button
                   onClick={() => submitInterest(stickyEmail, 'sticky')}

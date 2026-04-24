@@ -216,38 +216,38 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
   return (
     <div className="min-h-screen font-display pb-24">
 
-      <div className="max-w-6xl mx-auto px-8 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         {/* Header + Stats */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
           <div>
             <p className="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-3">
               Your Library
             </p>
-            <h1 className="text-5xl font-black tracking-tighter mb-2">My Music</h1>
-            <p className="text-zinc-400 font-medium">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tighter mb-2">My Music</h1>
+            <p className="text-zinc-400 font-medium text-sm sm:text-base">
               You&apos;ve supported{' '}
               <span className="text-white font-bold">{uniqueArtistCount} {uniqueArtistCount === 1 ? 'artist' : 'artists'}</span>{' '}
               directly.
             </p>
           </div>
-          <div className="flex gap-3">
-            <div className="bg-zinc-900 border border-zinc-800 px-6 py-4 rounded-2xl text-right">
+          <div className="flex gap-3 w-full md:w-auto">
+            <div className="bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl text-right flex-1 md:flex-initial">
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">
-                Total Contributed
+                Contributed
               </p>
-              <p className="text-2xl font-black text-orange-600">{totalContributed}</p>
+              <p className="text-xl sm:text-2xl font-black text-orange-600">{totalContributed}</p>
             </div>
-            <div className="bg-zinc-900 border border-zinc-800 px-6 py-4 rounded-2xl text-right">
+            <div className="bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl text-right flex-1 md:flex-initial">
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">
-                Releases Owned
+                Releases
               </p>
-              <p className="text-2xl font-black">{releasesOwned}</p>
+              <p className="text-xl sm:text-2xl font-black">{releasesOwned}</p>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-8 border-b border-zinc-800">
+        <div className="flex gap-1 mb-8 border-b border-zinc-800 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <button
             onClick={() => setTab('collection')}
             className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors border-b-2 -mb-px ${
@@ -386,7 +386,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
           style={{ opacity: 1 }}
         >
           {viewMode === 'expanded' ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 animate-in fade-in duration-300">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8 animate-in fade-in duration-300">
               {filtered.map((r) => (
                 <ReleaseCard
                   key={r.purchaseId}
@@ -865,8 +865,8 @@ function WishlistTab({ items }: { items: WishlistItem[] }) {
       {wishlist.map(w => {
         const gradient = w.coverUrl ? null : generateGradient(w.artistSlug, w.releaseId)
         return (
-          <div key={w.wishlistId} className="flex items-center gap-4 bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-            <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
+          <div key={w.wishlistId} className="flex items-center gap-3 sm:gap-4 bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 sm:p-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex-shrink-0">
               {w.coverUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={w.coverUrl} alt={w.title} className="w-full h-full object-cover" />
@@ -880,18 +880,18 @@ function WishlistTab({ items }: { items: WishlistItem[] }) {
                 <p className="text-xs text-zinc-500">{w.artistName}</p>
               </Link>
             </div>
-            <span className="text-sm font-bold text-white flex-shrink-0">
+            <span className="text-xs sm:text-sm font-bold text-white flex-shrink-0">
               {formatPriceUtil(w.pricePence / 100, w.currency)}
             </span>
             <Link
               href={`/${w.artistSlug}`}
-              className="bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-orange-500 transition-colors flex-shrink-0"
+              className="bg-orange-600 text-white text-xs font-bold px-3 sm:px-4 py-2 rounded-full hover:bg-orange-500 transition-colors flex-shrink-0"
             >
               Buy
             </Link>
             <button
               onClick={() => remove(w.releaseId)}
-              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
+              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0 hidden sm:block"
               aria-label="Remove from wishlist"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { NotificationBell } from '@/app/components/ui/NotificationBell'
+
 
 interface Notification {
   id: string
@@ -96,20 +96,7 @@ export function NotificationsClient({ userId }: Props) {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
-      {/* Nav */}
-      <nav className="flex justify-between items-center px-8 py-5 border-b border-zinc-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
-        <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors font-display">
-          insound.
-        </Link>
-        <div className="flex gap-4 items-center">
-          <Link href="/library" className="text-xs font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors">
-            Library
-          </Link>
-          <NotificationBell userId={userId} />
-        </div>
-      </nav>
-
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="font-display text-2xl font-bold">Notifications</h1>
