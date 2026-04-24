@@ -23,8 +23,9 @@ export function NotificationBell({ userId, initialUnreadCount = 0 }: Props) {
 
   useEffect(() => {
     const supabase = createClient()
+    const channelName = `notifications:${userId}:${Date.now()}`
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
