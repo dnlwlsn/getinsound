@@ -3,23 +3,45 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { usePlayerStore, type Track } from '@/lib/stores/player'
 
-/* ── Mock track catalogue ──────────────────────────────────────── */
+/* ── Mock track catalogue (used for "More from this artist") ──── */
 const allTracks = [
-  { id: 0, title: 'Indie Summer', artist: 'YOUTH', price: '9.00', img: 'https://picsum.photos/seed/mus0/600/600' },
-  { id: 1, title: 'Northern Rain', artist: 'YOUTH', price: '7.00', img: 'https://picsum.photos/seed/mus1/600/600' },
-  { id: 2, title: 'Midnight Drive', artist: 'YOUTH', price: '8.00', img: 'https://picsum.photos/seed/mus3/600/600' },
-  { id: 3, title: 'Electric Love', artist: 'Neon Velour', price: '7.50', img: 'https://picsum.photos/seed/mus2/600/600' },
-  { id: 4, title: 'Golden Hour', artist: 'Luna Park', price: '6.50', img: 'https://picsum.photos/seed/mus4/600/600' },
+  { id: '0', title: 'Indie Summer', artist: 'YOUTH', artistSlug: 'youth', price: '9.00', img: 'https://picsum.photos/seed/mus0/600/600' },
+  { id: '1', title: 'Northern Rain', artist: 'YOUTH', artistSlug: 'youth', price: '7.00', img: 'https://picsum.photos/seed/mus1/600/600' },
+  { id: '2', title: 'Midnight Drive', artist: 'YOUTH', artistSlug: 'youth', price: '8.00', img: 'https://picsum.photos/seed/mus3/600/600' },
+  { id: '3', title: 'Electric Love', artist: 'Neon Velour', artistSlug: 'neon-velour', price: '7.50', img: 'https://picsum.photos/seed/mus2/600/600' },
+  { id: '4', title: 'Golden Hour', artist: 'Luna Park', artistSlug: 'luna-park', price: '6.50', img: 'https://picsum.photos/seed/mus4/600/600' },
 ]
 
 /* ── Helpers ───────────────────────────────────────────────────── */
 function formatTime(s: number) {
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  const m = Math.floor(s / 60)
+  const sec = Math.floor(s % 60)
+  return `${m}:${String(sec).padStart(2, '0')}`
 }
 
-function playerUrl(t: { id: number; title: string; artist: string; price: string; img: string }) {
-  return `/player?id=${t.id}&title=${encodeURIComponent(t.title)}&artist=${encodeURIComponent(t.artist)}&price=${t.price}&img=${encodeURIComponent(t.img)}`
+function playerUrl(t: { id: string; title: string; artist: string; artistSlug: string; price: string; img: string }) {
+  return `/player?id=${t.id}&title=${encodeURIComponent(t.title)}&artist=${encodeURIComponent(t.artist)}&artistSlug=${encodeURIComponent(t.artistSlug)}&price=${t.price}&img=${encodeURIComponent(t.img)}`
+}
+
+function buildTrack(params: {
+  id: string; title: string; artist: string; artistSlug: string;
+  img: string; accent: string;
+}): Track {
+  return {
+    id: params.id,
+    title: params.title,
+    artistName: params.artist,
+    artistSlug: params.artistSlug,
+    releaseId: params.id,
+    releaseTitle: params.title,
+    coverUrl: params.img,
+    position: 1,
+    durationSec: null,
+    accentColour: params.accent,
+    purchased: false,
+  }
 }
 
 /* ── Component ─────────────────────────────────────────────────── */
@@ -30,17 +52,28 @@ export default function PlayerClient() {
   const trackId = searchParams.get('id') || '0'
   const title = searchParams.get('title') || 'Indie Summer'
   const artist = searchParams.get('artist') || 'YOUTH'
+  const artistSlug = searchParams.get('artistSlug') || 'youth'
   const price = searchParams.get('price') || '5.99'
   const img = searchParams.get('img') || 'https://picsum.photos/seed/mus0/600/600'
   const accent = searchParams.get('accent') || '#F56D00'
 
-  /* State */
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentSeconds, setCurrentSeconds] = useState(0)
-  const [totalSeconds] = useState(() => Math.floor(Math.random() * 180 + 150))
+  /* Player store */
+  const play = usePlayerStore(s => s.play)
+  const pause = usePlayerStore(s => s.pause)
+  const resume = usePlayerStore(s => s.resume)
+  const storeNext = usePlayerStore(s => s.next)
+  const storePrevious = usePlayerStore(s => s.previous)
+  const seek = usePlayerStore(s => s.seek)
+  const setVolume = usePlayerStore(s => s.setVolume)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
+  const currentTime = usePlayerStore(s => s.currentTime)
+  const duration = usePlayerStore(s => s.duration)
+  const volume = usePlayerStore(s => s.volume)
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const isPreview = usePlayerStore(s => s.isPreview)
+
+  /* Local UI state */
   const [liked, setLiked] = useState(false)
-  const [repeated, setRepeated] = useState(false)
-  const [shuffled, setShuffled] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [buyModalOpen, setBuyModalOpen] = useState(false)
   const [checkoutStep, setCheckoutStep] = useState<'form' | 'processing' | 'success'>('form')
@@ -54,8 +87,24 @@ export default function PlayerClient() {
   const [registerEmailError, setRegisterEmailError] = useState(false)
   const [stickyEmailError, setStickyEmailError] = useState(false)
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
+  const scrubbingRef = useRef(false)
+  const hasStartedRef = useRef(false)
+
+  /* Start playback on mount (or when track changes via URL) */
+  useEffect(() => {
+    const track = buildTrack({ id: trackId, title, artist, artistSlug, img, accent })
+    const related = allTracks
+      .filter(t => t.id !== trackId)
+      .sort((a, b) => (a.artist === artist ? -1 : b.artist === artist ? 1 : 0))
+      .slice(0, 3)
+    const queue: Track[] = [
+      track,
+      ...related.map(t => buildTrack({ id: t.id, title: t.title, artist: t.artist, artistSlug: t.artistSlug, img: t.img, accent })),
+    ]
+    play(track, queue)
+    hasStartedRef.current = true
+  }, [trackId, title, artist, artistSlug, img, accent]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Apply accent colour as CSS variable */
   useEffect(() => {
@@ -88,64 +137,57 @@ export default function PlayerClient() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [stickyBarDismissed, registered])
 
-  /* Play / pause timer */
-  useEffect(() => {
-    if (isPlaying) {
-      intervalRef.current = setInterval(() => {
-        setCurrentSeconds(prev => {
-          const next = Math.min(prev + 1, totalSeconds)
-          if (next >= totalSeconds) {
-            if (repeated) {
-              return 0
-            } else {
-              setIsPlaying(false)
-              return next
-            }
-          }
-          return next
-        })
-      }, 1000)
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [isPlaying, totalSeconds, repeated])
-
   /* Derived values */
-  const progressPct = totalSeconds > 0 ? (currentSeconds / totalSeconds) * 100 : 0
+  const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0
+  const isThisTrack = currentTrack?.id === trackId
+  const playing = isThisTrack && isPlaying
+
   const related = allTracks
-    .filter(t => t.id !== parseInt(trackId))
+    .filter(t => t.id !== trackId)
     .sort((a, b) => (a.artist === artist ? -1 : b.artist === artist ? 1 : 0))
     .slice(0, 3)
 
   /* Handlers */
-  const togglePlay = useCallback(() => setIsPlaying(p => !p), [])
+  const togglePlay = useCallback(() => {
+    if (!isThisTrack) {
+      const track = buildTrack({ id: trackId, title, artist, artistSlug, img, accent })
+      play(track)
+      return
+    }
+    if (isPlaying) pause()
+    else resume()
+  }, [isThisTrack, isPlaying, trackId, title, artist, artistSlug, img, accent, play, pause, resume])
 
-  const seekTo = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const seekFromX = useCallback((clientX: number) => {
     const bar = progressBarRef.current
-    if (!bar) return
+    if (!bar || duration <= 0) return
     const rect = bar.getBoundingClientRect()
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    setCurrentSeconds(Math.floor(pct * totalSeconds))
-  }, [totalSeconds])
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    seek(pct * duration)
+  }, [duration, seek])
 
-  const nextTrack = useCallback(() => {
-    setCurrentSeconds(0)
-    if (isPlaying) {
-      setIsPlaying(false)
-      setTimeout(() => setIsPlaying(true), 50)
-    }
-  }, [isPlaying])
+  const onScrubStart = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    scrubbingRef.current = true
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    seekFromX(clientX)
 
-  const prevTrack = useCallback(() => {
-    if (currentSeconds > 3) {
-      setCurrentSeconds(0)
-    } else {
-      nextTrack()
+    function onMove(ev: MouseEvent | TouchEvent) {
+      if (!scrubbingRef.current) return
+      const x = 'touches' in ev ? ev.touches[0].clientX : ev.clientX
+      seekFromX(x)
     }
-  }, [currentSeconds, nextTrack])
+    function onEnd() {
+      scrubbingRef.current = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onEnd)
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('touchend', onEnd)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onEnd)
+    document.addEventListener('touchmove', onMove, { passive: true })
+    document.addEventListener('touchend', onEnd)
+  }, [seekFromX])
 
   const shareTrack = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).catch(() => {})
@@ -252,13 +294,13 @@ export default function PlayerClient() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={img}
-                  className={`w-full h-full object-cover spin-slow ${isPlaying ? '' : 'paused'}`}
+                  className={`w-full h-full object-cover spin-slow ${playing ? '' : 'paused'}`}
                   alt="Album art"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
               {/* Equaliser bars */}
-              <div className={`${isPlaying ? '' : 'bars-paused'} absolute bottom-5 right-5 flex items-end gap-1 h-6`}>
+              <div className={`${playing ? '' : 'bars-paused'} absolute bottom-5 right-5 flex items-end gap-1 h-6`}>
                 <div className="bar1 w-1.5 bg-orange-500 rounded-full" />
                 <div className="bar2 w-1.5 bg-orange-500 rounded-full" />
                 <div className="bar3 w-1.5 bg-orange-500 rounded-full" />
@@ -271,64 +313,54 @@ export default function PlayerClient() {
               <h1 className="text-3xl font-black leading-tight mb-1 font-display">{title}</h1>
               <div className="flex items-center justify-between">
                 <p className="text-orange-600 font-bold tracking-tight text-lg">{artist}</p>
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-full">
-                  Indie
-                </span>
+                <div className="flex items-center gap-2">
+                  {isPreview && isThisTrack && (
+                    <span className="text-[10px] font-black uppercase tracking-widest text-orange-500 bg-orange-600/10 border border-orange-600/20 px-3 py-1 rounded-full">
+                      Preview
+                    </span>
+                  )}
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-full">
+                    Indie
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Progress bar */}
+            {/* Progress bar (supports click + drag scrubbing) */}
             <div className="mb-3">
               <div
                 ref={progressBarRef}
-                onClick={seekTo}
-                className="w-full h-1.5 bg-zinc-800 rounded-full cursor-pointer relative group hover:h-2.5 transition-all duration-150"
+                onMouseDown={onScrubStart}
+                onTouchStart={onScrubStart}
+                className="w-full h-3 bg-zinc-800 rounded-full cursor-pointer relative group touch-none"
               >
-                <div className="h-full bg-orange-600 rounded-full relative" style={{ width: `${progressPct}%` }}>
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-y-0 left-0 bg-orange-600 rounded-full" style={{ width: `${progressPct}%` }}>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg scale-0 group-hover:scale-100 group-active:scale-100 transition-transform" />
                 </div>
               </div>
             </div>
             <div className="flex justify-between text-xs text-zinc-500 font-bold mb-7">
-              <span>{formatTime(currentSeconds)}</span>
-              <span>{formatTime(totalSeconds)}</span>
+              <span>{isThisTrack ? formatTime(currentTime) : '0:00'}</span>
+              <span>{duration > 0 && isThisTrack ? formatTime(duration) : '--:--'}</span>
             </div>
 
             {/* Controls */}
-            <div className="flex justify-between items-center mb-8">
-              <button
-                onClick={() => setShuffled(s => !s)}
-                className={`${shuffled ? 'text-orange-500' : 'text-zinc-600'} hover:text-zinc-400 transition-colors p-2`}
-              >
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <polyline points="16 3 21 3 21 8" /><line x1="4" y1="20" x2="21" y2="3" />
-                  <polyline points="21 16 21 21 16 21" /><line x1="15" y1="15" x2="21" y2="21" />
-                </svg>
-              </button>
-              <button onClick={prevTrack} className="text-zinc-400 hover:text-white transition-colors p-2">
+            <div className="flex justify-center items-center gap-6 sm:gap-8 mb-8">
+              <button onClick={storePrevious} className="text-zinc-400 hover:text-white transition-colors p-2">
                 <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
               </button>
               <button
                 onClick={togglePlay}
                 className="bg-white text-black w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center hover:bg-orange-600 hover:scale-105 transition-all shadow-2xl shadow-orange-600/20"
               >
-                {isPlaying ? (
+                {playing ? (
                   <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
                 ) : (
                   <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                 )}
               </button>
-              <button onClick={nextTrack} className="text-zinc-400 hover:text-white transition-colors p-2">
+              <button onClick={storeNext} className="text-zinc-400 hover:text-white transition-colors p-2">
                 <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>
-              </button>
-              <button
-                onClick={() => setRepeated(r => !r)}
-                className={`${repeated ? 'text-orange-500' : 'text-zinc-600'} hover:text-zinc-400 transition-colors p-2`}
-              >
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                </svg>
               </button>
             </div>
 
@@ -337,7 +369,14 @@ export default function PlayerClient() {
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-zinc-600">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
               </svg>
-              <input type="range" min="0" max="100" defaultValue="80" className="flex-1 h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-orange-600" />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(volume * 100)}
+                onChange={e => setVolume(parseInt(e.target.value) / 100)}
+                className="flex-1 h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-orange-600"
+              />
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-zinc-400">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
@@ -439,7 +478,7 @@ export default function PlayerClient() {
                       disabled={checkoutStep === 'processing'}
                       className="w-full bg-orange-600 text-black font-black py-4 rounded-2xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider disabled:opacity-70"
                     >
-                      {checkoutStep === 'processing' ? 'Processing...' : `Pay \u00A3${price}`}
+                      {checkoutStep === 'processing' ? 'Processing...' : `Pay £${price}`}
                     </button>
                     <p className="text-center text-[10px] text-zinc-600 mt-4 font-bold tracking-wide">Secured by 256-bit encryption</p>
                   </div>
@@ -462,14 +501,14 @@ export default function PlayerClient() {
         </div>
 
         {/* ── Register interest ──────────────────────────────────── */}
-        <section className="py-24 bg-zinc-950 border-t border-zinc-900">
-          <div className="max-w-2xl mx-auto px-6 text-center">
+        <section className="py-16 sm:py-24 bg-zinc-950 border-t border-zinc-900">
+          <div className="max-w-2xl mx-auto px-5 sm:px-6 text-center">
             <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 rounded-full px-4 py-2 mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-600 pulse-dot" />
               <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Early Access Open</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 font-display">Be first in line.</h2>
-            <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter mb-4 font-display">Be first in line.</h2>
+            <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed text-sm sm:text-base">
               Register your interest and get priority access, a founding member badge, and your rate locked in forever — before we open to everyone.
             </p>
             {!registered ? (
@@ -487,7 +526,7 @@ export default function PlayerClient() {
                   disabled={registerSending}
                   className="bg-orange-600 hover:bg-orange-500 text-black font-black px-7 py-4 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20 disabled:opacity-70"
                 >
-                  {registerSending ? 'Sending...' : 'Register \u2192'}
+                  {registerSending ? 'Sending...' : 'Register →'}
                 </button>
               </div>
             ) : (
@@ -533,7 +572,7 @@ export default function PlayerClient() {
                   disabled={stickySending}
                   className="bg-orange-600 hover:bg-orange-500 text-black font-black px-5 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20 disabled:opacity-70"
                 >
-                  {stickySending ? 'Sending...' : 'Register \u2192'}
+                  {stickySending ? 'Sending...' : 'Register →'}
                 </button>
               </div>
             ) : (
