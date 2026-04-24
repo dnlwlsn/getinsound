@@ -50,7 +50,7 @@ export function AppNav() {
   }
 
   return (
-    <nav className="w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl">
+    <nav className="sticky top-0 relative w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
         <Link href="/explore" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
           insound.

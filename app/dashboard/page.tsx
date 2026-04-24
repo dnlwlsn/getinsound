@@ -6,6 +6,7 @@ export const runtime = 'edge'
 export const metadata = { title: 'Artist Studio | Insound' }
 
 export default async function DashboardPage() {
+  try {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/signup')
@@ -160,6 +161,9 @@ export default async function DashboardPage() {
       } : undefined}
     />
   )
+  } catch (e: any) {
+    return <pre style={{ padding: '2rem', color: '#f97316' }}>Dashboard error: {e?.message ?? String(e)}{'\n'}{e?.stack}</pre>
+  }
 }
 
 function maskEmail(email: string): string {
