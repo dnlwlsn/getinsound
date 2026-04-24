@@ -1,12 +1,16 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
   "name": "insound",
-  "pages_build_output_dir": ".open-next/assets",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": [
     "nodejs_compat",
     "global_fetch_strictly_public"
   ],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://rvsfriqjobwuzzfdiyxg.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg",
