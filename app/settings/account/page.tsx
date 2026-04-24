@@ -19,7 +19,9 @@ export default async function AccountSettingsPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/welcome')
+  if (!profile) {
+    await supabase.from('fan_profiles').upsert({ id: user.id }, { onConflict: 'id' })
+  }
 
   const { data: pending } = await supabase
     .from('account_deletion_requests')

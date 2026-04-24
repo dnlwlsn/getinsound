@@ -13,13 +13,19 @@ export default async function ProfileSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/signup')
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from('fan_profiles')
     .select('username, avatar_url, bio, accent_colour, is_public, show_purchase_amounts, show_collection, show_wall')
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/welcome')
+  if (!profile) {
+    await supabase.from('fan_profiles').upsert({ id: user.id }, { onConflict: 'id' })
+    profile = {
+      username: null, avatar_url: null, bio: null, accent_colour: null,
+      is_public: true, show_purchase_amounts: false, show_collection: true, show_wall: true,
+    }
+  }
 
   // Fetch purchases for the "hide specific purchases" list
   const { data: purchases } = await supabase
