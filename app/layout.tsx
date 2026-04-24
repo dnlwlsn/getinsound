@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { PlayerBar } from './components/PlayerBar'
 import { AppNav } from './components/ui/AppNav'
 import { CurrencyProvider } from './providers/CurrencyProvider'
+import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistration'
 import './globals.css'
 
 export const runtime = 'edge'
@@ -55,6 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </CurrencyProvider>
         <PlayerBar />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   )
