@@ -74,3 +74,44 @@ export async function createNotificationBatch({
   if (rows.length === 0) return
   await supabase.from('notifications').insert(rows)
 }
+
+export async function sendPushNotification({
+  supabase,
+  userIds,
+  title,
+  body,
+  url,
+  tag,
+}: {
+  supabase: SupabaseClient
+  userIds: string[]
+  title: string
+  body?: string
+  url?: string
+  tag?: string
+}): Promise<void> {
+  if (userIds.length === 0) return
+
+  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+  if (!supabaseUrl || !serviceKey) return
+
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_ids: userIds,
+        title,
+        body: body ?? '',
+        url,
+        tag,
+      }),
+    })
+  } catch {
+    // Push failures should not block the notification flow
+  }
+}
