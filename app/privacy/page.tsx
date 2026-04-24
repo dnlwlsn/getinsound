@@ -25,9 +25,10 @@ export default function PrivacyPage() {
         <div className="prose-custom space-y-8 text-[15px] text-zinc-400 leading-[1.85] [&_h2]:font-display [&_h2]:text-[1.35rem] [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-12 [&_h2]:mb-3 [&_h3]:font-display [&_h3]:text-[1.05rem] [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-2 [&_a]:text-orange-600 [&_a:hover]:text-orange-400 [&_strong]:text-white [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1.5 [&_table]:w-full [&_table]:text-sm [&_th]:p-3 [&_th]:text-left [&_th]:text-white [&_th]:font-bold [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-widest [&_td]:p-3 [&_td]:border-b [&_td]:border-white/[0.06] [&_code]:text-orange-400 [&_code]:text-[13px]">
 
           <h2>1. Who we are</h2>
-          <p>Insound (&ldquo;Insound&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is the data controller responsible for your personal data. We are registered in England and Wales.</p>
+          <p>Insound Music Ltd (&ldquo;Insound&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is the data controller responsible for your personal data. We are a company registered in England and Wales (Company Number: 17179694).</p>
           <table><tbody>
-            <tr><td><strong>Registered name</strong></td><td>Insound</td></tr>
+            <tr><td><strong>Registered name</strong></td><td>Insound Music Ltd</td></tr>
+            <tr><td><strong>Company number</strong></td><td>17179694</td></tr>
             <tr><td><strong>Contact email</strong></td><td><a href="mailto:privacy@getinsound.com">privacy@getinsound.com</a></td></tr>
             <tr><td><strong>Website</strong></td><td><a href="https://getinsound.com">getinsound.com</a></td></tr>
           </tbody></table>

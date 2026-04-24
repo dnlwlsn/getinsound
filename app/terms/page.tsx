@@ -22,7 +22,7 @@ export default function TermsPage() {
         <div className="space-y-6 text-[15px] text-zinc-400 leading-[1.75] [&_h2]:text-[1.25rem] [&_h2]:font-black [&_h2]:text-white [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-2 [&_a]:text-orange-600 [&_a:hover]:text-orange-400 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1.5">
 
           {/* ── Identity ──────────────────────────────────────── */}
-          <p>These terms govern the use of Insound at <a href="https://getinsound.com">getinsound.com</a>. The service is operated by [OPERATOR_LEGAL_NAME], a sole trader based in England. Contact: [EMAIL_PLACEHOLDER].</p>
+          <p>These terms govern the use of Insound at <a href="https://getinsound.com">getinsound.com</a>. The service is operated by Insound Music Ltd, a company registered in England and Wales (Company Number: 17179694). Contact: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a>.</p>
           <p>Plain English where possible. If something is unclear, email <a href="mailto:dan@getinsound.com">dan@getinsound.com</a> and Insound will explain it.</p>
 
           {/* ── Marketplace Role ───────────────────────────────── */}
@@ -33,7 +33,7 @@ export default function TermsPage() {
 
           <h2>1. Definitions</h2>
           <ul>
-            <li>&ldquo;the Platform&rdquo; or &ldquo;Insound&rdquo; &mdash; the service at getinsound.com, operated by [OPERATOR_LEGAL_NAME].</li>
+            <li>&ldquo;the Platform&rdquo; or &ldquo;Insound&rdquo; &mdash; the service at getinsound.com, operated by Insound Music Ltd (Company Number: 17179694).</li>
             <li>&ldquo;Artist&rdquo; &mdash; a registered user who uploads and sells music on the Platform.</li>
             <li>&ldquo;Fan&rdquo; &mdash; anyone who purchases music, downloads Content, or browses the Platform.</li>
             <li>&ldquo;Content&rdquo; &mdash; music files, artwork, text, metadata, and any other material uploaded by an Artist to the Platform.</li>
@@ -265,7 +265,7 @@ export default function TermsPage() {
           <p>The Platform processes personal data in accordance with UK GDPR and the Data Protection Act 2018. Full details are in the <Link href="/privacy">Privacy Policy</Link>.</p>
 
           <h2>19. Contact</h2>
-          <p>[OPERATOR_LEGAL_NAME]<br />Sole trader, England<br />Email: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a></p>
+          <p>Insound Music Ltd<br />Company Number: 17179694<br />Registered in England and Wales<br />Email: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a></p>
         </div>
       </div>
 
