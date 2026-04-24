@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { subscribeToPush, unsubscribeFromPush, isPushSubscribed } from '@/lib/pwa/push'
+import { supportsWebPush, isIOS } from '@/lib/pwa/ios'
 
 type PrefType = {
   type: string
@@ -36,6 +38,9 @@ export function NotificationPreferences({ isArtist }: Props) {
   )
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushSupported, setPushSupported] = useState(false)
+  const [pushLoading, setPushLoading] = useState(false)
 
   useEffect(() => {
     fetch('/api/notifications/preferences')
@@ -49,6 +54,26 @@ export function NotificationPreferences({ isArtist }: Props) {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    const supported = supportsWebPush()
+    setPushSupported(supported)
+    if (supported) {
+      isPushSubscribed().then(setPushEnabled)
+    }
+  }, [])
+
+  async function togglePush() {
+    setPushLoading(true)
+    if (pushEnabled) {
+      const ok = await unsubscribeFromPush()
+      if (ok) setPushEnabled(false)
+    } else {
+      const ok = await subscribeToPush()
+      if (ok) setPushEnabled(true)
+    }
+    setPushLoading(false)
+  }
 
   function toggle(type: string, field: 'in_app' | 'email') {
     setPrefs(prev => prev.map(p =>
@@ -76,6 +101,38 @@ export function NotificationPreferences({ isArtist }: Props) {
       <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-4">
         Notification Preferences
       </label>
+
+      {/* Push notifications toggle */}
+      <div className="mb-6 p-4 rounded-xl bg-zinc-900/50 border border-white/[0.06]">
+        {pushSupported ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">Push Notifications</p>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Get notified instantly when artists release new music
+              </p>
+            </div>
+            <button
+              onClick={togglePush}
+              disabled={pushLoading}
+              className={`w-9 h-5 rounded-full transition-colors relative ${
+                pushEnabled ? 'bg-orange-600' : 'bg-zinc-700'
+              } ${pushLoading ? 'opacity-50' : ''}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                pushEnabled ? 'left-[18px]' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+        ) : isIOS() ? (
+          <div>
+            <p className="text-sm font-semibold text-white">Notifications</p>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Push notifications aren&apos;t available on iOS. We&apos;ll send notifications via email instead.
+            </p>
+          </div>
+        ) : null}
+      </div>
 
       {/* Column headers */}
       <div className="flex items-center gap-2 mb-3 pl-0">
