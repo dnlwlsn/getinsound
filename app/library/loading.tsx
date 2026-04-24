@@ -1,13 +1,7 @@
 export default function LibraryLoading() {
   return (
     <div className="min-h-screen font-display pb-24">
-      {/* Nav skeleton */}
-      <nav className="flex justify-between items-center px-8 py-5 border-b border-zinc-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="w-24 h-6 bg-zinc-900 rounded animate-pulse" />
-        <div className="w-16 h-4 bg-zinc-900 rounded animate-pulse" />
-      </nav>
-
-      <div className="max-w-6xl mx-auto px-8 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         {/* Header skeleton */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
           <div>

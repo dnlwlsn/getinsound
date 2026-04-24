@@ -37,21 +37,6 @@ export default function LibrarySignIn() {
 
   return (
     <div className="min-h-screen font-display flex flex-col">
-      <nav className="flex justify-between items-center px-8 py-5 border-b border-zinc-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
-        <Link
-          href="/"
-          className="text-xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors"
-        >
-          insound.
-        </Link>
-        <Link
-          href="/signup"
-          className="bg-orange-600 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors"
-        >
-          Create Account
-        </Link>
-      </nav>
-
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">

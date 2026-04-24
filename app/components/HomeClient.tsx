@@ -291,10 +291,10 @@ export default function HomeClient() {
             insound<span className="text-white/25 hero-dot">.</span>
           </span>
           <div className="flex items-center gap-3">
-            <Link href="/signup"
+            <a href="#signup"
               className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
-              Get started
-            </Link>
+              Join the waitlist
+            </a>
           </div>
         </div>
       </nav>

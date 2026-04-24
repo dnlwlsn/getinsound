@@ -34,6 +34,10 @@ type Stats = {
 }
 type Fan = { displayEmail: string; purchaseCount: number; totalPence: number; purchases: { release_id: string; amount_pence: number; paid_at: string | null }[]; badge?: { badge_type: string; metadata?: { position?: number } | null } | null }
 type CodeSummary = { total: number; redeemed: number }
+type DownloadCode = {
+  id: string; code: string; redeemed_by: string | null
+  redeemed_at: string | null; expires_at: string; created_at: string
+}
 
 type Referral = {
   code: string; count: number; zeroFeesUnlocked: boolean
@@ -83,6 +87,14 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [payoutsLoading, setPayoutsLoading] = useState(false)
   const [expandedFan, setExpandedFan] = useState<number | null>(null)
   const [generatingCodes, setGeneratingCodes] = useState<string | null>(null)
+  const [codesSummary, setCodesSummary] = useState(codesByRelease)
+  const [showGenerateModal, setShowGenerateModal] = useState(false)
+  const [generateReleaseId, setGenerateReleaseId] = useState('')
+  const [generateBatchSize, setGenerateBatchSize] = useState(10)
+  const [expandedCodesRelease, setExpandedCodesRelease] = useState<string | null>(null)
+  const [codesForRelease, setCodesForRelease] = useState<DownloadCode[]>([])
+  const [codesLoading, setCodesLoading] = useState(false)
+  const [codesFilter, setCodesFilter] = useState<'all' | 'available' | 'redeemed' | 'expired'>('all')
   const [accentSaving, setAccentSaving] = useState(false)
   const [showArtistTooltip, setShowArtistTooltip] = useState(false)
   const [showMilestone, setShowMilestone] = useState(!!milestone)
@@ -137,16 +149,72 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   }
 
   // ── Download codes ──────────────────────────────────────────
-  async function generateCodes(releaseId: string) {
+  async function generateCodes(releaseId: string, count: number) {
     setGeneratingCodes(releaseId)
     try {
-      await fetch('/api/dashboard/download-codes', {
+      const res = await fetch('/api/dashboard/download-codes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ release_id: releaseId, count: 10 }),
+        body: JSON.stringify({ release_id: releaseId, count }),
       })
+      if (res.ok) {
+        const data = await res.json()
+        const generated = data.count || 0
+        setCodesSummary(prev => {
+          const existing = prev[releaseId] || { total: 0, redeemed: 0 }
+          return { ...prev, [releaseId]: { total: existing.total + generated, redeemed: existing.redeemed } }
+        })
+        if (expandedCodesRelease === releaseId) loadCodesForRelease(releaseId)
+      }
     } catch {}
     setGeneratingCodes(null)
+    setShowGenerateModal(false)
+  }
+
+  async function loadCodesForRelease(releaseId: string) {
+    setCodesLoading(true)
+    try {
+      const res = await fetch(`/api/dashboard/download-codes?release_id=${releaseId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setCodesForRelease(data.codes || [])
+        setCodesSummary(prev => ({ ...prev, [releaseId]: { total: data.total, redeemed: data.redeemed } }))
+      }
+    } catch {}
+    setCodesLoading(false)
+  }
+
+  function toggleCodesExpand(releaseId: string) {
+    if (expandedCodesRelease === releaseId) {
+      setExpandedCodesRelease(null)
+      setCodesForRelease([])
+      setCodesFilter('all')
+    } else {
+      setExpandedCodesRelease(releaseId)
+      setCodesFilter('all')
+      loadCodesForRelease(releaseId)
+    }
+  }
+
+  function downloadCodesCSV(releaseId: string) {
+    const rel = rels.find(r => r.id === releaseId)
+    const now = new Date()
+    const rows = [['Code', 'Status', 'Redeemed By', 'Redeemed At', 'Expires At', 'Created At']]
+    for (const c of codesForRelease) {
+      const expired = new Date(c.expires_at) < now
+      const status = c.redeemed_by ? 'Redeemed' : expired ? 'Expired' : 'Available'
+      rows.push([c.code, status, c.redeemed_by || '', c.redeemed_at ? new Date(c.redeemed_at).toLocaleDateString() : '', new Date(c.expires_at).toLocaleDateString(), new Date(c.created_at).toLocaleDateString()])
+    }
+    const csv = rows.map(r => r.map(cell => `"${cell}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${(rel?.title || 'codes').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-download-codes.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   // ── Accent colour save ─────────────────────────────────────
@@ -457,10 +525,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                     release={r}
                     artistId={artist.id}
                     artistSlug={artist.slug}
-                    codes={codesByRelease[r.id]}
                     onToggle={toggleField}
-                    onGenerateCodes={generateCodes}
-                    generatingCodes={generatingCodes === r.id}
                     onCancelPreorder={cancelPreorder}
                   />
                 ))}
@@ -777,23 +842,115 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               <p className="text-zinc-600 text-sm">Upload a release to generate download codes.</p>
             ) : (
               <div className="space-y-3">
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={() => { setGenerateReleaseId(rels[0].id); setGenerateBatchSize(10); setShowGenerateModal(true) }}
+                    className="bg-orange-600 text-black font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors"
+                  >
+                    + Generate Codes
+                  </button>
+                </div>
                 {rels.map(r => {
-                  const c = codesByRelease[r.id]
+                  const c = codesSummary[r.id]
+                  const isExpanded = expandedCodesRelease === r.id
+                  const remaining = c ? c.total - c.redeemed : 0
+                  const now = new Date()
+
+                  const filteredCodes = codesForRelease.filter(code => {
+                    if (codesFilter === 'all') return true
+                    const expired = new Date(code.expires_at) < now
+                    if (codesFilter === 'redeemed') return !!code.redeemed_by
+                    if (codesFilter === 'expired') return expired && !code.redeemed_by
+                    return !code.redeemed_by && !expired
+                  })
+
                   return (
-                    <div key={r.id} className="flex items-center justify-between py-3 border-b border-zinc-800/40 last:border-0">
-                      <div>
-                        <p className="text-sm font-bold">{r.title}</p>
-                        <p className="text-[10px] text-zinc-500">
-                          {c ? `${c.redeemed} / ${c.total} redeemed` : 'No codes generated'}
-                        </p>
-                      </div>
+                    <div key={r.id} className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl overflow-hidden">
                       <button
-                        onClick={() => generateCodes(r.id)}
-                        disabled={generatingCodes === r.id}
-                        className="text-xs font-bold text-orange-500 hover:text-orange-400 disabled:opacity-50 transition-colors"
+                        onClick={() => c && c.total > 0 ? toggleCodesExpand(r.id) : undefined}
+                        className="w-full flex items-center gap-4 p-4 text-left hover:bg-zinc-800/30 transition-colors"
                       >
-                        {generatingCodes === r.id ? 'Generating...' : '+ Generate 10 Codes'}
+                        <img src={r.cover_url || generateGradientDataUri(artist.id, r.id)} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate">{r.title}</p>
+                          {c && c.total > 0 ? (
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-[10px] text-zinc-500">{c.total} generated</span>
+                              <span className="text-[10px] text-green-500">{c.redeemed} redeemed</span>
+                              <span className="text-[10px] text-orange-500">{remaining} remaining</span>
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-zinc-600 mt-1">No codes generated</p>
+                          )}
+                        </div>
+                        {c && c.total > 0 && (
+                          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className={`shrink-0 text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        )}
                       </button>
+
+                      {isExpanded && (
+                        <div className="border-t border-zinc-800/40 p-4">
+                          {codesLoading ? (
+                            <p className="text-zinc-500 text-sm text-center py-4">Loading codes...</p>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex gap-1.5 flex-wrap">
+                                  {(['all', 'available', 'redeemed', 'expired'] as const).map(f => (
+                                    <button
+                                      key={f}
+                                      onClick={() => setCodesFilter(f)}
+                                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-colors ${codesFilter === f ? 'bg-orange-600 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}
+                                    >
+                                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                                    </button>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => downloadCodesCSV(r.id)}
+                                  className="text-[10px] font-bold text-orange-500 hover:text-orange-400 transition-colors flex items-center gap-1"
+                                >
+                                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                  CSV
+                                </button>
+                              </div>
+
+                              {filteredCodes.length === 0 ? (
+                                <p className="text-zinc-600 text-sm text-center py-3">No codes match this filter.</p>
+                              ) : (
+                                <div className="space-y-1 max-h-72 overflow-y-auto">
+                                  {filteredCodes.map(code => {
+                                    const expired = new Date(code.expires_at) < now
+                                    const status = code.redeemed_by ? 'redeemed' : expired ? 'expired' : 'available'
+                                    return (
+                                      <div key={code.id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-zinc-800/30">
+                                        <code className="text-xs font-mono text-zinc-300 flex-shrink-0">{code.code}</code>
+                                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
+                                          status === 'available' ? 'bg-green-900/50 text-green-400' :
+                                          status === 'redeemed' ? 'bg-blue-900/50 text-blue-400' :
+                                          'bg-zinc-800 text-zinc-500'
+                                        }`}>
+                                          {status}
+                                        </span>
+                                        <span className="text-[10px] text-zinc-600 flex-1 min-w-0 truncate">
+                                          {code.redeemed_by
+                                            ? `${maskId(code.redeemed_by)} · ${new Date(code.redeemed_at!).toLocaleDateString()}`
+                                            : `expires ${new Date(code.expires_at).toLocaleDateString()}`
+                                          }
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -870,6 +1027,83 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
             await fetch('/api/milestone/shown', { method: 'POST' })
           }}
         />
+      )}
+
+      {/* Generate download codes modal */}
+      {showGenerateModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4" onClick={() => !generatingCodes && setShowGenerateModal(false)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">Generate Download Codes</h3>
+            <p className="text-zinc-500 text-sm mb-6">Codes let fans download a release for free. Max 200 per release.</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 block mb-2">Release</label>
+                <select
+                  value={generateReleaseId}
+                  onChange={e => setGenerateReleaseId(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2.5 px-3 text-sm text-white focus:border-orange-600 outline-none transition-colors"
+                >
+                  {rels.map(r => {
+                    const c = codesSummary[r.id]
+                    const used = c?.total || 0
+                    return (
+                      <option key={r.id} value={r.id} disabled={used >= 200}>
+                        {r.title} ({used}/200 codes)
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 block mb-2">
+                  Batch Size: <span className="text-orange-500">{generateBatchSize}</span>
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={Math.min(50, 200 - (codesSummary[generateReleaseId]?.total || 0))}
+                  value={generateBatchSize}
+                  onChange={e => setGenerateBatchSize(parseInt(e.target.value))}
+                  className="w-full accent-orange-600"
+                />
+                <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+                  <span>1</span>
+                  <span>{Math.min(50, 200 - (codesSummary[generateReleaseId]?.total || 0))}</span>
+                </div>
+              </div>
+
+              {(() => {
+                const c = codesSummary[generateReleaseId]
+                const used = c?.total || 0
+                const afterGenerate = used + generateBatchSize
+                return used > 0 ? (
+                  <p className="text-[10px] text-zinc-500">
+                    Currently {used} codes · After: {afterGenerate}/200
+                  </p>
+                ) : null
+              })()}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowGenerateModal(false)}
+                disabled={!!generatingCodes}
+                className="flex-1 text-zinc-400 font-bold text-sm py-3 rounded-full border border-zinc-800 hover:border-zinc-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => generateCodes(generateReleaseId, generateBatchSize)}
+                disabled={!!generatingCodes || !generateReleaseId || (codesSummary[generateReleaseId]?.total || 0) >= 200}
+                className="flex-1 bg-orange-600 text-black font-bold text-sm py-3 rounded-full hover:bg-orange-500 transition-colors disabled:opacity-50"
+              >
+                {generatingCodes ? 'Generating...' : `Generate ${generateBatchSize} Codes`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Cancel pre-order confirmation modal */}
@@ -950,10 +1184,9 @@ function Section({ title, count, children }: { title: string; count?: number; ch
   )
 }
 
-function ReleaseRow({ release: r, artistId, artistSlug, codes, onToggle, onGenerateCodes, generatingCodes, onCancelPreorder }: {
-  release: Release; artistId: string; artistSlug: string; codes?: CodeSummary
+function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreorder }: {
+  release: Release; artistId: string; artistSlug: string
   onToggle: (id: string, field: string, value: any) => void
-  onGenerateCodes: (id: string) => void; generatingCodes: boolean
   onCancelPreorder: (id: string) => void
 }) {
   const [showControls, setShowControls] = useState(false)
@@ -1255,6 +1488,15 @@ function FirstSaleMilestoneModal({ artistName, onClose }: { artistName: string; 
       </div>
     </div>
   )
+}
+
+function maskId(id: string): string {
+  if (id.includes('@')) {
+    const [local, domain] = id.split('@')
+    const maskedLocal = local.length <= 2 ? local[0] + '***' : local[0] + '***' + local[local.length - 1]
+    return `${maskedLocal}@${domain}`
+  }
+  return id.slice(0, 8) + '...'
 }
 
 function VisibilityBadge({ v }: { v: string }) {

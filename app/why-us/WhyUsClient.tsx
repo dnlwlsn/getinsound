@@ -95,7 +95,7 @@ export function WhyUsClient() {
         </div>
         <div className="flex gap-3 items-center">
           <Link href="/auth" className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block">Sign In</Link>
-          <Link href="/auth" className="bg-orange-600 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">Get Started</Link>
+          <Link href="/#signup" className="bg-orange-600 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">Join the Waitlist</Link>
         </div>
       </nav>
 
