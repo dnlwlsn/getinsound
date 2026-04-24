@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { loadPlayerState, savePlayerState, savePlayerTime } from '@/lib/pwa/idb-player'
 
 export interface Track {
   id: string
@@ -139,3 +140,45 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     isExpanded: false,
   }),
 }))
+
+// Hydrate from IndexedDB on first load
+if (typeof window !== 'undefined') {
+  loadPlayerState().then((saved) => {
+    if (!saved || !saved.currentTrack) return
+    usePlayerStore.setState({
+      currentTrack: saved.currentTrack,
+      queue: saved.queue,
+      queueIndex: saved.queueIndex,
+      currentTime: saved.currentTime,
+      volume: saved.volume,
+      isMuted: saved.isMuted,
+      isPlaying: false,
+    })
+  })
+}
+
+// Persist to IndexedDB on relevant state changes
+usePlayerStore.subscribe((state, prevState) => {
+  if (!state.currentTrack) return
+
+  if (
+    state.currentTrack !== prevState.currentTrack ||
+    state.queue !== prevState.queue ||
+    state.queueIndex !== prevState.queueIndex ||
+    state.volume !== prevState.volume ||
+    state.isMuted !== prevState.isMuted
+  ) {
+    savePlayerState({
+      currentTrack: state.currentTrack,
+      queue: state.queue,
+      queueIndex: state.queueIndex,
+      currentTime: state.currentTime,
+      volume: state.volume,
+      isMuted: state.isMuted,
+    })
+  }
+
+  if (state.currentTime !== prevState.currentTime) {
+    savePlayerTime(state.currentTime)
+  }
+})
