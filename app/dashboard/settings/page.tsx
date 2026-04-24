@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardSettingsClient } from './DashboardSettingsClient'
 
-export const runtime = 'edge'
 export const metadata = { title: 'Account Settings | Insound' }
 
 export default async function DashboardSettingsPage() {

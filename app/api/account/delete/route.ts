@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireFreshAuth } from '@/lib/fresh-auth'
 
-export const runtime = 'edge'
 
 /** GET — returns pending deletion request + impact data (for artists) */
 export async function GET() {

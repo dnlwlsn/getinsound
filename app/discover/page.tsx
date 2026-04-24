@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import DiscoverClient from './DiscoverClient'
 
-export const runtime = 'edge'
 
 export const metadata: Metadata = {
   title: 'Discover | insound.',

@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import ExploreClient from './ExploreClient'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Explore | insound.',
   description:

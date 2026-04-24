@@ -3,7 +3,6 @@ import { requireAdmin } from '@/lib/admin'
 import { AdminFeatureFlags } from './AdminFeatureFlags'
 import { AdminStats } from './AdminStats'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Admin — Insound',
 }

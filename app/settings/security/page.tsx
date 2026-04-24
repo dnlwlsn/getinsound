@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { SecuritySettingsClient } from './SecuritySettingsClient'
 import { cookies } from 'next/headers'
 
-export const runtime = 'edge'
 export const metadata = { title: 'Security Settings | Insound' }
 
 export default async function SecuritySettingsPage() {

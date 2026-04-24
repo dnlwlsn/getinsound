@@ -8,7 +8,6 @@ import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistr
 import { InstallBanner } from './components/pwa/InstallBanner'
 import './globals.css'
 
-export const runtime = 'edge'
 
 const montserrat = Montserrat({
   subsets: ['latin'],

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAdminApi } from '@/lib/admin'
 
-export const runtime = 'edge'
 export async function POST(req: NextRequest) {
   const user = await requireAdminApi()
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

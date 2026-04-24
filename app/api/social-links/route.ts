@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { type SocialPlatform, type SocialLinks } from '@/lib/verification'
 
-export const runtime = 'edge'
 
 export async function DELETE(req: NextRequest) {
   const supabase = await createClient()

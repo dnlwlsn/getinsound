@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { getUserRole } from '@/lib/auth'
 import { BecomeArtistClient } from './BecomeArtistClient'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Become an Artist | Insound',
   description: 'Start selling your music on Insound.',

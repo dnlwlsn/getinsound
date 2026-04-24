@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Privacy Policy | Insound',
   description: 'Insound Privacy Policy — how we collect, use, and protect your personal data under UK GDPR.',

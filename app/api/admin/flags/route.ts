@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 
-export const runtime = 'edge'
 export async function GET() {
   const { supabase } = await requireAdmin()
 

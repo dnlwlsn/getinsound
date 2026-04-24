@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import LibraryClient from './LibraryClient'
 import LibrarySignIn from './LibrarySignIn'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'My Library | Insound',
   description:

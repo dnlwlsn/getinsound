@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Terms of Service | Insound',
   description: 'Insound Terms of Service — the rules, rights, and responsibilities for Artists and Fans.',

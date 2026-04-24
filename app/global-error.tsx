@@ -1,6 +1,5 @@
 'use client'
 
-export const runtime = 'edge'
 
 export default function GlobalError({ reset }: { error: Error; reset: () => void }) {
   return (

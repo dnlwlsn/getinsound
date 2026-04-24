@@ -3,7 +3,6 @@ import { requireAdminApi } from '@/lib/admin'
 import { sendEmail } from '@/lib/email/send'
 import { buildBroadcastHtml } from '@/lib/email/broadcast'
 
-export const runtime = 'edge'
 export async function POST(req: NextRequest) {
   const user = await requireAdminApi()
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

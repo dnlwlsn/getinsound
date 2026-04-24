@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-export const runtime = 'edge'
 
 // GET: list codes for a release
 export async function GET(req: NextRequest) {

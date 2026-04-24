@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { getUserRole } from '@/lib/auth'
 import { WelcomeClient } from './WelcomeClient'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Welcome to Insound',
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 
-export const runtime = 'edge'
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

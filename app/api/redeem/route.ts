@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export const runtime = 'edge'
 import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 import { createNotification } from '@/lib/notifications'
 

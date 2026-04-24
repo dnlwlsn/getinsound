@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import MerchItemClient from './MerchItemClient'
 
-export const runtime = 'edge'
 
 interface Props {
   params: Promise<{ slug: string; merchId: string }>

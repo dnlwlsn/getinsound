@@ -4,7 +4,6 @@ import { requireAdminApi } from '@/lib/admin'
 import { sendEmail } from '@/lib/email/send'
 import { buildBroadcastHtml } from '@/lib/email/broadcast'
 
-export const runtime = 'edge'
 function getAdminClient() { return createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 
-export const runtime = 'edge'
 interface CachedRates {
   rates: Record<string, number>
   cachedAt: number

@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import SearchClient from './SearchClient'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Search | insound.',
   description: 'Search for artists and releases on Insound.',

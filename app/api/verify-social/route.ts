@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { SOCIAL_PLATFORMS, type SocialPlatform, type SocialLinks } from '@/lib/verification'
 
-export const runtime = 'edge'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()

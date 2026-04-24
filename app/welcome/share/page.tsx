@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ShareClient } from './ShareClient'
 
-export const runtime = 'edge'
 export const metadata = { title: "You're in | Insound" }
 
 export default async function SharePage() {

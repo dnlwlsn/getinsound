@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { RESERVED_SLUGS } from '@/lib/reserved-slugs'
 import ArtistProfileClient from './ArtistProfileClient'
 import { FanProfileClient } from './FanProfileClient'
-export const runtime = 'edge'
 
 interface Props {
   params: Promise<{ slug: string }>

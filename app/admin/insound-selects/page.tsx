@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import InsoundSelectsClient from './InsoundSelectsClient'
 
-export const runtime = 'edge'
 
 export const metadata: Metadata = {
   title: 'Insound Selects — Admin',

@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileSettingsClient } from './ProfileSettingsClient'
 
-export const runtime = 'edge'
 export const metadata: Metadata = {
   title: 'Profile Settings | Insound',
 }
