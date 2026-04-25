@@ -1,9 +1,20 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
   "name": "insound",
-  "pages_build_output_dir": ".open-next/assets",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://rvsfriqjobwuzzfdiyxg.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51TM4GsGkY3otnyNsltYWVo9N1xWEzKEUa8B4XjPlmSnP5VLCKAnkTebfHM8QOkmLTxyxxhNKQ4iJ9karlBfo5jEv007Ts2uEgI",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "BAuPXjrPiFVGjRNsC1Le0C40FkcuyK2VtKqFXpP_iTPk-6JdQvoUB2OZK8k5tbay-ljtTkcOCg42xpTaLOT0Dsw",
+    "NEXT_PUBLIC_SITE_URL": "https://getinsound.com"
+  }
 }
