@@ -235,11 +235,13 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
           </div>
           <div className="text-center sm:text-left flex-1">
             <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: accent }}>Artist</p>
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight font-display text-white">
-                {artist.name}
-              </h1>
-              {verified && <VerifiedTick size={20} />}
+            <div className="flex flex-col items-center sm:items-start gap-2">
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight font-display text-white">
+                  {artist.name}
+                </h1>
+                {verified && <VerifiedTick size={20} />}
+              </div>
               {badges.length > 0 && <BadgeList badges={badges} />}
             </div>
             {artist.bio && (
@@ -451,7 +453,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
 
                           {trackCount > 0 && (
                             <div className="mt-4 border-t border-zinc-800/60 pt-3">
-                              <ol className="space-y-0.5">
+                              <ol>
                                 {release.tracks.map((track, i) => {
                                   const isActive = currentTrack?.id === track.id
                                   const isTrackPlaying = isActive && isPlaying
@@ -462,7 +464,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                                         onClick={() => handleToggleTrack(track.id, release, track, i)}
                                         className={`w-full flex items-center gap-3 py-2 px-2 rounded-lg transition-colors text-left ${isActive ? 'bg-zinc-800/60' : 'hover:bg-zinc-800/40'}`}
                                       >
-                                        <span className="w-6 text-center shrink-0">
+                                        <span className="w-6 text-center shrink-0 relative">
                                           {isTrackPlaying ? (
                                             <span className="inline-flex gap-[2px] items-end h-3">
                                               <span className="w-[3px] h-full rounded-full animate-pulse" style={{ background: accent }} />
@@ -476,8 +478,8 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                                             </svg>
                                           ) : (
                                             <>
-                                              <span className="text-zinc-600 font-mono text-xs group-hover/track:hidden">{String(i + 1).padStart(2, '0')}</span>
-                                              <svg className="hidden group-hover/track:block mx-auto" width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style={{ color: accent }}>
+                                              <span className="text-zinc-600 font-mono text-xs group-hover/track:opacity-0">{String(i + 1).padStart(2, '0')}</span>
+                                              <svg className="absolute inset-0 m-auto opacity-0 group-hover/track:opacity-100 transition-opacity" width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style={{ color: accent }}>
                                                 <path d="M8 5v14l11-7z" />
                                               </svg>
                                             </>

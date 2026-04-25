@@ -15,7 +15,7 @@ const NAV_LINKS = [
 ]
 
 const HIDE_NAV_ROUTES = ['/', '/signup', '/auth', '/welcome', '/become-an-artist']
-const HIDE_NAV_PREFIXES = ['/for-', '/dashboard/settings', '/privacy', '/terms', '/ai-policy', '/why-us', '/redeem']
+const HIDE_NAV_PREFIXES = ['/for-', '/privacy', '/terms', '/ai-policy', '/why-us', '/redeem']
 
 export function AppNav() {
   const pathname = usePathname()
