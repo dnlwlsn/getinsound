@@ -1,9 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "insound",
-  "compatibility_date": "2024-12-30",
+  "pages_build_output_dir": ".open-next/assets",
+  "compatibility_date": "2024-09-23",
   "compatibility_flags": [
-    "nodejs_compat",
-    "global_fetch_strictly_public"
+    "nodejs_compat"
   ]
 }
