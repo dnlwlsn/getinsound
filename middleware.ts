@@ -8,6 +8,15 @@ const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/becom
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30
 
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let result = 0
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return result === 0
+}
+
 function detectCountry(request: NextRequest): string | null {
   const cfCountry = request.headers.get('cf-ipcountry')
   if (cfCountry && cfCountry !== 'XX' && cfCountry !== 'T1') return cfCountry
@@ -63,6 +72,40 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
+  // ── Preview bypass ──
+  const previewParam = request.nextUrl.searchParams.get('preview')
+  const previewToken = process.env.PREVIEW_TOKEN
+
+  if (previewParam === 'clear') {
+    const url = request.nextUrl.clone()
+    url.searchParams.delete('preview')
+    const clearResponse = NextResponse.redirect(url)
+    clearResponse.cookies.set('insound-preview', '', {
+      path: '/',
+      maxAge: 0,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+    })
+    return clearResponse
+  }
+
+  if (previewParam && previewToken && constantTimeEqual(previewParam, previewToken)) {
+    const url = request.nextUrl.clone()
+    url.searchParams.delete('preview')
+    const previewResponse = NextResponse.redirect(url)
+    previewResponse.cookies.set('insound-preview', 'true', {
+      path: '/',
+      maxAge: THIRTY_DAYS,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+    })
+    return previewResponse
+  }
+
+  const hasPreviewAccess = request.cookies.get('insound-preview')?.value === 'true'
+
   // Protect artist-only routes
   if (user && ARTIST_ROUTES.some(r => path.startsWith(r))) {
     const [{ data: artist }, { data: account }] = await Promise.all([
@@ -82,7 +125,7 @@ export async function middleware(request: NextRequest) {
   // Multi-segment paths under artist slugs (e.g. /slug/merch/id) are also public
   const isProfileRoute = /^\/[^/]+$/.test(path) && !ARTIST_ROUTES.some(r => path.startsWith(r))
   const isMerchRoute = /^\/[^/]+\/merch\/[^/]+$/.test(path)
-  if (!user && !isProfileRoute && !isMerchRoute && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
+  if (!user && !hasPreviewAccess && !isProfileRoute && !isMerchRoute && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     return NextResponse.redirect(url)
