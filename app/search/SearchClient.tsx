@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { useViewMode } from '@/lib/useViewMode'
@@ -38,18 +38,23 @@ type Results = { artists: ArtistResult[]; releases: ReleaseResult[] }
 
 export default function SearchClient() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const q = searchParams.get('q') ?? ''
+  const [inputValue, setInputValue] = useState(q)
   const [results, setResults] = useState<Results | null>(null)
   const [loading, setLoading] = useState(false)
+  const [hasSearched, setHasSearched] = useState(!!q)
+  const inputRef = useRef<HTMLInputElement>(null)
   const { mode, set: setViewMode } = useViewMode()
   const { formatPrice, convertPrice, currency: fanCurrency } = useCurrency()
 
   const fetchResults = useCallback(async (query: string) => {
     if (!query.trim()) {
-      setResults({ artists: [], releases: [] })
+      setResults(null)
       return
     }
     setLoading(true)
+    setHasSearched(true)
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
       const data: Results = await res.json()
@@ -62,8 +67,21 @@ export default function SearchClient() {
   }, [])
 
   useEffect(() => {
+    setInputValue(q)
     fetchResults(q)
+    if (!q) setHasSearched(false)
   }, [q, fetchResults])
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = inputValue.trim()
+    if (!trimmed) return
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`)
+  }
 
   const displayPrice = (pence: number, currency: string) => {
     const converted = convertPrice(pence / 100, currency, fanCurrency)
@@ -72,21 +90,44 @@ export default function SearchClient() {
 
   return (
     <div className="min-h-screen bg-[#09090b]">
+      {/* Search input */}
+      <div className="max-w-6xl mx-auto px-5 md:px-10 pt-10 pb-2">
+        <form onSubmit={handleSubmit} className="relative">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            ref={inputRef}
+            type="search"
+            inputMode="search"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="Search artists, releases…"
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-2.5 pl-10 pr-4 text-sm outline-none text-white placeholder-zinc-600 focus:border-orange-600 transition-colors"
+          />
+        </form>
+      </div>
+
       {/* Results */}
-      <div className="max-w-6xl mx-auto px-5 md:px-10 py-10">
+      <div className="max-w-6xl mx-auto px-5 md:px-10 py-6">
         {loading && (
           <p className="text-center text-zinc-600 font-bold text-sm py-20">Searching...</p>
         )}
 
-        {!loading && !q && (
+        {!loading && !hasSearched && (
           <p className="text-center text-zinc-500 text-sm py-20">
             Enter a search term to find artists and releases.
           </p>
         )}
 
-        {!loading && q && results && results.artists.length === 0 && results.releases.length === 0 && (
+        {!loading && hasSearched && results && results.artists.length === 0 && results.releases.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-zinc-400 text-sm font-bold">No results for &ldquo;{q}&rdquo;</p>
+            <p className="text-zinc-400 text-sm font-bold">No artists or releases match &ldquo;{q}&rdquo;</p>
             <p className="text-zinc-600 text-xs mt-2">Try a different search term</p>
           </div>
         )}
@@ -102,11 +143,7 @@ export default function SearchClient() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {results.artists.map(a => (
                     <Link key={a.id} href={`/${a.slug}`}>
-                      <div className="flex items-center gap-4 p-4 rounded-2xl
-                        bg-white/[0.02] ring-1 ring-white/[0.06]
-                        hover:ring-white/[0.12] transition-all duration-150
-
-"
+                      <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06] hover:ring-white/[0.12] transition-all duration-150"
                       >
                         {a.avatar_url ? (
                           <img src={a.avatar_url} alt={a.name} className="w-12 h-12 rounded-full object-cover ring-1 ring-white/[0.1]" />
@@ -173,8 +210,7 @@ export default function SearchClient() {
                       <Link
                         key={r.id}
                         href={`/release?a=${r.artist_slug}&r=${r.slug}`}
-                        className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] ring-1 ring-white/[0.06] hover:ring-white/[0.12] transition-all
-"
+                        className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] ring-1 ring-white/[0.06] hover:ring-white/[0.12] transition-all"
                       >
                         {r.cover_url ? (
                           <img src={r.cover_url} alt={r.title} className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/[0.1]" />

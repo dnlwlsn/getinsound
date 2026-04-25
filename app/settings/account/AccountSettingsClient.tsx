@@ -1,14 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { resolveAccent, DEFAULT_ACCENT } from '@/lib/accent'
 import { SettingsTabs } from '@/components/settings/SettingsTabs'
 import { DeleteAccountModal } from '@/components/settings/DeleteAccountModal'
 import { DeletionPendingBanner } from '@/components/settings/DeletionPendingBanner'
 import { NotificationPreferences } from '@/components/settings/NotificationPreferences'
-import { NotificationBell } from '@/app/components/ui/NotificationBell'
 import { ReverifyModal } from '@/components/settings/ReverifyModal'
 
 interface Props {
@@ -23,7 +20,6 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
   const [showModal, setShowModal] = useState(false)
   const [pending, setPending] = useState(pendingDeletion)
   const [downloading, setDownloading] = useState(false)
-  const resolvedAccent = resolveAccent(DEFAULT_ACCENT)
   const [newEmail, setNewEmail] = useState('')
   const [emailChanging, setEmailChanging] = useState(false)
   const [emailChangeSuccess, setEmailChangeSuccess] = useState(false)
@@ -115,21 +111,6 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
   return (
     <div className="min-h-screen flex flex-col relative"
       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px)', backgroundSize: '48px 48px' }}>
-
-      <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80"
-        style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <Link href="/" className="text-2xl font-black tracking-tighter hover:text-orange-500 transition-colors font-display"
-          style={{ color: resolvedAccent }}>
-          insound.
-        </Link>
-        <div className="flex gap-4 items-center">
-          <Link href="/library"
-            className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">
-            Library
-          </Link>
-          <NotificationBell userId={userId} />
-        </div>
-      </nav>
 
       <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
         <div className="w-full max-w-lg relative z-10">
