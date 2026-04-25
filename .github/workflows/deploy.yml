@@ -23,7 +23,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run pages:build
+      - run: npm run cf:build
 
       - run: npx wrangler deploy .open-next/worker.js --experimental-autoconfig=false
         env:
