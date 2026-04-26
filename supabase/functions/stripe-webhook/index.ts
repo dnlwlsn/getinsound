@@ -283,10 +283,9 @@ Deno.serve(async (req) => {
         return new Response('ok', { status: 200 });
       }
 
-      const currency = session.currency?.toLowerCase() ?? 'gbp';
-      const isZeroDecimal = currency === 'jpy' || currency === 'krw' || currency === 'vnd';
-      const amountMinor = session.amount_total ?? 0;
-      const amountPence = isZeroDecimal ? amountMinor * 100 : amountMinor;
+      // Stripe amount_total is always in the smallest currency unit
+      // (pence for GBP, cents for USD, whole yen for JPY). Store as-is.
+      const amountPence = session.amount_total ?? 0;
       const platformPence = Math.round(amountPence * 0.1);
       const artistPence = amountPence - platformPence;
 
