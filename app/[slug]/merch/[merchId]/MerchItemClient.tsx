@@ -220,7 +220,7 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
                 <span className="font-black" style={{ color: accent }}>{totalDisplay}</span>
               </div>
               <p className="text-[11px] text-zinc-600 pt-1">
-                Artist receives ~{artistReceivesDisplay} after fees
+                Artist receives ~{artistReceivesDisplay} after fees (estimate)
               </p>
             </div>
 

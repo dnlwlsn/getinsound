@@ -33,6 +33,7 @@ interface PlayerState {
   // Audio source
   audioUrl: string | null
   isPreview: boolean
+  previewDuration: number | null
 
   // UI state
   isExpanded: boolean // mobile: expanded vs collapsed
@@ -48,7 +49,7 @@ interface PlayerState {
   toggleMute: () => void
   setCurrentTime: (time: number) => void
   setDuration: (dur: number) => void
-  setAudioUrl: (url: string, isPreview: boolean) => void
+  setAudioUrl: (url: string, isPreview: boolean, previewDuration?: number | null) => void
   setIsPlaying: (playing: boolean) => void
   toggleExpanded: () => void
   clearPlayer: () => void
@@ -65,6 +66,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   isMuted: false,
   audioUrl: null,
   isPreview: false,
+  previewDuration: null,
   isExpanded: false,
 
   play: (track, queue) => {
@@ -79,6 +81,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       duration: track.durationSec ?? 0,
       audioUrl: null,
       isPreview: false,
+      previewDuration: null,
     })
   },
 
@@ -96,6 +99,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         currentTime: 0,
         audioUrl: null,
         isPreview: false,
+        previewDuration: null,
       })
     }
   },
@@ -116,6 +120,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         currentTime: 0,
         audioUrl: null,
         isPreview: false,
+        previewDuration: null,
       })
     }
   },
@@ -125,7 +130,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   toggleMute: () => set(s => ({ isMuted: !s.isMuted })),
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (dur) => set({ duration: dur }),
-  setAudioUrl: (url, isPreview) => set({ audioUrl: url, isPreview }),
+  setAudioUrl: (url, isPreview, previewDuration) => set({ audioUrl: url, isPreview, previewDuration: previewDuration ?? null }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   toggleExpanded: () => set(s => ({ isExpanded: !s.isExpanded })),
   clearPlayer: () => set({
@@ -137,6 +142,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     duration: 0,
     audioUrl: null,
     isPreview: false,
+    previewDuration: null,
     isExpanded: false,
   }),
 }))

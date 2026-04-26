@@ -131,7 +131,14 @@ export default function ReleaseClient() {
     if (stripeMountRef.current) stripeMountRef.current.innerHTML = ''
   }, [])
 
-  const openCheckout = useCallback(async () => {
+  useEffect(() => {
+    if (!modalOpen) return
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal() }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [modalOpen, closeModal])
+
+  const openCheckout = useCallback(async (customAmountPence?: number) => {
     if (!release || !artist) return
     setStage('checkout')
     setModalOpen(true)
@@ -143,7 +150,12 @@ export default function ReleaseClient() {
       const refCookie = document.cookie.split('; ').find(c => c.startsWith('insound_ref='))
       const refCode = refCookie?.split('=')[1] || undefined
       const { data, error } = await supabase.functions.invoke('checkout-create', {
-        body: { release_id: release.id, origin: window.location.origin, ref_code: refCode },
+        body: {
+          release_id: release.id,
+          origin: window.location.origin,
+          ref_code: refCode,
+          ...(customAmountPence ? { custom_amount: customAmountPence } : {}),
+        },
       })
       if (error) throw error
       if (!data?.client_secret) throw new Error('No checkout session returned')
@@ -163,7 +175,6 @@ export default function ReleaseClient() {
         if (stripeMountRef.current) embedded.mount(stripeMountRef.current)
       })
     } catch (err: any) {
-      console.error(err)
       setErrorTitle("Couldn't open checkout.")
       setErrorMsg(err.message || 'Please try again.')
       setStage('error')
@@ -188,6 +199,13 @@ export default function ReleaseClient() {
         }
         let body: any = null
         try { body = await error?.context?.response?.json?.() } catch {}
+        if (body?.release_date && body?.error) {
+          // Pre-order: downloads not yet available
+          setErrorTitle('Pre-order confirmed!')
+          setErrorMsg(body.error)
+          setStage('error')
+          return
+        }
         if (body && body.error !== 'pending') throw new Error(body.error || 'Could not load download')
       } catch (err) {
         if (i === maxAttempts - 1) {
@@ -233,6 +251,18 @@ export default function ReleaseClient() {
 
   return (
     <>
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'MusicRelease',
+          name: release.title,
+          byArtist: { '@type': 'MusicGroup', name: artist.name },
+          image: release.cover_url,
+          offers: { '@type': 'Offer', price: (release.price_pence / 100).toFixed(2), priceCurrency: 'GBP' },
+        }) }}
+      />
       {/* Stripe.js script */}
       {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
       <script src="https://js.stripe.com/v3/" async />
@@ -258,7 +288,7 @@ export default function ReleaseClient() {
               <h1 className="text-4xl md:text-5xl font-black tracking-tight mt-3 mb-2 font-display">{release.title}</h1>
               <p className="text-zinc-500 text-sm mb-8">{typeLabel} · {tracks.length} track{tracks.length === 1 ? '' : 's'}</p>
 
-              <PriceSection release={release} onBuy={openCheckout} />
+              <PriceSection release={release} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
 
               {/* Tracklist */}
               <div className="mt-10 border-t border-zinc-800 pt-6">
@@ -284,6 +314,7 @@ export default function ReleaseClient() {
       {modalOpen && (
         <div
           className="fixed inset-0 z-[400] bg-black/70 backdrop-blur-sm"
+          role="presentation"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
           <div className="absolute top-0 right-0 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-[slide-in-right_0.3s_ease_both]">
@@ -396,7 +427,7 @@ export default function ReleaseClient() {
 
 /* ── Price section with PWYW support ──────────────────────────── */
 
-function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void }) {
+function PriceSection({ release, onBuy }: { release: Release; onBuy: (customAmountPence?: number) => void }) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const relCurrency = release.currency || 'GBP'
 
@@ -452,7 +483,7 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: () => void 
       )}
 
       <button
-        onClick={onBuy}
+        onClick={() => onBuy(release.pwyw_enabled ? amountPence : undefined)}
         disabled={!isValid}
         className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >

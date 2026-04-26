@@ -23,6 +23,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!tracking_number || !carrier) {
     return NextResponse.json({ error: 'tracking_number and carrier are required' }, { status: 400 })
   }
+  const validCarriers = ['royal_mail', 'evri', 'dpd', 'yodel', 'other']
+  if (!validCarriers.includes(carrier)) {
+    return NextResponse.json({ error: 'Invalid carrier' }, { status: 400 })
+  }
 
   const { data: order } = await supabase
     .from('orders')

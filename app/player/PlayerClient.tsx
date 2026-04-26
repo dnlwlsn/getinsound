@@ -195,6 +195,13 @@ export default function PlayerClient() {
 
   const closeBuyModal = useCallback(() => setBuyModalOpen(false), [])
 
+  useEffect(() => {
+    if (!buyModalOpen) return
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') closeBuyModal() }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [buyModalOpen, closeBuyModal])
+
   const completePurchase = useCallback(() => {
     setCheckoutStep('processing')
     setTimeout(() => setCheckoutStep('success'), 1800)

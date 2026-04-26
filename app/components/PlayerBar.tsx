@@ -14,7 +14,7 @@ function formatTime(s: number): string {
 export function PlayerBar() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, isMuted,
-    audioUrl, isPreview, isExpanded,
+    audioUrl, isPreview, previewDuration, isExpanded,
     pause, resume, next, previous, seek,
     setVolume, toggleMute, setCurrentTime, setDuration, setAudioUrl,
     setIsPlaying, toggleExpanded,
@@ -24,6 +24,24 @@ export function PlayerBar() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const rafRef = useRef<number>(0)
   const fetchingRef = useRef<string | null>(null)
+  const playLoggedRef = useRef<string | null>(null)
+
+  // Log play count helper (fires once per track play)
+  const logPlay = useCallback((trackId: string, preview: boolean) => {
+    const key = `${trackId}-${preview}`
+    if (playLoggedRef.current === key) return
+    playLoggedRef.current = key
+    fetch('/api/tracks/log-play', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackId, isPreview: preview }),
+    }).catch(() => {})
+  }, [])
+
+  // Reset play-logged flag when track changes
+  useEffect(() => {
+    playLoggedRef.current = null
+  }, [currentTrack?.id])
 
   // Fetch signed URL when track changes
   useEffect(() => {
@@ -35,7 +53,7 @@ export function PlayerBar() {
       .then(r => r.json())
       .then(data => {
         if (data.url) {
-          setAudioUrl(data.url, data.isPreview)
+          setAudioUrl(data.url, data.isPreview, data.previewDuration ?? null)
         }
       })
       .catch(() => {
@@ -86,6 +104,9 @@ export function PlayerBar() {
     lastSeek.current = currentTime
   }, [currentTime])
 
+  // Effective duration for display — use preview limit when applicable
+  const displayDuration = previewDuration && isPreview ? Math.min(previewDuration, duration) : duration
+
   // Waveform drawing
   const drawWaveform = useCallback(() => {
     const canvas = canvasRef.current
@@ -103,7 +124,8 @@ export function PlayerBar() {
     const w = rect.width
     const h = rect.height
     const barCount = Math.floor(w / 3)
-    const progress = duration > 0 ? currentTime / duration : 0
+    const effectiveDur = previewDuration && isPreview ? Math.min(previewDuration, duration) : duration
+    const progress = effectiveDur > 0 ? currentTime / effectiveDur : 0
     const accent = resolveAccent(currentTrack?.accentColour)
 
     ctx.clearRect(0, 0, w, h)
@@ -119,17 +141,39 @@ export function PlayerBar() {
       ctx.fillStyle = filled ? accent : 'rgba(255,255,255,0.12)'
       ctx.fillRect(x, (h - barH) / 2, 2, barH)
     }
-  }, [currentTime, duration, currentTrack])
+  }, [currentTime, duration, currentTrack, previewDuration, isPreview])
+
+  // Enforce preview duration limit — stop playback and advance to next track
+  const previewEnforcedRef = useRef(false)
+  useEffect(() => {
+    // Reset enforcement flag when track changes
+    previewEnforcedRef.current = false
+  }, [currentTrack?.id])
 
   // Animation loop for time updates
   useEffect(() => {
     const audio = audioRef.current
+    const trackId = currentTrack?.id
+    const preview = isPreview
 
     function tick() {
       if (audio && !audio.paused) {
         const t = audio.currentTime
         lastSeek.current = t
         setCurrentTime(t)
+
+        // Log preview play at 30 seconds
+        if (preview && trackId && t >= 30) {
+          logPlay(trackId, true)
+        }
+
+        // Enforce preview duration limit
+        if (previewDuration && t >= previewDuration && !previewEnforcedRef.current) {
+          previewEnforcedRef.current = true
+          if (trackId) logPlay(trackId, true)
+          audio.pause()
+          next()
+        }
       }
       drawWaveform()
       rafRef.current = requestAnimationFrame(tick)
@@ -137,7 +181,7 @@ export function PlayerBar() {
 
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [drawWaveform, setCurrentTime])
+  }, [drawWaveform, setCurrentTime, previewDuration, next, currentTrack?.id, isPreview, logPlay])
 
   // Audio event handlers
   const handleLoadedMetadata = useCallback(() => {
@@ -147,16 +191,76 @@ export function PlayerBar() {
   }, [setDuration])
 
   const handleEnded = useCallback(() => {
+    if (currentTrack) {
+      logPlay(currentTrack.id, isPreview)
+    }
     next()
-  }, [next])
+  }, [next, currentTrack, isPreview, logPlay])
 
   const handleScrubberClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
-    if (!canvas || duration <= 0) return
+    if (!canvas || displayDuration <= 0) return
     const rect = canvas.getBoundingClientRect()
     const ratio = (e.clientX - rect.left) / rect.width
-    seek(ratio * duration)
-  }, [duration, seek])
+    seek(ratio * displayDuration)
+  }, [displayDuration, seek])
+
+  const expandedRef = useRef<HTMLDivElement>(null)
+  const touchRef = useRef({ startY: 0, startTime: 0, dragging: false })
+  const draggedRef = useRef(false)
+
+  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
+    touchRef.current = { startY: e.touches[0].clientY, startTime: Date.now(), dragging: false }
+    if (expandedRef.current) expandedRef.current.style.transition = 'none'
+  }, [])
+
+  const handleSwipeMove = useCallback((e: React.TouchEvent) => {
+    const dy = e.touches[0].clientY - touchRef.current.startY
+    if (dy > 10) {
+      touchRef.current.dragging = true
+      draggedRef.current = true
+      if (expandedRef.current) expandedRef.current.style.transform = `translateY(${dy}px)`
+    }
+  }, [])
+
+  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchRef.current.dragging) {
+      if (expandedRef.current) {
+        expandedRef.current.style.transform = ''
+        expandedRef.current.style.transition = ''
+      }
+      return
+    }
+    const dy = e.changedTouches[0].clientY - touchRef.current.startY
+    const elapsed = Date.now() - touchRef.current.startTime
+    const velocity = elapsed > 0 ? dy / elapsed : 0
+    if (expandedRef.current) expandedRef.current.style.transition = 'transform 0.2s ease-out'
+    if (dy > 100 || velocity > 0.5) {
+      if (expandedRef.current) expandedRef.current.style.transform = 'translateY(100%)'
+      setTimeout(() => {
+        toggleExpanded()
+        if (expandedRef.current) {
+          expandedRef.current.style.transform = ''
+          expandedRef.current.style.transition = ''
+        }
+      }, 200)
+    } else {
+      if (expandedRef.current) expandedRef.current.style.transform = 'translateY(0)'
+      setTimeout(() => {
+        if (expandedRef.current) {
+          expandedRef.current.style.transform = ''
+          expandedRef.current.style.transition = ''
+        }
+      }, 200)
+    }
+    touchRef.current.dragging = false
+    setTimeout(() => { draggedRef.current = false }, 50)
+  }, [toggleExpanded])
+
+  const handleHandleClick = useCallback(() => {
+    if (draggedRef.current) return
+    toggleExpanded()
+  }, [toggleExpanded])
 
   if (!currentTrack) return null
 
@@ -183,7 +287,7 @@ export function PlayerBar() {
               {currentTrack.coverUrl ? (
                 <img
                   src={currentTrack.coverUrl}
-                  alt=""
+                  alt={`${currentTrack.title} by ${currentTrack.artistName}`}
                   className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                 />
               ) : (
@@ -261,7 +365,7 @@ export function PlayerBar() {
                   onClick={handleScrubberClick}
                 />
                 <span className="text-[10px] text-zinc-500 w-8 tabular-nums">
-                  {formatTime(duration)}
+                  {formatTime(displayDuration)}
                 </span>
               </div>
             </div>
@@ -312,7 +416,7 @@ export function PlayerBar() {
             <div
               className="h-full transition-[width] duration-200"
               style={{
-                width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                width: `${displayDuration > 0 ? (currentTime / displayDuration) * 100 : 0}%`,
                 background: accent,
               }}
             />
@@ -320,9 +424,16 @@ export function PlayerBar() {
 
           {isExpanded ? (
             /* Expanded mobile view */
-            <div className="px-4 py-4">
+            <div
+              ref={expandedRef}
+              className="px-4 py-4"
+              style={{ touchAction: 'none', overscrollBehavior: 'contain' }}
+              onTouchStart={handleSwipeStart}
+              onTouchMove={handleSwipeMove}
+              onTouchEnd={handleSwipeEnd}
+            >
               <button
-                onClick={toggleExpanded}
+                onClick={handleHandleClick}
                 className="w-full flex justify-center mb-4"
                 aria-label="Collapse player"
               >
@@ -333,7 +444,7 @@ export function PlayerBar() {
                 {currentTrack.coverUrl ? (
                   <img
                     src={currentTrack.coverUrl}
-                    alt=""
+                    alt={`${currentTrack.title} by ${currentTrack.artistName}`}
                     className="w-48 h-48 rounded-2xl object-cover"
                   />
                 ) : (
@@ -368,7 +479,7 @@ export function PlayerBar() {
                     onClick={handleScrubberClick}
                   />
                   <span className="text-[10px] text-zinc-500 w-8 tabular-nums">
-                    {formatTime(duration)}
+                    {formatTime(displayDuration)}
                   </span>
                 </div>
 
@@ -412,7 +523,7 @@ export function PlayerBar() {
               {currentTrack.coverUrl ? (
                 <img
                   src={currentTrack.coverUrl}
-                  alt=""
+                  alt={`${currentTrack.title} by ${currentTrack.artistName}`}
                   className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                 />
               ) : (
@@ -428,8 +539,9 @@ export function PlayerBar() {
               <span className="flex-shrink-0" onClick={e => e.stopPropagation()}>
                 <FavouriteButton trackId={currentTrack.id} size={16} />
               </span>
-              <div
+              <button
                 className="flex-shrink-0 mr-1"
+                aria-label={isPlaying ? 'Pause' : 'Play'}
                 onClick={e => {
                   e.stopPropagation()
                   isPlaying ? pause() : resume()
@@ -444,7 +556,7 @@ export function PlayerBar() {
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 )}
-              </div>
+              </button>
             </button>
           )}
         </div>

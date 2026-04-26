@@ -198,13 +198,15 @@ export default function BroadcastClient({ adminEmail }: { adminEmail: string }) 
   }
 
   const simpleMarkdownPreview = (md: string) => {
-    return md
+    const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    const escaped = escapeHtml(md)
+    return escaped
       .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold mt-4 mb-1">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold mt-4 mb-1">$1</h2>')
       .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold mt-4 mb-1">$1</h1>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-orange-500 underline">$1</a>')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" class="text-orange-500 underline">$1</a>')
       .replace(/\n\n/g, '</p><p class="mb-3">')
       .replace(/\n/g, '<br>')
   }

@@ -208,6 +208,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
               <img
                 src={featuredArtist.avatar_url}
                 alt=""
+                role="presentation"
                 className="w-full h-full object-cover opacity-20 blur-2xl scale-110"
               />
             )}

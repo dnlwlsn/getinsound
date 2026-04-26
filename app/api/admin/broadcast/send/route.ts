@@ -9,7 +9,17 @@ function getAdminClient() { return createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 ) }
 
+async function getUnsubscribedIds(): Promise<Set<string>> {
+  const { data } = await getAdminClient()
+    .from('fan_profiles')
+    .select('id')
+    .eq('email_unsubscribed', true)
+  return new Set((data ?? []).map(r => r.id))
+}
+
 async function getRecipientEmails(audience: string): Promise<string[]> {
+  const unsubscribed = await getUnsubscribedIds()
+
   if (audience === 'artists') {
     const { data } = await getAdminClient().from('artist_accounts').select('email')
     return (data ?? []).map(r => r.email).filter(Boolean)
@@ -19,6 +29,7 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
     const { data } = await getAdminClient()
       .from('fan_profiles')
       .select('id')
+      .eq('email_unsubscribed', false)
     const fanIds = (data ?? []).map(r => r.id)
     if (fanIds.length === 0) return []
     const { data: users } = await getAdminClient().auth.admin.listUsers({ perPage: 1000 })
@@ -32,7 +43,7 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
     const { data } = await getAdminClient()
       .from('purchases')
       .select('fan_id')
-    const fanIds = [...new Set((data ?? []).map(r => r.fan_id))]
+    const fanIds = [...new Set((data ?? []).map(r => r.fan_id))].filter(id => !unsubscribed.has(id))
     if (fanIds.length === 0) return []
     const { data: users } = await getAdminClient().auth.admin.listUsers({ perPage: 1000 })
     return (users?.users ?? [])
@@ -43,7 +54,10 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
 
   // everyone
   const { data: users } = await getAdminClient().auth.admin.listUsers({ perPage: 1000 })
-  return (users?.users ?? []).map(u => u.email!).filter(Boolean)
+  return (users?.users ?? [])
+    .filter(u => !unsubscribed.has(u.id))
+    .map(u => u.email!)
+    .filter(Boolean)
 }
 
 export async function POST(req: NextRequest) {

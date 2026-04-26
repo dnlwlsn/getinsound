@@ -23,8 +23,14 @@ export async function POST(req: NextRequest) {
   if (!name || !description || !price || !currency || postage == null || stock == null) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
-  if (price < 200) {
-    return NextResponse.json({ error: 'Minimum price is 200 (smallest currency unit)' }, { status: 400 })
+  if (typeof price !== 'number' || price < 200 || price > 10000000) {
+    return NextResponse.json({ error: 'Price must be between 200 and 10000000 (smallest currency unit)' }, { status: 400 })
+  }
+  if (typeof postage !== 'number' || postage < 0 || postage > 10000000) {
+    return NextResponse.json({ error: 'Postage must be between 0 and 10000000' }, { status: 400 })
+  }
+  if (typeof stock !== 'number' || stock < 0 || !Number.isInteger(stock)) {
+    return NextResponse.json({ error: 'Stock must be a non-negative integer' }, { status: 400 })
   }
 
   const { data: merch, error } = await supabase

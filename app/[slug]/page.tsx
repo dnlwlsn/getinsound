@@ -230,7 +230,21 @@ export default async function ProfilePage({ params }: Props) {
   const releaseCount = (releases || []).length
   const isVerified = !!(accountData?.stripe_verified && accountData?.independence_confirmed && releaseCount > 0)
 
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicGroup',
+    name: artist.name,
+    url: `https://getinsound.com/${artist.slug}`,
+    image: artist.avatar_url || null,
+    description: artist.bio || null,
+  }
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
     <ArtistProfileClient
       artist={artist}
       releases={(releases || []).map(r => ({
@@ -242,5 +256,6 @@ export default async function ProfilePage({ params }: Props) {
       socialLinks={artist.social_links}
       merch={merchItems || []}
     />
+    </>
   )
 }

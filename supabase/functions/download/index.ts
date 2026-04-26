@@ -7,8 +7,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SIGNED_URL_TTL_SEC = 60 * 60; // 1 hour
 
+const SITE_URL = Deno.env.get('SITE_URL') || 'https://getinsound.com';
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': SITE_URL,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
     const { data: release, error: releaseErr } = await admin
       .from('releases')
       .select(`
-        id, title, cover_url,
+        id, title, cover_url, preorder_enabled, release_date,
         artists!inner ( name ),
         tracks ( id, title, position, audio_path )
       `)
@@ -73,6 +74,18 @@ Deno.serve(async (req) => {
 
     if (releaseErr) return json({ error: releaseErr.message }, 500);
     if (!release) return json({ error: 'Release not found' }, 404);
+
+    // Block downloads for pre-orders where the release date is still in the future
+    if (release.preorder_enabled && release.release_date) {
+      const releaseDate = new Date(release.release_date);
+      if (releaseDate.getTime() > Date.now()) {
+        const formatted = releaseDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        return json({
+          error: `This release is available for pre-order. Downloads will be available on ${formatted}.`,
+          release_date: release.release_date,
+        }, 403);
+      }
+    }
 
     const artist = Array.isArray(release.artists) ? release.artists[0] : release.artists;
     const tracks = [...(release.tracks ?? [])].sort((a, b) => a.position - b.position);
@@ -91,10 +104,7 @@ Deno.serve(async (req) => {
       }),
     );
 
-    await admin
-      .from('download_grants')
-      .update({ used_count: grant.used_count + 1 })
-      .eq('id', grant.id);
+    await admin.rpc('increment_download_grant_usage', { grant_id: grant.id });
 
     return json({
       release: {

@@ -119,7 +119,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
       // Award founding_artist badge if eligible (waitlist position ≤ 50)
       try {
         const res = await fetch('/api/badges/founding-artist', { method: 'POST' })
-        if (!res.ok) console.error('Founding artist badge check failed')
+        if (!res.ok) { /* badge check failed, non-critical */ }
       } catch {}
 
       router.push('/dashboard')

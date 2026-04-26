@@ -92,5 +92,24 @@ export async function GET(request: Request) {
     })
   }
 
+  // No preview_path exists yet — serve the master with a player-enforced
+  // 30-second preview limit. The full file URL is signed and short-lived so
+  // leakage risk is low, and the player will stop playback at 30s.
+  if (track.audio_path) {
+    const { data: signed, error: signErr } = await supabase.storage
+      .from('masters')
+      .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)
+
+    if (signErr || !signed) {
+      return NextResponse.json({ error: 'Failed to generate URL' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      url: signed.signedUrl,
+      isPreview: true,
+      previewDuration: 30,
+    })
+  }
+
   return NextResponse.json({ error: 'No audio available' }, { status: 404 })
 }

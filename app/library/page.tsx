@@ -1,7 +1,15 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminSupabase } from '@supabase/supabase-js'
 import LibraryClient from './LibraryClient'
 import LibrarySignIn from './LibrarySignIn'
+
+function getAdminClient() {
+  return createAdminSupabase(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
 
 export const metadata: Metadata = {
   title: 'My Library | Insound',
@@ -29,6 +37,7 @@ export interface LibraryRelease {
   tracks: LibraryTrack[]
   artistBadge?: { badge_type: string; metadata?: { position?: number } | null } | null
   artistVerified?: boolean
+  downloadExpired?: boolean
 }
 
 export interface LibraryTrack {
@@ -115,6 +124,22 @@ export default async function LibraryPage() {
     }
   }
 
+  // Fetch download grants to check if any are still valid per purchase
+  const purchaseIds = (purchases ?? []).map((p: any) => p.id)
+  const { data: grants } = purchaseIds.length > 0
+    ? await getAdminClient()
+        .from('download_grants')
+        .select('purchase_id, expires_at, used_count, max_uses')
+        .in('purchase_id', purchaseIds)
+    : { data: [] }
+
+  const activePurchaseGrants = new Set<string>()
+  for (const g of grants ?? []) {
+    if (new Date(g.expires_at) > new Date() && g.used_count < g.max_uses) {
+      activePurchaseGrants.add(g.purchase_id)
+    }
+  }
+
   const releases: LibraryRelease[] = (purchases ?? [])
     .filter((p: any) => p.releases)
     .map((p: any) => {
@@ -154,6 +179,7 @@ export default async function LibraryPage() {
         tracks,
         artistBadge: artistBadgeMap.get(artistId) ?? null,
         artistVerified: artistVerifiedSet.has(artistId),
+        downloadExpired: !activePurchaseGrants.has(p.id),
       }
     })
 

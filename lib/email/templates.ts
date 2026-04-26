@@ -46,7 +46,7 @@ export type EmailTemplate = keyof typeof TEMPLATES;
 export function buildMagicLinkEmail(
   actionUrl: string,
   template: EmailTemplate,
-  meta?: { releaseTitle?: string; artistName?: string },
+  meta?: { releaseTitle?: string; artistName?: string; userId?: string },
 ): { subject: string; html: string } {
   const config = TEMPLATES[template];
 
@@ -84,7 +84,7 @@ export function buildMagicLinkEmail(
         </td></tr>
         <tr><td style="color:${TEXT_MUTED};font-size:13px;line-height:1.5;">
           ${config.footer}
-        </td></tr>
+        </td></tr>${unsubscribeFooter(meta?.userId)}
       </table>
     </td></tr>
   </table>
@@ -94,7 +94,13 @@ export function buildMagicLinkEmail(
   return { subject, html };
 }
 
-function wrapEmail(body: string): string {
+function unsubscribeFooter(userId?: string): string {
+  if (!userId) return '';
+  return `
+        <tr><td style="padding-top:32px;"><a href="https://getinsound.com/unsubscribe?token=${userId}" style="color:#71717A;font-size:11px;text-decoration:underline;">Unsubscribe</a></td></tr>`;
+}
+
+function wrapEmail(body: string, userId?: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -105,7 +111,7 @@ function wrapEmail(body: string): string {
         <tr><td style="padding-bottom:40px;">
           <span style="font-size:24px;font-weight:900;color:${BRAND_ORANGE};letter-spacing:-0.5px;">insound.</span>
         </td></tr>
-        ${body}
+        ${body}${unsubscribeFooter(userId)}
       </table>
     </td></tr>
   </table>
@@ -126,6 +132,33 @@ export function buildMerchOrderArtistEmail(itemName: string, buyerEmail: string,
         </td></tr>
         <tr><td style="color:${TEXT_MUTED};font-size:13px;line-height:1.5;">
           Remember to dispatch this order promptly.
+        </td></tr>`);
+}
+
+export function buildPurchaseReceiptEmail(
+  releaseTitle: string,
+  artistName: string,
+  amountPence: number,
+  siteUrl: string,
+): string {
+  const amountLabel = `£${(amountPence / 100).toFixed(2)}`;
+  return wrapEmail(`
+        <tr><td style="color:${TEXT_WHITE};font-size:20px;font-weight:700;line-height:1.4;padding-bottom:24px;">
+          Thank you for your purchase!
+        </td></tr>
+        <tr><td style="color:${TEXT_WHITE};font-size:16px;line-height:1.6;padding-bottom:8px;">
+          ${escapeHtml(releaseTitle)} by ${escapeHtml(artistName)}
+        </td></tr>
+        <tr><td style="color:${TEXT_MUTED};font-size:14px;line-height:1.6;padding-bottom:32px;">
+          Amount paid: <strong style="color:${TEXT_WHITE};">${amountLabel}</strong>
+        </td></tr>
+        <tr><td style="padding-bottom:48px;">
+          <a href="${escapeHtml(siteUrl)}/library" style="display:inline-block;background:${BRAND_ORANGE};color:${TEXT_WHITE};font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
+            Listen now &rarr;
+          </a>
+        </td></tr>
+        <tr><td style="color:${TEXT_MUTED};font-size:13px;line-height:1.5;">
+          If you have any questions about your purchase, please contact us.
         </td></tr>`);
 }
 

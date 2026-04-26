@@ -1,7 +1,14 @@
 User-agent: *
 Allow: /
 
-Disallow: /dashboard.html
-Disallow: /discography.html
-Disallow: /sales.html
-Disallow: /library.html
+Disallow: /dashboard
+Disallow: /discography
+Disallow: /sales
+Disallow: /library
+Disallow: /settings
+Disallow: /admin
+Disallow: /api/
+Disallow: /auth
+Disallow: /unsubscribe
+
+Sitemap: https://getinsound.com/sitemap.xml

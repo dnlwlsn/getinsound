@@ -214,7 +214,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       <div className="relative h-48 md:h-64 overflow-hidden" style={artist.banner_url ? {} : { background: bannerGradient(artist.id, accent) }}>
         {artist.banner_url && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={artist.banner_url} alt="" className="w-full h-full object-cover" />
+          <img src={artist.banner_url} alt="" role="presentation" className="w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#09090b_100%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#09090b] to-transparent" />

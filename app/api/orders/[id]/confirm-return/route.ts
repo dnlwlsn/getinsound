@@ -56,10 +56,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   )
 
   await admin.from('platform_costs').insert({
-    order_id: id,
-    type: 'merch_return_stripe_fee',
+    related_order_id: id,
+    cost_type: 'merch_return_stripe_fee',
     amount: refund.amount,
-    stripe_refund_id: refund.id,
+    currency: refund.currency,
+    notes: `Stripe refund ${refund.id}`,
   })
 
   const merchName = (order.merch as unknown as { name: string } | null)?.name ?? 'your order'

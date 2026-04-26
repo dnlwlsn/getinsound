@@ -196,15 +196,15 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
     return (
       <div className="min-h-screen font-display flex items-center justify-center">
         <div className="text-center max-w-md px-8">
-          <h2 className="text-xl font-bold mb-3">Something went wrong loading your library.</h2>
-          <p className="text-zinc-400 text-sm mb-6">
+          <h2 className="text-lg font-bold text-zinc-300 mb-2">Something went wrong loading your library.</h2>
+          <p className="text-zinc-500 text-sm mb-5">
             Try refreshing, or contact us if it keeps happening.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-orange-600 text-white font-bold px-6 py-3 rounded-full text-sm hover:bg-orange-500 transition-colors"
+            className="text-orange-600 text-sm font-bold hover:text-orange-500 transition-colors"
           >
-            Retry
+            Retry &rarr;
           </button>
         </div>
       </div>
@@ -214,16 +214,15 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
   if (releases.length === 0 && favourites.length === 0 && wishlist.length === 0) {
     return (
       <div className="min-h-screen font-display">
-        <div className="flex items-center justify-center min-h-[70vh] relative">
-          <div className="absolute inset-0 opacity-30" style={{ background: generateGradient('empty', 'state').css }} />
-          <div className="text-center relative z-10 px-8">
-            <h2 className="text-3xl font-black tracking-tight mb-3">Nothing here yet.</h2>
-            <p className="text-zinc-400 font-medium mb-8">Find something you love.</p>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center px-8">
+            <h2 className="text-lg font-bold text-zinc-300 mb-2">Nothing here yet.</h2>
+            <p className="text-zinc-500 text-sm mb-5">Find something you love.</p>
             <Link
               href="/explore"
-              className="inline-block bg-orange-600 text-white font-bold px-8 py-3.5 rounded-full text-sm hover:bg-orange-500 transition-colors"
+              className="text-orange-600 text-sm font-bold hover:text-orange-500 transition-colors"
             >
-              Discover music
+              Discover music &rarr;
             </Link>
           </div>
         </div>
@@ -323,7 +322,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
               return (
                 <div key={o.id} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex items-start gap-4">
                   <div className="w-14 h-14 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
-                    {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+                    {photo ? <img src={photo} alt={merchData?.name || 'Merch item'} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm truncate">{merchData?.name || 'Unknown item'}{o.variant_selected ? ` (${o.variant_selected})` : ''}</p>
@@ -424,6 +423,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
                   onPlay={() => handlePlay(r)}
                   onDownload={() => setDownloadModal(r)}
                   formatDate={formatDate}
+                  showToast={showToast}
                 />
               ))}
             </div>
@@ -438,6 +438,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
                   onPlay={() => handlePlay(r)}
                   onPlayTrack={(idx) => handlePlayTrack(r, idx)}
                   onDownload={() => setDownloadModal(r)}
+                  showToast={showToast}
                 />
               ))}
             </div>
@@ -484,11 +485,13 @@ function ReleaseCard({
   onPlay,
   onDownload,
   formatDate,
+  showToast,
 }: {
   release: LibraryRelease
   onPlay: () => void
   onDownload: () => void
   formatDate: (iso: string) => string
+  showToast: (msg: string) => void
 }) {
   const gradient = release.coverUrl ? null : generateGradient(release.artistId, release.releaseId)
   const borderStyle = release.accentColour
@@ -537,6 +540,9 @@ function ReleaseCard({
               >
                 &darr; Download
               </button>
+              {release.downloadExpired && (
+                <RedownloadButton purchaseId={release.purchaseId} onSuccess={showToast} />
+              )}
             </>
           )}
         </div>
@@ -589,6 +595,7 @@ function ReleaseRowCompact({
   onPlay,
   onPlayTrack,
   onDownload,
+  showToast,
 }: {
   release: LibraryRelease
   expanded: boolean
@@ -596,6 +603,7 @@ function ReleaseRowCompact({
   onPlay: () => void
   onPlayTrack: (trackIndex: number) => void
   onDownload: () => void
+  showToast: (msg: string) => void
 }) {
   const gradient = release.coverUrl ? null : generateGradient(release.artistId, release.releaseId)
   const isMultiTrack = release.releaseType !== 'single' && release.tracks.length > 1
@@ -684,6 +692,11 @@ function ReleaseRowCompact({
           >
             &darr; Download
           </button>
+        )}
+        {!release.preOrder && release.downloadExpired && (
+          <div className="hidden sm:block shrink-0">
+            <RedownloadButton purchaseId={release.purchaseId} onSuccess={showToast} />
+          </div>
         )}
       </div>
 
@@ -819,6 +832,7 @@ function FormatSelectorModal({
   return (
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+      role="presentation"
       onClick={onClose}
     >
       <div
@@ -1011,6 +1025,45 @@ function SavedTab({ items }: { items: FavouriteItem[] }) {
         )
       })}
     </div>
+  )
+}
+
+function RedownloadButton({ purchaseId, onSuccess }: { purchaseId: string; onSuccess: (msg: string) => void }) {
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function handleClick() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/library/redownload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchase_id: purchaseId }),
+      })
+      if (res.ok) {
+        setDone(true)
+        onSuccess('Check your email for a new download link')
+      } else {
+        onSuccess('Failed to request download link')
+      }
+    } catch {
+      onSuccess('Something went wrong')
+    }
+    setLoading(false)
+  }
+
+  if (done) {
+    return <span className="text-[10px] text-green-400 font-bold">Link sent!</span>
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-bold bg-transparent ring-1 ring-orange-600/30 text-orange-500 hover:ring-orange-600/60 hover:bg-orange-600/5 transition-all shrink-0 disabled:opacity-50"
+    >
+      {loading ? 'Requesting...' : 'Request download link'}
+    </button>
   )
 }
 

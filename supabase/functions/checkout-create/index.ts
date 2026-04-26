@@ -12,8 +12,9 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 
 const PLATFORM_FEE_BPS = 1000; // 10.00%
 
+const SITE_URL = Deno.env.get('SITE_URL') || 'https://getinsound.com';
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': SITE_URL,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -37,6 +38,7 @@ Deno.serve(async (req) => {
     const fanCurrency: string | undefined = body.fan_currency;
     const fanLocale: string | undefined = body.fan_locale;
     const refCode: string | undefined = body.ref_code;
+    const customAmount: number | undefined = typeof body.custom_amount === 'number' ? body.custom_amount : undefined;
     if (!releaseId) return json({ error: 'release_id required' }, 400);
 
     const admin = createClient(
@@ -48,7 +50,7 @@ Deno.serve(async (req) => {
       .from('releases')
       .select(`
         id, slug, title, price_pence, currency, cover_url, published, artist_id,
-        preorder_enabled, release_date,
+        preorder_enabled, release_date, pwyw_enabled, pwyw_minimum_pence,
         artists!inner ( id, slug, name )
       `)
       .eq('id', releaseId)
@@ -71,7 +73,15 @@ Deno.serve(async (req) => {
       return json({ error: 'This artist has not finished setting up payouts yet.' }, 400);
     }
 
-    const unitAmount = release.price_pence;
+    // Determine unit amount — support PWYW custom amounts
+    let unitAmount = release.price_pence;
+    if (release.pwyw_enabled && customAmount != null) {
+      const minimum = release.pwyw_minimum_pence ?? release.price_pence;
+      if (customAmount >= minimum && customAmount >= release.price_pence) {
+        unitAmount = customAmount;
+      }
+      // If custom_amount is below minimum, silently fall back to price_pence
+    }
     if (!unitAmount || unitAmount < 200) {
       return json({ error: 'Invalid price' }, 400);
     }

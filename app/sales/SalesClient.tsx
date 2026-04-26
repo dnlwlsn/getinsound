@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +18,13 @@ export function SalesClient() {
 
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [withdrawStep, setWithdrawStep] = useState<1 | 2 | 3>(1)
+
+  useEffect(() => {
+    if (!withdrawOpen) return
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setWithdrawOpen(false) }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [withdrawOpen])
 
   function openWithdraw() {
     setWithdrawStep(1)

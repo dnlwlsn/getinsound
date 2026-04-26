@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 type ArtistResult = {
   id: string
@@ -33,6 +34,11 @@ export async function GET(request: NextRequest) {
   if (!q) {
     return NextResponse.json({ artists: [], releases: [] })
   }
+
+  const ip = getClientIp(request.headers)
+  const ipHash = await hashIp(ip)
+  const rateLimited = await checkRateLimit(ipHash, 'search', 30, 1)
+  if (rateLimited) return rateLimited
 
   const supabase = await createClient()
 

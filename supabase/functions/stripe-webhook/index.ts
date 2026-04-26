@@ -577,6 +577,13 @@ Deno.serve(async (req) => {
           buildExistingAccountEmail(releaseTitle, artistName),
         );
       }
+
+      // ── Purchase receipt email (sent to ALL buyers) ──
+      await sendEmail(
+        buyerEmail,
+        `Receipt: ${releaseTitle} by ${artistName}`,
+        buildPurchaseReceiptEmail(releaseTitle, artistName, amountPence),
+      );
     } else if (event.type === 'account.updated') {
       const account = event.data.object as Stripe.Account;
 
@@ -920,6 +927,42 @@ function buildMerchOrderArtistEmail(itemName: string, buyerEmail: string, varian
         </td></tr>
         <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
           Remember to dispatch this order promptly.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amountPence: number): string {
+  const amountLabel = `£${(amountPence / 100).toFixed(2)}`;
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:60px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0">
+        <tr><td style="padding-bottom:40px;">
+          <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
+        </td></tr>
+        <tr><td style="color:#FAFAFA;font-size:20px;font-weight:700;line-height:1.4;padding-bottom:24px;">
+          Thank you for your purchase!
+        </td></tr>
+        <tr><td style="color:#FAFAFA;font-size:16px;line-height:1.6;padding-bottom:8px;">
+          ${escapeHtml(releaseTitle)} by ${escapeHtml(artistName)}
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:14px;line-height:1.6;padding-bottom:32px;">
+          Amount paid: <strong style="color:#FAFAFA;">${amountLabel}</strong>
+        </td></tr>
+        <tr><td style="padding-bottom:48px;">
+          <a href="${SITE_URL}/library" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
+            Listen now &rarr;
+          </a>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
+          If you have any questions about your purchase, please contact us.
         </td></tr>
       </table>
     </td></tr>

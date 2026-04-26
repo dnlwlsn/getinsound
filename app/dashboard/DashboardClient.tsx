@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ColourPicker } from '@/app/components/ui/ColourPicker'
@@ -110,6 +110,13 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [orders, setOrders] = useState(merchOrders)
   const [merchForm, setMerchForm] = useState({ name: '', description: '', price: '', postage: '0', stock: '', variants: '', dispatch_estimate: 'Ships within 5 days' })
   const [merchSaving, setMerchSaving] = useState(false)
+  const [merchPhotoFiles, setMerchPhotoFiles] = useState<(File | null)[]>([null, null, null])
+  const [merchPhotoPreviews, setMerchPhotoPreviews] = useState<(string | null)[]>([null, null, null])
+  const [merchPhotoError, setMerchPhotoError] = useState('')
+  const [uploadingPhotoFor, setUploadingPhotoFor] = useState<string | null>(null)
+  const [editingMerch, setEditingMerch] = useState<string | null>(null)
+  const [editMerchForm, setEditMerchForm] = useState({ name: '', description: '', price: '', postage: '', stock: '', variants: '', dispatch_estimate: '' })
+  const [editMerchSaving, setEditMerchSaving] = useState(false)
   const [orderFilter, setOrderFilter] = useState('all')
   const [dispatchingOrder, setDispatchingOrder] = useState<string | null>(null)
   const [dispatchForm, setDispatchForm] = useState({ tracking_number: '', carrier: 'royal_mail' })
@@ -297,6 +304,19 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [cancelTarget, setCancelTarget] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
+  // ── Escape key for modals ───────────────────────────────────
+  useEffect(() => {
+    if (!showGenerateModal && !cancelTarget) return
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showGenerateModal && !generatingCodes) setShowGenerateModal(false)
+        if (cancelTarget && !cancelling) setCancelTarget(null)
+      }
+    }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [showGenerateModal, generatingCodes, cancelTarget, cancelling])
+
   async function cancelPreorder(releaseId: string) {
     setCancelTarget(releaseId)
   }
@@ -345,8 +365,36 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     setReturnAddrSaving(false)
   }
 
+  function handleMerchPhotoSelect(slot: number, file: File | null) {
+    setMerchPhotoError('')
+    if (!file) {
+      setMerchPhotoFiles(prev => { const n = [...prev]; n[slot] = null; return n })
+      setMerchPhotoPreviews(prev => { const n = [...prev]; n[slot] = null; return n })
+      return
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setMerchPhotoError('Only JPEG, PNG, and WebP images are allowed')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMerchPhotoError('Image must be under 5MB')
+      return
+    }
+    setMerchPhotoFiles(prev => { const n = [...prev]; n[slot] = file; return n })
+    setMerchPhotoPreviews(prev => { const n = [...prev]; n[slot] = URL.createObjectURL(file); return n })
+  }
+
+  async function uploadPhotoToMerch(merchId: string, file: File): Promise<string[]> {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch(`/api/merch/${merchId}/photos`, { method: 'POST', body: fd })
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed') }
+    const data = await res.json()
+    return data.photos
+  }
+
   async function createMerchItem() {
-    if (!returnAddr) return
+    if (!returnAddr || !merchPhotoFiles[0]) return
     setMerchSaving(true)
     try {
       const variantsArr = merchForm.variants.trim()
@@ -368,11 +416,86 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
       })
       if (res.ok) {
         const data = await res.json()
-        setMerch(prev => [{ ...data, name: merchForm.name, description: merchForm.description, price: Math.round(parseFloat(merchForm.price) * 100), currency: 'GBP', postage: Math.round(parseFloat(merchForm.postage || '0') * 100), stock: parseInt(merchForm.stock), variants: variantsArr, dispatch_estimate: merchForm.dispatch_estimate, photos: [], is_active: true, created_at: new Date().toISOString() }, ...prev])
+        let photos: string[] = []
+        for (const file of merchPhotoFiles) {
+          if (file) photos = await uploadPhotoToMerch(data.id, file)
+        }
+        setMerch(prev => [{ ...data, name: merchForm.name, description: merchForm.description, price: Math.round(parseFloat(merchForm.price) * 100), currency: 'GBP', postage: Math.round(parseFloat(merchForm.postage || '0') * 100), stock: parseInt(merchForm.stock), variants: variantsArr, dispatch_estimate: merchForm.dispatch_estimate, photos, is_active: true, created_at: new Date().toISOString() }, ...prev])
         setMerchForm({ name: '', description: '', price: '', postage: '0', stock: '', variants: '', dispatch_estimate: 'Ships within 5 days' })
+        setMerchPhotoFiles([null, null, null])
+        setMerchPhotoPreviews([null, null, null])
       }
     } catch {}
     setMerchSaving(false)
+  }
+
+  function startEditMerch(m: MerchItem) {
+    setEditingMerch(m.id)
+    setEditMerchForm({
+      name: m.name,
+      description: m.description,
+      price: (m.price / 100).toFixed(2),
+      postage: (m.postage / 100).toFixed(2),
+      stock: String(m.stock),
+      variants: m.variants?.join(', ') ?? '',
+      dispatch_estimate: m.dispatch_estimate,
+    })
+  }
+
+  async function saveEditMerch() {
+    if (!editingMerch) return
+    setEditMerchSaving(true)
+    try {
+      const variantsArr = editMerchForm.variants.trim()
+        ? editMerchForm.variants.split(',').map(v => v.trim()).filter(Boolean)
+        : null
+      const updates = {
+        name: editMerchForm.name,
+        description: editMerchForm.description,
+        price: Math.round(parseFloat(editMerchForm.price) * 100),
+        postage: Math.round(parseFloat(editMerchForm.postage || '0') * 100),
+        stock: parseInt(editMerchForm.stock),
+        variants: variantsArr,
+        dispatch_estimate: editMerchForm.dispatch_estimate,
+      }
+      const res = await fetch(`/api/merch/${editingMerch}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      })
+      if (res.ok) {
+        setMerch(prev => prev.map(m => m.id === editingMerch ? { ...m, ...updates } : m))
+        setEditingMerch(null)
+      }
+    } catch {}
+    setEditMerchSaving(false)
+  }
+
+  async function replaceMerchPhoto(merchId: string, index: number, file: File) {
+    setUploadingPhotoFor(merchId)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(`/api/merch/${merchId}/photos?index=${index}`, { method: 'PUT', body: fd })
+      if (res.ok) {
+        const data = await res.json()
+        setMerch(prev => prev.map(m => m.id === merchId ? { ...m, photos: data.photos } : m))
+      }
+    } catch {}
+    setUploadingPhotoFor(null)
+  }
+
+  async function removeMerchPhoto(merchId: string, index: number) {
+    if (index === 0) return
+    setUploadingPhotoFor(merchId)
+    try {
+      const res = await fetch(`/api/merch/${merchId}/photos?index=${index}`, { method: 'DELETE' })
+      if (res.ok) {
+        const data = await res.json()
+        setMerch(prev => prev.map(m => m.id === merchId ? { ...m, photos: data.photos } : m))
+      }
+    } catch {}
+    setUploadingPhotoFor(null)
   }
 
   async function toggleMerchActive(id: string, isActive: boolean) {
@@ -570,8 +693,40 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                   <input placeholder="Stock" type="number" min="1" value={merchForm.stock} onChange={e => setMerchForm(f => ({ ...f, stock: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                   <input placeholder="Variants (S, M, L, XL)" value={merchForm.variants} onChange={e => setMerchForm(f => ({ ...f, variants: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                   <input placeholder="Dispatch estimate" value={merchForm.dispatch_estimate} onChange={e => setMerchForm(f => ({ ...f, dispatch_estimate: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <div className="col-span-2">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Product photos</p>
+                    <div className="flex gap-3">
+                      {[0, 1, 2].map(slot => (
+                        <div key={slot} className="flex flex-col items-center gap-1">
+                          {merchPhotoPreviews[slot] ? (
+                            <div className="relative group">
+                              <img src={merchPhotoPreviews[slot]!} alt={`Photo ${slot + 1}`} className="w-16 h-16 rounded-lg object-cover" />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-1">
+                                <label className="cursor-pointer p-1">
+                                  <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+                                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => { handleMerchPhotoSelect(slot, e.target.files?.[0] || null); e.target.value = '' }} />
+                                </label>
+                                {slot > 0 && (
+                                  <button onClick={() => handleMerchPhotoSelect(slot, null)} className="p-1">
+                                    <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center w-16 h-16 border border-dashed border-zinc-700 rounded-lg cursor-pointer hover:border-zinc-500 transition-colors">
+                              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-zinc-600"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+                              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => { handleMerchPhotoSelect(slot, e.target.files?.[0] || null); e.target.value = '' }} />
+                            </label>
+                          )}
+                          <span className="text-[9px] text-zinc-600 font-bold">{slot === 0 ? 'Image 1 *' : `Image ${slot + 1}`}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {merchPhotoError && <p className="text-xs text-red-400 mt-1">{merchPhotoError}</p>}
+                  </div>
                 </div>
-                <button onClick={createMerchItem} disabled={merchSaving || !merchForm.name || !merchForm.price || !merchForm.stock} className="mt-3 bg-orange-600 text-black font-bold px-4 py-2 rounded-lg text-xs disabled:opacity-40">
+                <button onClick={createMerchItem} disabled={merchSaving || !merchForm.name || !merchForm.price || !merchForm.stock || !merchPhotoFiles[0]} className="mt-3 bg-orange-600 text-black font-bold px-4 py-2 rounded-lg text-xs disabled:opacity-40">
                   {merchSaving ? 'Creating...' : '+ Add Listing'}
                 </button>
               </div>
@@ -582,19 +737,63 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
             ) : (
               <div className="space-y-3">
                 {merch.map(m => (
-                  <div key={m.id} className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-4 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
-                      {m.photos?.[0] ? (
-                        <img src={m.photos[0]} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                        </div>
-                      )}
+                  <div key={m.id}>
+                  <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-4">
+                    <div className="flex items-center gap-4">
+                    <div className="flex gap-1.5 shrink-0">
+                      {[0, 1, 2].map(idx => {
+                        const photo = m.photos?.[idx]
+                        const canAdd = !photo && idx === (m.photos?.length || 0) && (m.photos?.length || 0) < 3
+                        if (!photo && !canAdd) return <div key={idx} className="w-12 h-12" />
+                        return (
+                          <div key={idx} className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden shrink-0 relative group">
+                            {photo ? (
+                              <>
+                                <img src={photo} alt={`${m.name} photo ${idx + 1}`} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-0.5">
+                                  <label className="cursor-pointer p-0.5">
+                                    <svg width="10" height="10" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingPhotoFor === m.id} onChange={e => {
+                                      const f = e.target.files?.[0]
+                                      if (!f) return
+                                      if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) return
+                                      if (f.size > 5 * 1024 * 1024) return
+                                      replaceMerchPhoto(m.id, idx, f)
+                                      e.target.value = ''
+                                    }} />
+                                  </label>
+                                  {idx > 0 && (
+                                    <button onClick={() => removeMerchPhoto(m.id, idx)} className="p-0.5">
+                                      <svg width="10" height="10" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" /></svg>
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            ) : canAdd ? (
+                              <label className="w-full h-full flex items-center justify-center text-zinc-700 hover:text-zinc-400 transition-colors cursor-pointer">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+                                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingPhotoFor === m.id} onChange={e => {
+                                  const f = e.target.files?.[0]
+                                  if (!f) return
+                                  if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) return
+                                  if (f.size > 5 * 1024 * 1024) return
+                                  uploadPhotoToMerch(m.id, f).then(photos => setMerch(prev => prev.map(x => x.id === m.id ? { ...x, photos } : x)))
+                                  e.target.value = ''
+                                }} />
+                              </label>
+                            ) : null}
+                          </div>
+                        )
+                      })}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm truncate">{m.name}</p>
-                      <p className="text-[10px] text-zinc-500">{pence(m.price)} · {m.stock} in stock{m.variants ? ` · ${(m.variants as string[]).join(', ')}` : ''}</p>
+                      <p className="text-[10px] text-zinc-500">
+                        {pence(m.price)} · {m.stock} in stock{m.variants ? ` · ${(m.variants as string[]).join(', ')}` : ''}
+                        {uploadingPhotoFor === m.id && <span className="text-orange-500 ml-1">Uploading...</span>}
+                        {!m.photos?.length && uploadingPhotoFor !== m.id && <span className="text-red-400 ml-1">No photo</span>}
+                        {(m.photos?.length || 0) >= 1 && <span className="text-zinc-600 ml-1">· {m.photos.length}/3 photos</span>}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.is_active ? 'bg-green-900/50 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
@@ -603,7 +802,28 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                       <button onClick={() => toggleMerchActive(m.id, m.is_active)} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">
                         {m.is_active ? 'Deactivate' : 'Activate'}
                       </button>
+                      <button onClick={() => editingMerch === m.id ? setEditingMerch(null) : startEditMerch(m)} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">
+                        {editingMerch === m.id ? 'Cancel' : 'Edit'}
+                      </button>
                     </div>
+                    </div>
+                  </div>
+                  {editingMerch === m.id && (
+                    <div className="bg-zinc-800/30 border border-zinc-700/30 rounded-xl p-4 mt-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        <input placeholder="Name" value={editMerchForm.name} onChange={e => setEditMerchForm(f => ({ ...f, name: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                        <textarea placeholder="Description" value={editMerchForm.description} onChange={e => setEditMerchForm(f => ({ ...f, description: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm h-20 resize-none" />
+                        <input placeholder="Price (£)" type="number" step="0.01" min="2" value={editMerchForm.price} onChange={e => setEditMerchForm(f => ({ ...f, price: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                        <input placeholder="Postage (£)" type="number" step="0.01" min="0" value={editMerchForm.postage} onChange={e => setEditMerchForm(f => ({ ...f, postage: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                        <input placeholder="Stock" type="number" min="0" value={editMerchForm.stock} onChange={e => setEditMerchForm(f => ({ ...f, stock: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                        <input placeholder="Variants (S, M, L, XL)" value={editMerchForm.variants} onChange={e => setEditMerchForm(f => ({ ...f, variants: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                        <input placeholder="Dispatch estimate" value={editMerchForm.dispatch_estimate} onChange={e => setEditMerchForm(f => ({ ...f, dispatch_estimate: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                      </div>
+                      <button onClick={saveEditMerch} disabled={editMerchSaving || !editMerchForm.name || !editMerchForm.price || !editMerchForm.stock} className="mt-3 bg-orange-600 text-black font-bold px-4 py-2 rounded-lg text-xs disabled:opacity-40">
+                        {editMerchSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  )}
                   </div>
                 ))}
               </div>
@@ -630,7 +850,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                     <div key={o.id} className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-4">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
-                          {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+                          {photo ? <img src={photo} alt={merchData?.name || 'Order item'} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm truncate">{merchData?.name || 'Unknown item'}{o.variant_selected ? ` (${o.variant_selected})` : ''}</p>
@@ -714,7 +934,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                       </div>
                       <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap line-clamp-3">{p.content}</p>
                       {p.media_url && p.post_type === 'photo' && (
-                        <img src={p.media_url} alt="" className="mt-2 h-16 w-16 rounded-lg object-cover" />
+                        <img src={p.media_url} alt="Post photo" className="mt-2 h-16 w-16 rounded-lg object-cover" />
                       )}
                       {p.media_url && (p.post_type === 'demo' || p.post_type === 'voice_note') && (
                         <div className="mt-2 flex items-center gap-2 text-[10px] text-zinc-500">
@@ -876,7 +1096,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                         onClick={() => c && c.total > 0 ? toggleCodesExpand(r.id) : undefined}
                         className="w-full flex items-center gap-4 p-4 text-left hover:bg-zinc-800/30 transition-colors"
                       >
-                        <img src={r.cover_url || generateGradientDataUri(artist.id, r.id)} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                        <img src={r.cover_url || generateGradientDataUri(artist.id, r.id)} alt={r.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm truncate">{r.title}</p>
                           {c && c.total > 0 ? (
@@ -1203,7 +1423,7 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
   return (
     <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl overflow-hidden">
       <div className="flex items-center gap-4 p-4">
-        <img src={coverSrc} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+        <img src={coverSrc} alt={r.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm truncate">{r.title}</p>
           <p className="text-[10px] text-zinc-500">{r.type} · {r.tracks.length} track{r.tracks.length !== 1 ? 's' : ''} · {plays} plays · {saveCount} {saveCount === 1 ? 'save' : 'saves'}</p>
@@ -1411,6 +1631,12 @@ function ReferralWidget({ referral }: { referral: Referral }) {
 }
 
 function FirstSaleMilestoneModal({ artistName, onClose }: { artistName: string; onClose: () => void }) {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [onClose])
+
   const [copied, setCopied] = useState(false)
   const imageUrl = `/api/milestone/image?name=${encodeURIComponent(artistName)}`
   const shareText = `Just made my first sale on @getinsound! 🎶`

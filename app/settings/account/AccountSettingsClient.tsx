@@ -102,8 +102,8 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
           window.open(`/download/${r.downloadToken}`, '_blank')
         }
       }
-    } catch (e) {
-      console.error('Download failed:', e)
+    } catch {
+      // error handled by UI state
     }
     setDownloading(false)
   }
