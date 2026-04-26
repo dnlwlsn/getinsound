@@ -19,7 +19,7 @@ const COST_ITEMS = [
   'Music video production',
   'PR and playlist pitching',
   'Session musicians',
-  'PRS/MCPS membership fees',
+  'PRS/MCPS fees',
   'Social media advertising',
   'Publishing fees',
   'Pay to play',
