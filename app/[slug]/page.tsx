@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient()
   const { data: artist } = await supabase
     .from('artists')
-    .select('name, bio')
+    .select('name, bio, avatar_url, slug')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -50,7 +50,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `${artist.name} | insound.`
   const description = artist.bio || `Listen to ${artist.name} on Insound. Buy music directly from the artist.`
-  return { title, description, openGraph: { title, description, type: 'profile' } }
+
+  const ogImages: { url: string; width: number; height: number; alt: string }[] = []
+
+  const ogUrl = new URL('/api/og', 'https://getinsound.com')
+  ogUrl.searchParams.set('title', artist.name)
+  ogUrl.searchParams.set('type', 'artist')
+  if (artist.avatar_url) ogUrl.searchParams.set('cover', artist.avatar_url)
+  ogImages.push({ url: ogUrl.toString(), width: 1200, height: 630, alt: title })
+
+  if (artist.avatar_url) {
+    ogImages.push({ url: artist.avatar_url, width: 500, height: 500, alt: `${artist.name} avatar` })
+  }
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'profile', images: ogImages },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ogImages.length > 0 ? [ogImages[0].url] : undefined,
+    },
+  }
 }
 
 export default async function ProfilePage({ params }: Props) {

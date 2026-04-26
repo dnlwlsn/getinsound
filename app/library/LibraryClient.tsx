@@ -12,6 +12,7 @@ import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { getTrackingUrl } from '@/lib/carriers'
 import { zipSync } from 'fflate'
+import { NotificationOptIn } from '@/app/components/pwa/NotificationOptIn'
 
 type SortOption = 'newest' | 'oldest' | 'title' | 'artist'
 type DateRange = 'all' | '7d' | '30d' | '90d' | '1y'
@@ -474,6 +475,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
       >
         {toastText}
       </div>
+      <NotificationOptIn show={releases.length > 0} />
     </div>
   )
 }

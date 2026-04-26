@@ -7,6 +7,7 @@ import { CurrencyProvider } from './providers/CurrencyProvider'
 import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistration'
 import { InstallBanner } from './components/pwa/InstallBanner'
 import { CookieBanner } from './components/ui/CookieBanner'
+import { GenreOnboarding } from './components/GenreOnboarding'
 import './globals.css'
 
 
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <AppNav />
           {children}
         </CurrencyProvider>
+        <GenreOnboarding redirectTo="/discover" />
         <PlayerBar />
         <ServiceWorkerRegistration />
         <InstallBanner />

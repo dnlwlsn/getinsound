@@ -6,6 +6,7 @@ import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useCurrency } from '../providers/CurrencyProvider'
+import { WishlistButton } from '@/app/components/ui/WishlistButton'
 
 /* ── Deterministic gradient fallback ──────────────────────────── */
 function cyrb53(str: string, seed = 0) {
@@ -288,7 +289,10 @@ export default function ReleaseClient() {
               <h1 className="text-4xl md:text-5xl font-black tracking-tight mt-3 mb-2 font-display">{release.title}</h1>
               <p className="text-zinc-500 text-sm mb-8">{typeLabel} · {tracks.length} track{tracks.length === 1 ? '' : 's'}</p>
 
-              <PriceSection release={release} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
+              <div className="flex items-center gap-4">
+                <PriceSection release={release} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
+                <WishlistButton releaseId={release.id} size={24} />
+              </div>
 
               {/* Tracklist */}
               <div className="mt-10 border-t border-zinc-800 pt-6">

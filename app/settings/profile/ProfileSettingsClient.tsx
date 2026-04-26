@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { resolveAccent, DEFAULT_ACCENT } from '@/lib/accent'
 import { SettingsTabs } from '@/components/settings/SettingsTabs'
 import { ImageUploader } from '@/app/components/ui/ImageUploader'
+import { NotificationOptIn } from '@/app/components/pwa/NotificationOptIn'
 
 const ACCENT_COLOURS = [
   '#F56D00', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
@@ -335,6 +336,7 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, u
           </div>
         </div>
       </div>
+      <NotificationOptIn show={true} />
     </div>
   )
 }

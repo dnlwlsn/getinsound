@@ -11,6 +11,7 @@ import { BadgeList } from '@/app/components/ui/Badge'
 import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import { SocialLinksRow } from '@/app/components/ui/SocialLinks'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
+import { WishlistButton } from '@/app/components/ui/WishlistButton'
 import type { SocialLinks } from '@/lib/verification'
 import { MerchCard } from '@/app/components/ui/MerchCard'
 
@@ -311,6 +312,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                           <span className="flex-1" />
                           <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
                           <FavouriteButton releaseId={release.id} size={16} />
+                          <WishlistButton releaseId={release.id} size={16} className="ml-1" />
                           <button
                             onClick={() => {
                               if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -363,6 +365,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                             <span className="flex-1" />
                             <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
                             <FavouriteButton releaseId={release.id} size={16} />
+                            <WishlistButton releaseId={release.id} size={16} className="ml-1" />
                             <button
                               onClick={() => {
                                 if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -510,6 +513,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                               {preorder ? 'Pre-order' : 'Buy'} {price.label}
                             </Link>
                             <FavouriteButton releaseId={release.id} size={20} />
+                            <WishlistButton releaseId={release.id} size={20} className="ml-2" />
                           </div>
                         </div>
                       </div>
@@ -542,6 +546,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                             <p className="font-bold text-sm text-white truncate group-hover:opacity-80 transition-opacity">{release.title}</p>
                           </Link>
                           <FavouriteButton releaseId={release.id} size={16} />
+                          <WishlistButton releaseId={release.id} size={16} className="ml-1" />
                         </div>
                         <p className="text-xs mt-0.5 font-semibold" style={{ color: accent }}>
                           {price.label}

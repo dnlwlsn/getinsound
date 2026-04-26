@@ -1061,6 +1061,7 @@ export default function HomeClient() {
             <Link href="/privacy" className="hover:text-orange-500 transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-orange-500 transition-colors">Terms</Link>
             <Link href="/ai-policy" className="hover:text-orange-500 transition-colors">AI Policy</Link>
+            <Link href="/faq" className="hover:text-orange-500 transition-colors">FAQ</Link>
           </div>
           <p className="text-zinc-700 text-[11px] font-medium">© 2026 Insound</p>
         </div>
