@@ -17,6 +17,20 @@ async function getUnsubscribedIds(): Promise<Set<string>> {
   return new Set((data ?? []).map(r => r.id))
 }
 
+async function getAllUsers() {
+  const allUsers: { id: string; email?: string }[] = []
+  let page = 1
+  while (true) {
+    const { data } = await getAdminClient().auth.admin.listUsers({ page, perPage: 1000 })
+    const users = data?.users ?? []
+    if (users.length === 0) break
+    allUsers.push(...users.map(u => ({ id: u.id, email: u.email })))
+    if (users.length < 1000) break
+    page++
+  }
+  return allUsers
+}
+
 async function getRecipientEmails(audience: string): Promise<string[]> {
   const unsubscribed = await getUnsubscribedIds()
 
@@ -32,7 +46,7 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
       .eq('email_unsubscribed', false)
     const fanIds = (data ?? []).map(r => r.id)
     if (fanIds.length === 0) return []
-    const { data: users } = await getAdminClient().auth.admin.listUsers({ perPage: 1000 })
+    const users = { users: await getAllUsers() }
     return (users?.users ?? [])
       .filter(u => fanIds.includes(u.id))
       .map(u => u.email!)
@@ -45,7 +59,7 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
       .select('fan_id')
     const fanIds = [...new Set((data ?? []).map(r => r.fan_id))].filter(id => !unsubscribed.has(id))
     if (fanIds.length === 0) return []
-    const { data: users } = await getAdminClient().auth.admin.listUsers({ perPage: 1000 })
+    const users = { users: await getAllUsers() }
     return (users?.users ?? [])
       .filter(u => fanIds.includes(u.id))
       .map(u => u.email!)
@@ -53,7 +67,7 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
   }
 
   // everyone
-  const { data: users } = await getAdminClient().auth.admin.listUsers({ perPage: 1000 })
+  const users = { users: await getAllUsers() }
   return (users?.users ?? [])
     .filter(u => !unsubscribed.has(u.id))
     .map(u => u.email!)

@@ -25,12 +25,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .maybeSingle()
 
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
-  if (order.status !== 'return_requested') {
-    return NextResponse.json({ error: 'Order must be in return_requested status' }, { status: 409 })
-  }
-
   if (order.status === 'returned') {
     return NextResponse.json({ error: 'This return has already been processed' }, { status: 409 })
+  }
+  if (order.status !== 'return_requested') {
+    return NextResponse.json({ error: 'Order must be in return_requested status' }, { status: 409 })
   }
   if (!order.stripe_payment_intent_id) {
     return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
