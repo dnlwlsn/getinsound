@@ -45,10 +45,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to generate link' }, { status: 500 });
   }
 
-  const magicLink = linkData.properties?.action_link;
-  if (!magicLink) {
+  const tokenHash = linkData.properties?.hashed_token;
+  if (!tokenHash) {
     return NextResponse.json({ error: 'Failed to generate link' }, { status: 500 });
   }
+
+  const callbackPath = redirectTo || '/auth/callback?next=/welcome';
+  const separator = callbackPath.includes('?') ? '&' : '?';
+  const magicLink = `${SITE_URL}${callbackPath}${separator}token_hash=${tokenHash}&type=magiclink`;
 
   const { subject, html } = buildMagicLinkEmail(magicLink, template);
   const result = await sendEmail(email, subject, html);

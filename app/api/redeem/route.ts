@@ -148,10 +148,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    if (linkData?.properties?.action_link) {
+    if (linkData?.properties?.hashed_token) {
       const { buildMagicLinkEmail } = await import('@/lib/email/templates')
       const { sendEmail } = await import('@/lib/email/send')
-      const { subject, html } = buildMagicLinkEmail(linkData.properties.action_link, 'redeem')
+      const tokenHash = linkData.properties.hashed_token
+      const magicLink = `${SITE_URL}/auth/callback?next=/library&token_hash=${tokenHash}&type=magiclink`
+      const { subject, html } = buildMagicLinkEmail(magicLink, 'redeem')
       await sendEmail(email, subject, html)
     }
 
