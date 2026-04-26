@@ -51,6 +51,23 @@ export default async function DashboardPage() {
 
   if (!artist || !account) redirect('/become-an-artist')
 
+  // Fetch favourite counts for this artist's releases and tracks
+  const releaseIds = releases.map(r => r.id)
+  const trackIds = releases.flatMap(r => (r.tracks || []).map((t: any) => t.id))
+
+  const [relFavRes, trkFavRes] = await Promise.all([
+    releaseIds.length > 0
+      ? supabase.from('release_favourite_counts').select('release_id, save_count').in('release_id', releaseIds)
+      : Promise.resolve({ data: [] as { release_id: string; save_count: number }[] }),
+    trackIds.length > 0
+      ? supabase.from('track_favourite_counts').select('track_id, save_count').in('track_id', trackIds)
+      : Promise.resolve({ data: [] as { track_id: string; save_count: number }[] }),
+  ])
+
+  const saveCounts: Record<string, number> = {}
+  for (const r of (relFavRes as any).data || []) saveCounts[`release:${r.release_id}`] = r.save_count
+  for (const t of (trkFavRes as any).data || []) saveCounts[`track:${t.track_id}`] = t.save_count
+
   // Compute stats
   const totalEarningsPence = purchases.reduce((s, p) => s + p.artist_pence, 0)
   const now = new Date()
@@ -151,6 +168,7 @@ export default async function DashboardPage() {
       merchItems={merchItems}
       merchOrders={merchOrders as any}
       returnAddress={artist.return_address}
+      saveCounts={saveCounts}
       referral={fanProfile ? {
         code: fanProfile.referral_code,
         count: fanProfile.referral_count,

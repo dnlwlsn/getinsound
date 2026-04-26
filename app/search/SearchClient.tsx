@@ -8,6 +8,7 @@ import { useViewMode } from '@/lib/useViewMode'
 import { useCurrency } from '@/app/providers/CurrencyProvider'
 import { Badge } from '@/app/components/ui/Badge'
 import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
+import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
 
 type ArtistResult = {
   id: string
@@ -200,6 +201,7 @@ export default function SearchClient() {
                           <span className="text-xs font-bold text-white">
                             {displayPrice(r.price_pence, r.currency)}
                           </span>
+                          <FavouriteButton releaseId={r.id} size={14} />
                         </div>
                       </Link>
                     ))}
@@ -225,6 +227,7 @@ export default function SearchClient() {
                         <span className="text-xs font-bold text-white shrink-0">
                           {displayPrice(r.price_pence, r.currency)}
                         </span>
+                        <FavouriteButton releaseId={r.id} size={16} />
                       </Link>
                     ))}
                   </div>

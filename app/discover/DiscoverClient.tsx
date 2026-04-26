@@ -6,7 +6,7 @@ import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { Badge } from '@/app/components/ui/Badge'
-import { WishlistButton } from '@/app/components/ui/WishlistButton'
+import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -386,7 +386,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                       <Link href={`/${artist.slug}/${r.slug}`} className="min-w-0 flex-1">
                         <h3 className="font-bold text-sm truncate">{r.title}</h3>
                       </Link>
-                      <WishlistButton releaseId={r.id} size={16} />
+                      <FavouriteButton releaseId={r.id} size={16} />
                     </div>
                     <div className="flex items-center gap-1 mt-0.5">
                       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider truncate">
@@ -480,7 +480,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                       <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
                         {price(r.price_pence)}
                       </span>
-                      <WishlistButton releaseId={r.id} size={16} />
+                      <FavouriteButton releaseId={r.id} size={16} />
                       <Link
                         href={`/${artist.slug}/${r.slug}`}
                         className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"

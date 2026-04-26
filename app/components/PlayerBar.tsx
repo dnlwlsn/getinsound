@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { usePlayerStore } from '@/lib/stores/player'
 import { setAccentVar, resolveAccent } from '@/lib/accent'
+import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60)
@@ -205,6 +206,7 @@ export function PlayerBar() {
                   </span>
                 )}
               </div>
+              <FavouriteButton trackId={currentTrack.id} size={16} />
             </div>
 
             {/* Controls */}
@@ -350,6 +352,9 @@ export function PlayerBar() {
                       Preview
                     </span>
                   )}
+                  <div className="mt-2">
+                    <FavouriteButton trackId={currentTrack.id} size={20} />
+                  </div>
                 </div>
 
                 {/* Scrubber */}
@@ -420,6 +425,9 @@ export function PlayerBar() {
                 <p className="text-sm font-semibold text-white truncate">{currentTrack.title}</p>
                 <p className="text-xs text-zinc-400 truncate">{currentTrack.artistName}</p>
               </div>
+              <span className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+                <FavouriteButton trackId={currentTrack.id} size={16} />
+              </span>
               <div
                 className="flex-shrink-0 mr-1"
                 onClick={e => {

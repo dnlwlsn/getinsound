@@ -73,12 +73,13 @@ type Props = {
   merchItems?: MerchItem[]
   merchOrders?: MerchOrder[]
   returnAddress?: any
+  saveCounts?: Record<string, number>
 }
 
 function pence(n: number) { return formatPriceUtil(n / 100, 'GBP') }
 
 // ── Component ──────────────────────────────────────────────────
-export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral, merchItems = [], merchOrders = [], returnAddress }: Props) {
+export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral, merchItems = [], merchOrders = [], returnAddress, saveCounts = {} }: Props) {
   const supabase = createClient()
   const [rels, setRels] = useState(releases)
   const [payouts, setPayouts] = useState<any[] | null>(null)
@@ -519,16 +520,21 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               <p className="text-zinc-600 text-sm py-10 text-center">No releases yet.</p>
             ) : (
               <div className="space-y-3">
-                {rels.map(r => (
-                  <ReleaseRow
-                    key={r.id}
-                    release={r}
-                    artistId={artist.id}
-                    artistSlug={artist.slug}
-                    onToggle={toggleField}
-                    onCancelPreorder={cancelPreorder}
-                  />
-                ))}
+                {rels.map(r => {
+                  const relSaves = saveCounts[`release:${r.id}`] || 0
+                  const trkSaves = r.tracks.reduce((s, t) => s + (saveCounts[`track:${t.id}`] || 0), 0)
+                  return (
+                    <ReleaseRow
+                      key={r.id}
+                      release={r}
+                      artistId={artist.id}
+                      artistSlug={artist.slug}
+                      onToggle={toggleField}
+                      onCancelPreorder={cancelPreorder}
+                      saveCount={relSaves + trkSaves}
+                    />
+                  )
+                })}
               </div>
             )}
           </Section>
@@ -1184,10 +1190,11 @@ function Section({ title, count, children }: { title: string; count?: number; ch
   )
 }
 
-function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreorder }: {
+function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreorder, saveCount = 0 }: {
   release: Release; artistId: string; artistSlug: string
   onToggle: (id: string, field: string, value: any) => void
   onCancelPreorder: (id: string) => void
+  saveCount?: number
 }) {
   const [showControls, setShowControls] = useState(false)
   const plays = r.tracks.reduce((s, t) => s + t.preview_plays + t.full_plays, 0)
@@ -1199,7 +1206,7 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
         <img src={coverSrc} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm truncate">{r.title}</p>
-          <p className="text-[10px] text-zinc-500">{r.type} · {r.tracks.length} track{r.tracks.length !== 1 ? 's' : ''} · {plays} plays</p>
+          <p className="text-[10px] text-zinc-500">{r.type} · {r.tracks.length} track{r.tracks.length !== 1 ? 's' : ''} · {plays} plays · {saveCount} {saveCount === 1 ? 'save' : 'saves'}</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <VisibilityBadge v={r.visibility} />

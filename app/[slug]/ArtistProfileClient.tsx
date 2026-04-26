@@ -10,7 +10,7 @@ import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { BadgeList } from '@/app/components/ui/Badge'
 import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import { SocialLinksRow } from '@/app/components/ui/SocialLinks'
-import { WishlistButton } from '@/app/components/ui/WishlistButton'
+import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
 import type { SocialLinks } from '@/lib/verification'
 import { MerchCard } from '@/app/components/ui/MerchCard'
 
@@ -310,7 +310,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                           )}
                           <span className="flex-1" />
                           <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
-                          <WishlistButton releaseId={release.id} size={16} />
+                          <FavouriteButton releaseId={release.id} size={16} />
                           <button
                             onClick={() => {
                               if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -362,7 +362,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                             )}
                             <span className="flex-1" />
                             <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
-                            <WishlistButton releaseId={release.id} size={16} />
+                            <FavouriteButton releaseId={release.id} size={16} />
                             <button
                               onClick={() => {
                                 if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -509,7 +509,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                               </svg>
                               {preorder ? 'Pre-order' : 'Buy'} {price.label}
                             </Link>
-                            <WishlistButton releaseId={release.id} size={20} />
+                            <FavouriteButton releaseId={release.id} size={20} />
                           </div>
                         </div>
                       </div>
@@ -541,7 +541,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                           <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="min-w-0 flex-1">
                             <p className="font-bold text-sm text-white truncate group-hover:opacity-80 transition-opacity">{release.title}</p>
                           </Link>
-                          <WishlistButton releaseId={release.id} size={16} />
+                          <FavouriteButton releaseId={release.id} size={16} />
                         </div>
                         <p className="text-xs mt-0.5 font-semibold" style={{ color: accent }}>
                           {price.label}

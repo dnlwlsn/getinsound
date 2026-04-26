@@ -157,19 +157,36 @@ export default async function LibraryPage() {
       }
     })
 
-  const { data: wishlistData } = await supabase
-    .from('fan_wishlist')
-    .select(`
-      id, created_at, release_id,
-      releases (
-        id, slug, title, type, cover_url, price_pence, currency,
-        artists ( slug, name, accent_colour )
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+  const [wishlistResult, favouritesResult] = await Promise.all([
+    supabase
+      .from('fan_wishlist')
+      .select(`
+        id, created_at, release_id,
+        releases (
+          id, slug, title, type, cover_url, price_pence, currency,
+          artists ( slug, name, accent_colour )
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('favourites')
+      .select(`
+        id, created_at, track_id, release_id,
+        tracks (
+          id, title, position, duration_sec, release_id,
+          releases ( id, slug, title, type, cover_url, price_pence, currency, artists ( slug, name, accent_colour ) )
+        ),
+        releases (
+          id, slug, title, type, cover_url, price_pence, currency,
+          artists ( slug, name, accent_colour )
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
 
-  const wishlist = (wishlistData ?? []).map((w: any) => {
+  const wishlist = (wishlistResult.data ?? []).map((w: any) => {
     const r = w.releases
     const artist = Array.isArray(r.artists) ? r.artists[0] : r.artists
     return {
@@ -188,5 +205,47 @@ export default async function LibraryPage() {
     }
   })
 
-  return <LibraryClient releases={releases} error={null} userId={user.id} wishlist={wishlist} merchOrders={merchOrders as any} />
+  const favourites = (favouritesResult.data ?? []).map((f: any) => {
+    if (f.track_id && f.tracks) {
+      const track = Array.isArray(f.tracks) ? f.tracks[0] : f.tracks
+      const release = track?.releases ? (Array.isArray(track.releases) ? track.releases[0] : track.releases) : null
+      const artist = release?.artists ? (Array.isArray(release.artists) ? release.artists[0] : release.artists) : null
+      return {
+        favouriteId: f.id,
+        type: 'track' as const,
+        trackId: f.track_id,
+        trackTitle: track?.title ?? 'Unknown Track',
+        releaseId: release?.id ?? null,
+        releaseSlug: release?.slug ?? '',
+        releaseTitle: release?.title ?? '',
+        coverUrl: release?.cover_url ?? null,
+        pricePence: release?.price_pence ?? 0,
+        currency: release?.currency ?? 'GBP',
+        artistName: artist?.name ?? 'Unknown',
+        artistSlug: artist?.slug ?? '',
+        accentColour: artist?.accent_colour ?? null,
+        savedAt: f.created_at,
+      }
+    }
+    const release = Array.isArray(f.releases) ? f.releases[0] : f.releases
+    const artist = release?.artists ? (Array.isArray(release.artists) ? release.artists[0] : release.artists) : null
+    return {
+      favouriteId: f.id,
+      type: 'release' as const,
+      trackId: null,
+      trackTitle: null,
+      releaseId: f.release_id,
+      releaseSlug: release?.slug ?? '',
+      releaseTitle: release?.title ?? '',
+      coverUrl: release?.cover_url ?? null,
+      pricePence: release?.price_pence ?? 0,
+      currency: release?.currency ?? 'GBP',
+      artistName: artist?.name ?? 'Unknown',
+      artistSlug: artist?.slug ?? '',
+      accentColour: artist?.accent_colour ?? null,
+      savedAt: f.created_at,
+    }
+  })
+
+  return <LibraryClient releases={releases} error={null} userId={user.id} wishlist={wishlist} favourites={favourites} merchOrders={merchOrders as any} />
 }
