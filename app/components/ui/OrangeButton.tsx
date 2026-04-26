@@ -15,7 +15,7 @@ export function OrangeButton({ children, href, size = 'md', className = '', ...r
   }
 
   const base = `inline-flex items-center justify-center font-semibold rounded-full
-    bg-[#F56D00] text-[#0A0A0A] ${sizes[size]}
+    bg-[#F56D00] text-[#09090b] ${sizes[size]}
     hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]
     transition-all duration-150 ease-out
     disabled:opacity-50 disabled:pointer-events-none`

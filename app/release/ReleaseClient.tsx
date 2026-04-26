@@ -61,7 +61,7 @@ interface Track { id: string; title: string; position: number; duration_sec: num
 interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null; tracks: Track[] }
 interface Artist { id: string; slug: string; name: string; bio: string; avatar_url: string; accent_colour: string | null }
 
-type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'error'
+type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'preorder-confirmed' | 'error'
 
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
@@ -203,7 +203,7 @@ export default function ReleaseClient() {
           // Pre-order: downloads not yet available
           setErrorTitle('Pre-order confirmed!')
           setErrorMsg(body.error)
-          setStage('error')
+          setStage('preorder-confirmed')
           return
         }
         if (body && body.error !== 'pending') throw new Error(body.error || 'Could not load download')
@@ -268,7 +268,7 @@ export default function ReleaseClient() {
       <script src="https://js.stripe.com/v3/" async />
 
       <main className="flex-1 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(234,88,12,0.05),transparent_60%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,109,0,0.05),transparent_60%)] pointer-events-none" />
 
         <article className="max-w-5xl mx-auto px-6 md:px-12 py-12 md:py-16 animate-slide-in-up">
           <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-start">
@@ -330,6 +330,10 @@ export default function ReleaseClient() {
             {stage === 'checkout' && (
               <div>
                 <div ref={stripeMountRef} className="min-h-[400px]" />
+                <p className="text-[10px] text-zinc-600 px-6 pb-4 leading-relaxed">
+                  By completing this purchase, you agree to receive immediate access to digital content and waive your 14-day cancellation right once the download begins. See our{' '}
+                  <Link href="/terms" className="underline hover:text-zinc-400">Terms</Link>.
+                </p>
               </div>
             )}
 
@@ -406,6 +410,21 @@ export default function ReleaseClient() {
                   </ol>
                 </div>
                 <p className="text-center text-[11px] text-zinc-600 font-medium">A receipt has been sent by Stripe. Bookmark this tab if you need to come back.</p>
+              </div>
+            )}
+
+            {/* Stage: Pre-order confirmed */}
+            {stage === 'preorder-confirmed' && (
+              <div className="p-12 text-center mt-20">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
+                  <svg width="24" height="24" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
+                <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
+                <p className="text-zinc-400 text-sm font-medium mb-6">{errorMsg}</p>
+                <button onClick={closeModal} className="bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Close</button>
               </div>
             )}
 

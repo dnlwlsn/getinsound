@@ -212,7 +212,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                 className="w-full h-full object-cover opacity-20 blur-2xl scale-110"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A]/60 via-[#0A0A0A]/80 to-[#0A0A0A]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#09090b]/60 via-[#09090b]/80 to-[#09090b]" />
           </div>
 
           <div className="relative max-w-7xl mx-auto px-5 md:px-10 py-16 md:py-24">

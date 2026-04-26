@@ -23,7 +23,7 @@ export function WelcomeClient() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(234,88,12,0.05),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,109,0,0.05),transparent_60%)]" />
 
       <div className="w-full max-w-2xl relative z-10 text-center">
         <p className="text-orange-600 font-black text-3xl tracking-tighter font-display mb-6">insound.</p>
@@ -55,7 +55,7 @@ export function WelcomeClient() {
             className="bg-orange-600/[0.06] ring-1 ring-orange-600/[0.15] rounded-3xl p-8 text-center hover:ring-orange-600/30 transition-all group"
           >
             <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-orange-600/10 flex items-center justify-center">
-              <svg width="22" height="22" fill="none" stroke="#ea580c" strokeWidth="2" viewBox="0 0 24 24">
+              <svg width="22" height="22" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
               </svg>
             </div>

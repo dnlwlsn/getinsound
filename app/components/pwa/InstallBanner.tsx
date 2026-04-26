@@ -60,7 +60,7 @@ export function InstallBanner() {
       <div className="max-w-screen-xl mx-auto">
         <div className="bg-zinc-900 border border-white/[0.08] rounded-2xl p-4 flex items-center gap-4 shadow-2xl">
           {/* Waveform icon */}
-          <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] flex items-center justify-center flex-shrink-0 border border-white/[0.06]">
+          <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center flex-shrink-0 border border-white/[0.06]">
             <svg width="24" height="24" viewBox="0 0 143 120" aria-hidden="true">
               <rect x="0" y="39.168" width="18" height="41.664" rx="3" fill="#F47429" />
               <rect x="25" y="27.648" width="18" height="64.704" rx="3" fill="#F47429" />

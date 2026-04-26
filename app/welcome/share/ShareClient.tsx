@@ -29,7 +29,7 @@ export function ShareClient({ referralCode, referralCount, zeroFeesUnlocked }: P
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#0A0A0A' }}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#09090b' }}>
       <div className="w-full max-w-md">
         {/* Founder's Card */}
         <div

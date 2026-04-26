@@ -6,14 +6,14 @@
 :root {
   --ease-spring: cubic-bezier(0.32,0.72,0,1);
   --artist-accent: #F56D00;
-  --bg: #050505;
+  --bg: #09090b;
   --fg: #e4e4e7;
   --fg-muted: rgba(255,255,255,0.68);
   --fg-subtle: rgba(255,255,255,0.5);
   --fg-faint: rgba(255,255,255,0.6);
-  --card-bg: #0a0a0a;
+  --card-bg: #09090b;
   --input-bg: #18181b;
-  --nav-bg: rgba(5,5,5,0.75);
+  --nav-bg: rgba(9,9,11,0.75);
   --line-color: rgba(255,255,255,0.06);
   --border-subtle: rgba(255,255,255,0.05);
 }
@@ -67,12 +67,12 @@ body::after {
 @keyframes floatB { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
 
 @keyframes emailPop {
-  0%   { box-shadow: 0 0 0 0 rgba(234,88,12,0.5); transform: scale(1); }
-  30%  { box-shadow: 0 0 0 10px rgba(234,88,12,0.3); transform: scale(1.03); }
-  60%  { box-shadow: 0 0 0 18px rgba(234,88,12,0); transform: scale(1); }
-  100% { box-shadow: 0 0 0 0 rgba(234,88,12,0); transform: scale(1); }
+  0%   { box-shadow: 0 0 0 0 rgba(245,109,0,0.5); transform: scale(1); }
+  30%  { box-shadow: 0 0 0 10px rgba(245,109,0,0.3); transform: scale(1.03); }
+  60%  { box-shadow: 0 0 0 18px rgba(245,109,0,0); transform: scale(1); }
+  100% { box-shadow: 0 0 0 0 rgba(245,109,0,0); transform: scale(1); }
 }
-.email-pop { animation: emailPop 0.8s ease-out; border-color: #ea580c !important; }
+.email-pop { animation: emailPop 0.8s ease-out; border-color: #F56D00 !important; }
 
 @keyframes basketBounce { 0%{transform:scale(1)} 40%{transform:scale(1.35)} 100%{transform:scale(1)} }
 @keyframes priceAdded   { 0%{transform:scale(1)} 30%{transform:scale(0.85)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
@@ -97,7 +97,7 @@ body::after {
 
 /* ── Comparison cards ────────────────────────────────────────── */
 .col-bad  { background: rgba(239,68,68,0.03);  border-color: rgba(239,68,68,0.12); }
-.col-good { background: rgba(234,88,12,0.04);  border-color: rgba(234,88,12,0.14); }
+.col-good { background: rgba(245,109,0,0.04);  border-color: rgba(245,109,0,0.14); }
 
 .compare-cards {
   display: flex;
@@ -114,7 +114,7 @@ body::after {
 .compare-card {
   flex: 0 0 88%;
   scroll-snap-align: center;
-  background: #0a0a0a;
+  background: #09090b;
   border-color: rgba(255,255,255,0.06);
 }
 .compare-snap-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.25rem; }
@@ -168,7 +168,7 @@ body::after {
 
 input[type=email] { background: var(--input-bg); color: var(--fg); transition: background 0.3s ease, color 0.3s ease; }
 input[type=email]::placeholder { color: var(--fg-faint); }
-input[type=email]:focus { outline: none; border-color: #ea580c; }
+input[type=email]:focus { outline: none; border-color: #F56D00; }
 
 .t-muted  { color: var(--fg-muted); }
 .t-subtle { color: var(--fg-subtle); }
@@ -184,25 +184,25 @@ footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
   border-radius: 3px;
   outline: none;
   cursor: pointer;
-  background: linear-gradient(to right, #ea580c calc(var(--fill, 18.4%)), var(--line-color) calc(var(--fill, 18.4%)));
+  background: linear-gradient(to right, #F56D00 calc(var(--fill, 18.4%)), var(--line-color) calc(var(--fill, 18.4%)));
 }
 .calc-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 22px; height: 22px;
   border-radius: 50%;
-  background: #ea580c;
+  background: #F56D00;
   cursor: pointer;
-  box-shadow: 0 0 0 4px rgba(234,88,12,0.15);
+  box-shadow: 0 0 0 4px rgba(245,109,0,0.15);
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 .calc-slider::-webkit-slider-thumb:hover {
-  box-shadow: 0 0 0 7px rgba(234,88,12,0.22);
+  box-shadow: 0 0 0 7px rgba(245,109,0,0.22);
   transform: scale(1.08);
 }
 .calc-slider::-moz-range-thumb {
   width: 22px; height: 22px;
   border-radius: 50%;
-  background: #ea580c;
+  background: #F56D00;
   border: none;
   cursor: pointer;
 }
@@ -232,7 +232,7 @@ footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
 .roadmap-list.done li { color: #52525b; text-decoration: line-through; text-decoration-color: #27272a; padding-left: 1.5rem; }
 .roadmap-list.done li::before { display: none; }
 .roadmap-list.done svg { position: absolute; left: 0; top: 0.45em; }
-.roadmap-list.active li::before { background: #ea580c; }
+.roadmap-list.active li::before { background: #F56D00; }
 
 /* ── Zinc overrides ──────────────────────────────────────────── */
 .text-zinc-400 { color: rgba(255,255,255,0.7) !important; }
@@ -241,13 +241,13 @@ footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
 .text-zinc-700 { color: rgba(255,255,255,0.32) !important; }
 
 /* ── Orange opacity utilities ────────────────────────────────── */
-.bg-orange-600\/10   { background-color: rgba(234,88,12,0.1)  !important; }
-.bg-orange-600\/8    { background-color: rgba(234,88,12,0.08) !important; }
-.bg-orange-600\/5    { background-color: rgba(234,88,12,0.05) !important; }
-.bg-orange-600\/15   { background-color: rgba(234,88,12,0.15) !important; }
-.ring-orange-600\/20 { --tw-ring-color: rgba(234,88,12,0.5)   !important; }
-.ring-orange-600\/15 { --tw-ring-color: rgba(234,88,12,0.4)   !important; }
-.ring-orange-600\/10 { --tw-ring-color: rgba(234,88,12,0.3)   !important; }
+.bg-orange-600\/10   { background-color: rgba(245,109,0,0.1)  !important; }
+.bg-orange-600\/8    { background-color: rgba(245,109,0,0.08) !important; }
+.bg-orange-600\/5    { background-color: rgba(245,109,0,0.05) !important; }
+.bg-orange-600\/15   { background-color: rgba(245,109,0,0.15) !important; }
+.ring-orange-600\/20 { --tw-ring-color: rgba(245,109,0,0.5)   !important; }
+.ring-orange-600\/15 { --tw-ring-color: rgba(245,109,0,0.4)   !important; }
+.ring-orange-600\/10 { --tw-ring-color: rgba(245,109,0,0.3)   !important; }
 
 /* ── Artist accent colour utilities ────────────────────────────── */
 .accent-bg        { background-color: var(--artist-accent); }

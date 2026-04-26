@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-// 15 curated colours, all vibrant and accessible on #0A0A0A
+// 15 curated colours, all vibrant and accessible on #09090b
 export const ACCENT_PALETTE = [
   { hex: '#F56D00', name: 'Insound Orange' },
   { hex: '#3B82F6', name: 'Blue' },
@@ -52,7 +52,7 @@ export function ColourPicker({ value, onChange, className = '' }: Props) {
             className={`relative w-10 h-10 rounded-full transition-all duration-150
               hover:scale-110 active:scale-95
               ${selected === hex
-                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0A0A0A] scale-110'
+                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#09090b] scale-110'
                 : 'ring-1 ring-white/[0.1]'}`}
             style={{ backgroundColor: hex }}
           >
@@ -61,7 +61,7 @@ export function ColourPicker({ value, onChange, className = '' }: Props) {
                 className="absolute inset-0 m-auto w-4 h-4"
                 viewBox="0 0 16 16"
                 fill="none"
-                stroke={isLightColour(hex) ? '#0A0A0A' : '#FFFFFF'}
+                stroke={isLightColour(hex) ? '#09090b' : '#FFFFFF'}
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"

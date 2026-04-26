@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { RESERVED_SLUGS } from '@/lib/reserved-slugs'
 
 const ACCENT_COLOURS = [
-  '#ea580c', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
+  '#F56D00', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
   '#4f46e5', '#2563eb', '#0891b2', '#059669', '#16a34a',
   '#65a30d', '#ca8a04', '#d97706', '#78716c', '#ffffff',
 ]
@@ -32,7 +32,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
   const [attest, setAttest] = useState(false)
   const [terms, setTerms] = useState(false)
 
-  const [accent, setAccent] = useState('#ea580c')
+  const [accent, setAccent] = useState('#F56D00')
 
   const [bio, setBio] = useState('')
 
@@ -142,7 +142,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
       </nav>
 
       <div className="flex-1 flex items-center justify-center p-6 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(234,88,12,0.05),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,109,0,0.05),transparent_60%)]" />
 
         <div className="w-full max-w-md relative z-10">
           <div className="text-center mb-8">
@@ -156,7 +156,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
             ))}
           </div>
 
-          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl" style={{ boxShadow: '0 0 60px rgba(234,88,12,0.08)' }}>
+          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl" style={{ boxShadow: '0 0 60px rgba(245,109,0,0.08)' }}>
 
             {error && (
               <div className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3 mb-5">

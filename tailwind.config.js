@@ -23,8 +23,11 @@ module.exports = {
       },
       colors: {
         insound: {
-          bg: '#0A0A0A',
+          bg: '#09090b',
           orange: '#F56D00',
+        },
+        orange: {
+          600: '#F56D00',
         },
       },
     },

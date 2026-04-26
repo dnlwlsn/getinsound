@@ -103,7 +103,7 @@ export function RedeemClient() {
       </nav>
 
       <div className="flex-1 flex items-center justify-center p-6 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(234,88,12,0.05),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,109,0,0.05),transparent_60%)]" />
 
         <div className="w-full max-w-md relative z-10">
           <div className="text-center mb-8">
@@ -115,7 +115,7 @@ export function RedeemClient() {
             </p>
           </div>
 
-          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl" style={{ boxShadow: '0 0 60px rgba(234,88,12,0.08)' }}>
+          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl" style={{ boxShadow: '0 0 60px rgba(245,109,0,0.08)' }}>
 
             {phase === 'code' && (
               <>
@@ -217,7 +217,7 @@ export function RedeemClient() {
             {phase === 'done' && (
               <div className="text-center py-4">
                 <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
-                  <svg width="24" height="24" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <svg width="24" height="24" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>

@@ -676,7 +676,7 @@ function ReleaseRowCompact({
           <button
             onClick={onPlay}
             className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors"
-            style={{ background: release.accentColour ?? '#ea580c' }}
+            style={{ background: release.accentColour ?? '#F56D00' }}
             aria-label="Play"
           >
             <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
@@ -724,7 +724,7 @@ function ReleaseRowCompact({
                   <button
                     onClick={() => onPlayTrack(idx)}
                     className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 opacity-0 group-hover/track:opacity-100 transition-opacity"
-                    style={{ background: release.accentColour ?? '#ea580c' }}
+                    style={{ background: release.accentColour ?? '#F56D00' }}
                     aria-label={`Play ${track.title}`}
                   >
                     <svg width="10" height="10" fill="#000" viewBox="0 0 24 24" className="ml-0.5">

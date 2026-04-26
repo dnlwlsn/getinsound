@@ -109,7 +109,7 @@ export function ForArtistsClient() {
   ]
 
   return (
-    <main className="bg-[#0A0A0A] text-white min-h-screen">
+    <main className="bg-zinc-950 text-white min-h-screen">
 
       {/* ── NAV ──────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50">

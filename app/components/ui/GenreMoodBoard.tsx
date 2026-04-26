@@ -51,7 +51,7 @@ export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0A0A]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950">
       <div className="w-full max-w-2xl px-6 py-12 flex flex-col items-center">
         {/* Header */}
         <h1 className="font-display font-bold text-2xl sm:text-3xl text-white text-center mb-2">
@@ -111,7 +111,7 @@ export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
               w-full px-8 py-3.5 rounded-full font-semibold text-sm
               transition-all duration-150 ease-out
               ${canSubmit
-                ? 'bg-[#F56D00] text-[#0A0A0A] hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]'
+                ? 'bg-[#F56D00] text-[#09090b] hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]'
                 : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
               }
               disabled:opacity-50

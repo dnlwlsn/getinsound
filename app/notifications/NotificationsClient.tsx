@@ -95,7 +95,7 @@ export function NotificationsClient({ userId }: Props) {
   const hasUnread = notifications.some(n => !n.read)
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

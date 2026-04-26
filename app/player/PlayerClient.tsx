@@ -261,7 +261,7 @@ export default function PlayerClient() {
       <div className="min-h-screen flex flex-col relative overflow-x-hidden">
         {/* ── Main player area ────────────────────────────────────── */}
         <div className="flex-1 flex flex-col items-center justify-center px-5 py-6">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(234,88,12,0.07),transparent)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(245,109,0,0.07),transparent)] pointer-events-none" />
 
           <div className="relative z-10 w-full max-w-sm mx-auto">
             {/* Back + share/like */}
@@ -485,7 +485,7 @@ export default function PlayerClient() {
                 ) : (
                   <div className="text-center py-4">
                     <div className="w-16 h-16 bg-orange-600/15 rounded-full flex items-center justify-center mx-auto mb-5">
-                      <svg width="32" height="32" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg width="32" height="32" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                     </div>
                     <h3 className="text-xl font-black mb-2 font-display">You&apos;re a legend.</h3>
                     <p className="text-zinc-400 text-sm mb-1">Purchase complete.</p>
@@ -532,7 +532,7 @@ export default function PlayerClient() {
             ) : (
               <div className="mb-5">
                 <div className="inline-flex items-center gap-3 bg-orange-600/10 border border-orange-600/20 rounded-xl px-6 py-4">
-                  <svg width="16" height="16" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                   <span className="text-orange-500 font-black text-sm">You&apos;re on the list. We&apos;ll be in touch.</span>
                 </div>
               </div>
@@ -577,7 +577,7 @@ export default function PlayerClient() {
               </div>
             ) : (
               <span className="text-orange-500 font-black text-sm flex items-center gap-2">
-                <svg width="14" height="14" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                <svg width="14" height="14" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                 You&apos;re on the list
               </span>
             )}

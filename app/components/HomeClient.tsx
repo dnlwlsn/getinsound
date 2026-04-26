@@ -67,7 +67,7 @@ export default function HomeClient() {
   /* Phone mockup */
   const [phoneTime, setPhoneTime]   = useState('9:41')
   const [activeTrack, setActiveTrack] = useState(TRACKS[0]?.name ?? '')
-  const [banner, setBanner]         = useState({ color1: TRACKS[0]?.color1 ?? '#ea580c', color2: TRACKS[0]?.color2 ?? '#431407', glow: TRACKS[0]?.glow ?? '234,88,12' })
+  const [banner, setBanner]         = useState({ color1: TRACKS[0]?.color1 ?? '#F56D00', color2: TRACKS[0]?.color2 ?? '#431407', glow: TRACKS[0]?.glow ?? '234,88,12' })
   const [basket, setBasket]         = useState<string[]>([])
 
   /* Hero email ref for focus-pop */
@@ -295,8 +295,8 @@ export default function HomeClient() {
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <header id="top" className="relative min-h-screen flex items-center justify-center px-6 pb-20 overflow-hidden" style={{ paddingTop: '8rem' }}>
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full" style={{ background: 'radial-gradient(ellipse,rgba(234,88,12,0.1) 0%,transparent 70%)' }} />
-          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(ellipse,rgba(234,88,12,0.06) 0%,transparent 70%)' }} />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full" style={{ background: 'radial-gradient(ellipse,rgba(245,109,0,0.1) 0%,transparent 70%)' }} />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(ellipse,rgba(245,109,0,0.06) 0%,transparent 70%)' }} />
         </div>
 
         <div className="relative z-10 mx-auto text-center" style={{ maxWidth: '64rem' }}>
@@ -334,7 +334,7 @@ export default function HomeClient() {
             {/* Success */}
             {wPhase === 'success' && (
               <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                <svg width="16" height="16" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                 <span className="text-orange-400 font-bold text-sm">You&apos;re on the list. We&apos;ll be in touch.</span>
               </div>
             )}
@@ -358,7 +358,7 @@ export default function HomeClient() {
                 ) : (
                   <div className="text-center">
                     <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                      <svg width="16" height="16" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                       <span className="text-orange-400 font-bold text-sm">We&apos;ll let you know when we open to everyone.</span>
                     </div>
                   </div>
@@ -460,7 +460,7 @@ export default function HomeClient() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-4 reveal">
-            <div className="col-good border rounded-3xl p-8 text-center relative" style={{ boxShadow: '0 8px 40px rgba(234,88,12,0.22),0 0 0 1px rgba(234,88,12,0.14)' }}>
+            <div className="col-good border rounded-3xl p-8 text-center relative" style={{ boxShadow: '0 8px 40px rgba(245,109,0,0.22),0 0 0 1px rgba(245,109,0,0.14)' }}>
               <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-orange-500">{formatPrice(convertPrice(8.65, 'GBP', currency))}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/80 mt-4">To the artist</p>
             </div>
@@ -665,7 +665,7 @@ export default function HomeClient() {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="reveal card ring-1 ring-white/[0.05] rounded-3xl p-8">
               <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
-                <svg width="18" height="18" fill="none" stroke="#ea580c" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                <svg width="18" height="18" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 1</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Upload your music</h3>
@@ -681,7 +681,7 @@ export default function HomeClient() {
             </div>
             <div className="reveal reveal-delay-2 card ring-1 ring-white/[0.05] rounded-3xl p-8">
               <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
-                <svg width="18" height="18" fill="none" stroke="#ea580c" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>
+                <svg width="18" height="18" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>
               </div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 3</p>
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">Get paid</h3>
@@ -691,7 +691,7 @@ export default function HomeClient() {
 
           <div className="reveal mt-6 card ring-1 ring-white/[0.05] rounded-3xl p-8 flex flex-col sm:flex-row items-start gap-6">
             <div className="w-10 h-10 flex-shrink-0 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center">
-              <svg width="18" height="18" fill="none" stroke="#ea580c" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+              <svg width="18" height="18" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
             </div>
             <div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 4</p>
@@ -730,13 +730,13 @@ export default function HomeClient() {
             <div className="faq-phone" style={{ flexShrink: 0, width: '270px', display: 'flex', justifyContent: 'center' }}>
               <div style={{ position: 'relative', width: '270px' }}>
                 {/* Glow */}
-                <div className="device-glow" style={{ position: 'absolute', inset: '-60px', background: 'radial-gradient(ellipse,rgba(234,88,12,0.18) 0%,transparent 65%)', pointerEvents: 'none', zIndex: 0 }} />
+                <div className="device-glow" style={{ position: 'absolute', inset: '-60px', background: 'radial-gradient(ellipse,rgba(245,109,0,0.18) 0%,transparent 65%)', pointerEvents: 'none', zIndex: 0 }} />
 
                 {/* Floating sale toast */}
-                <div className="floating-card" style={{ position: 'absolute', left: '-155px', top: '80px', zIndex: 6, width: '150px', background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(16px)', border: '1px solid rgba(234,88,12,0.25)', borderRadius: '16px', padding: '11px 12px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)', animation: 'floatA 4.5s ease-in-out infinite' }}>
+                <div className="floating-card" style={{ position: 'absolute', left: '-155px', top: '80px', zIndex: 6, width: '150px', background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(16px)', border: '1px solid rgba(245,109,0,0.25)', borderRadius: '16px', padding: '11px 12px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)', animation: 'floatA 4.5s ease-in-out infinite' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '7px', background: 'rgba(234,88,12,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="10" height="10" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '7px', background: 'rgba(245,109,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="10" height="10" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                     </div>
                     <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', fontFamily: 'system-ui' }}>Sale received</span>
                   </div>
@@ -756,7 +756,7 @@ export default function HomeClient() {
 
                 {/* Phone shell */}
                 <div className="phone-device" style={{ position: 'relative', zIndex: 1, width: '270px', height: '568px', borderRadius: '44px' }}>
-                  <div style={{ position: 'absolute', inset: 0, borderRadius: '44px', overflow: 'hidden', background: '#050505' }}>
+                  <div style={{ position: 'absolute', inset: 0, borderRadius: '44px', overflow: 'hidden', background: '#09090b' }}>
 
                     {/* Dynamic island */}
                     <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', width: '88px', height: '26px', background: '#000', borderRadius: '20px', zIndex: 10 }} />
@@ -783,7 +783,7 @@ export default function HomeClient() {
                       <div style={{ position: 'relative', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg width="13" height="13" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 01-8 0" /></svg>
                         {basket.length > 0 && (
-                          <div style={{ position: 'absolute', top: '-3px', right: '-3px', width: '16px', height: '16px', borderRadius: '50%', background: '#ea580c', color: '#000', fontSize: '8px', fontWeight: 800, fontFamily: 'system-ui', lineHeight: '16px', textAlign: 'center' }}>
+                          <div style={{ position: 'absolute', top: '-3px', right: '-3px', width: '16px', height: '16px', borderRadius: '50%', background: '#F56D00', color: '#000', fontSize: '8px', fontWeight: 800, fontFamily: 'system-ui', lineHeight: '16px', textAlign: 'center' }}>
                             {basket.length}
                           </div>
                         )}
@@ -835,7 +835,7 @@ export default function HomeClient() {
 
                     {/* Bottom nav */}
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '62px', background: 'rgba(5,5,5,0.97)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 24px 10px' }}>
-                      <svg width="20" height="20" fill="none" stroke="#ea580c" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+                      <svg width="20" height="20" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
                       <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
                       <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" /></svg>
                       <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
@@ -1009,7 +1009,7 @@ export default function HomeClient() {
             {wPhase === 'success' && (
               <div className="mb-4">
                 <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                  <svg width="16" height="16" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                   <span className="text-orange-400 font-bold text-sm">You&apos;re on the list. We&apos;ll be in touch.</span>
                 </div>
               </div>
@@ -1033,7 +1033,7 @@ export default function HomeClient() {
                 ) : (
                   <div className="mt-3">
                     <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                      <svg width="16" height="16" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                       <span className="text-orange-400 font-bold text-sm">We&apos;ll let you know when we open to everyone.</span>
                     </div>
                   </div>

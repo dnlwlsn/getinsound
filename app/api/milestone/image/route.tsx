@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         style={{
           width: 1200,
           height: 630,
-          background: '#0A0A0A',
+          background: '#09090b',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

@@ -58,7 +58,7 @@ function PlayIcon({ size = 22 }: { size?: number }) {
 }
 function CheckIcon({ size = 40 }: { size?: number }) {
   return (
-    <svg width={size} height={size} fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24">
+    <svg width={size} height={size} fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
       <polyline points="20 6 9 17 4 12" />
     </svg>
   )

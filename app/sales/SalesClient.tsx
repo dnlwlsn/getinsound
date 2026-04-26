@@ -230,7 +230,7 @@ export function SalesClient() {
             {withdrawStep === 3 && (
               <div className="text-center py-6">
                 <div className="w-20 h-20 bg-orange-600/15 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg width="40" height="40" fill="none" stroke="#ea580c" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  <svg width="40" height="40" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <h3 className="text-2xl font-black mb-2">Transfer initiated!</h3>
                 <p className="text-zinc-400 text-sm mb-1">Your funds are on their way.</p>

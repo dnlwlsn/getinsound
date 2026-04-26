@@ -8,7 +8,7 @@ import { SettingsTabs } from '@/components/settings/SettingsTabs'
 import { ImageUploader } from '@/app/components/ui/ImageUploader'
 
 const ACCENT_COLOURS = [
-  '#ea580c', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
+  '#F56D00', '#dc2626', '#db2777', '#9333ea', '#7c3aed',
   '#4f46e5', '#2563eb', '#0891b2', '#059669', '#16a34a',
   '#65a30d', '#ca8a04', '#d97706', '#78716c', '#ffffff',
 ]

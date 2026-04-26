@@ -83,7 +83,7 @@ export function WhyUsClient() {
   }
 
   return (
-    <main className="bg-[#0A0A0A] text-white min-h-screen pb-32">
+    <main className="bg-zinc-950 text-white min-h-screen pb-32">
 
       {/* ── NAV ──────────────────────────────────────────────────── */}
       <nav className="sticky top-0 w-full z-40 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
@@ -101,7 +101,7 @@ export function WhyUsClient() {
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <header className="max-w-5xl mx-auto px-8 py-24 text-center relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(234,88,12,0.08),transparent)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(245,109,0,0.08),transparent)] pointer-events-none" />
         <div className="relative z-10">
           <span className="inline-flex items-center gap-2.5 bg-orange-600/10 text-orange-500 text-[10px] font-black px-4 py-2 rounded-full border border-orange-600/20 mb-8 uppercase tracking-widest">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
@@ -144,7 +144,7 @@ export function WhyUsClient() {
                     step={1}
                     value={price}
                     onChange={e => setPrice(parseInt(e.target.value, 10))}
-                    className="w-full h-3 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-orange-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_20px_rgba(234,88,12,0.4)]"
+                    className="w-full h-3 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-orange-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_20px_rgba(245,109,0,0.4)]"
                   />
                   <div className="flex justify-between mt-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest">
                     <span>{formatPrice(convertPrice(5, 'GBP', currency))} min</span>
@@ -314,7 +314,7 @@ export function WhyUsClient() {
           ) : (
             <div className="mb-5">
               <div className="inline-flex items-center gap-3 bg-orange-600/10 border border-orange-600/20 rounded-xl px-6 py-4">
-                <svg width="16" height="16" fill="none" stroke="#ea580c" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
                 <span className="text-orange-500 font-black text-sm">You&apos;re on the list. We&apos;ll be in touch.</span>
               </div>
             </div>

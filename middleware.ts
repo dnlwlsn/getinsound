@@ -147,7 +147,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Set locale cookies (after Supabase may have rebuilt response) ──
-  if (detectedCountry) {
+  // Only set functional cookies if the user has given consent
+  const consentValue = request.cookies.get('insound_consent')?.value
+  const hasFunctionalConsent = consentValue === 'accepted' || consentValue === 'functional'
+
+  if (detectedCountry && hasFunctionalConsent) {
     supabaseResponse.cookies.set('insound_locale', detectedCountry, {
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -162,7 +166,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (refCode && /^[A-Z0-9]{6}$/.test(refCode)) {
+  if (refCode && /^[A-Z0-9]{6}$/.test(refCode) && hasFunctionalConsent) {
     supabaseResponse.cookies.set('insound_ref', refCode, {
       path: '/',
       maxAge: 60 * 60 * 24 * 7,

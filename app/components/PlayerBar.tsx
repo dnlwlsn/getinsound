@@ -333,11 +333,11 @@ export function PlayerBar() {
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A0A0A">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#09090b">
                       <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
                     </svg>
                   ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A0A0A">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#09090b">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   )}
@@ -497,11 +497,11 @@ export function PlayerBar() {
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A0A0A">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#09090b">
                         <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
                       </svg>
                     ) : (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A0A0A">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#09090b">
                         <path d="M8 5v14l11-7z" />
                       </svg>
                     )}

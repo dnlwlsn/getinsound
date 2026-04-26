@@ -72,7 +72,7 @@ export function FanProfileClient({ fan, purchases, pinned, badges, wallPosts, st
   }, [supabase])
 
   return (
-    <main className="bg-[#0A0A0A] text-white min-h-screen">
+    <main className="bg-zinc-950 text-white min-h-screen">
       <div className="max-w-6xl mx-auto px-6 pt-32 pb-24">
         {isOwner && !fan.is_public && (
           <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 flex items-center justify-between gap-4">
