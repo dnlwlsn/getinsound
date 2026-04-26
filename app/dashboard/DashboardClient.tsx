@@ -16,6 +16,7 @@ import { SocialAccountsEditor } from '@/app/components/ui/SocialAccountsEditor'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import type { SocialLinks } from '@/lib/verification'
 import { CARRIERS } from '@/lib/carriers'
+import { AnalyticsCharts } from './AnalyticsCharts'
 
 // ── Types ──────────────────────────────────────────────────────
 type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; banner_url: string | null; accent_colour: string | null; social_links: SocialLinks | null }
@@ -74,12 +75,14 @@ type Props = {
   merchOrders?: MerchOrder[]
   returnAddress?: any
   saveCounts?: Record<string, number>
+  earningsHistory?: { month: string; earnings: number; sales: number }[]
+  releaseBreakdown?: { releaseTitle: string; earnings: number; sales: number }[]
 }
 
 function pence(n: number) { return formatPriceUtil(n / 100, 'GBP') }
 
 // ── Component ──────────────────────────────────────────────────
-export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral, merchItems = [], merchOrders = [], returnAddress, saveCounts = {} }: Props) {
+export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral, merchItems = [], merchOrders = [], returnAddress, saveCounts = {}, earningsHistory = [], releaseBreakdown = [] }: Props) {
   const supabase = createClient()
   const [rels, setRels] = useState(releases)
   const [payouts, setPayouts] = useState<any[] | null>(null)
@@ -624,6 +627,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
             <StatBox label="Plays" value={String(stats.totalPreviewPlays + stats.totalFullPlays)} sub={`${stats.totalPreviewPlays} preview · ${stats.totalFullPlays} full`} />
             <StatBox label="Unique Fans" value={String(stats.uniqueFans)} />
           </div>
+          <AnalyticsCharts earningsHistory={earningsHistory} releaseBreakdown={releaseBreakdown} />
           {stats.avgPaidPence > 0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-10">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">PWYW Insight</p>
@@ -1417,8 +1421,11 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
   saveCount?: number
 }) {
   const [showControls, setShowControls] = useState(false)
+  const [showEmbed, setShowEmbed] = useState(false)
+  const [embedCopied, setEmbedCopied] = useState(false)
   const plays = r.tracks.reduce((s, t) => s + t.preview_plays + t.full_plays, 0)
   const coverSrc = r.cover_url || generateGradientDataUri(artistId, r.id)
+  const embedCode = `<iframe src="https://getinsound.com/embed/${r.slug}" width="400" height="200" frameborder="0" style="border-radius:12px"></iframe>`
 
   return (
     <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl overflow-hidden">
@@ -1430,6 +1437,11 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <VisibilityBadge v={r.visibility} />
+          {r.published && (
+            <button onClick={() => setShowEmbed(!showEmbed)} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors" title="Get embed code">
+              Embed
+            </button>
+          )}
           <a href={`/release?a=${artistSlug}&r=${r.slug}`} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">View</a>
           <button onClick={() => setShowControls(!showControls)} className="text-zinc-500 hover:text-white transition-colors p-1">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1438,6 +1450,27 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
           </button>
         </div>
       </div>
+
+      {showEmbed && (
+        <div className="border-t border-zinc-800/40 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Embed Code</p>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 font-mono text-[11px] text-zinc-300 break-all leading-relaxed">
+            {embedCode}
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(embedCode)
+                setEmbedCopied(true)
+                setTimeout(() => setEmbedCopied(false), 2000)
+              } catch {}
+            }}
+            className="mt-2 bg-orange-600 text-black font-bold text-[10px] px-3 py-1.5 rounded-lg hover:bg-orange-500 transition-colors"
+          >
+            {embedCopied ? 'Copied!' : 'Copy to Clipboard'}
+          </button>
+        </div>
+      )}
 
       {showControls && (
         <div className="border-t border-zinc-800/40 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
