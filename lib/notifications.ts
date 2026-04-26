@@ -111,7 +111,7 @@ export async function sendPushNotification({
         tag,
       }),
     })
-  } catch {
-    // Push failures should not block the notification flow
+  } catch (err) {
+    console.error('Push notification failed:', (err as Error).message)
   }
 }

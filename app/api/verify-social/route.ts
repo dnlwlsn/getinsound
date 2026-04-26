@@ -24,6 +24,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid URL for this platform' }, { status: 400 })
   }
 
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(url)
+  } catch {
+    return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+  }
+  if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+    return NextResponse.json({ error: 'Invalid URL protocol' }, { status: 400 })
+  }
+  const hostname = parsedUrl.hostname
+  if (hostname === 'localhost' || hostname.startsWith('127.') || hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.') || hostname === '0.0.0.0' || hostname.includes('internal') || hostname.endsWith('.local')) {
+    return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+  }
+
   let exists = false
   try {
     const res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(5000) })

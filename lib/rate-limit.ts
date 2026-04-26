@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-type Action = 'magic_link' | 'purchase' | 'signup' | 'redeem_code' | 'social_verify' | 'email_change' | 'search'
+type Action = 'magic_link' | 'purchase' | 'signup' | 'redeem_code' | 'social_verify' | 'email_change' | 'search' | 'log_play'
 
 export async function checkRateLimit(
   key: string,

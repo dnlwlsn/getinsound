@@ -34,6 +34,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // 14+ days with no tracking — full refund from artist
+    if (order.status === 'refunded') {
+      return NextResponse.json({ result: 'already_refunded', message: 'This order has already been refunded.' })
+    }
     if (!order.stripe_payment_intent_id) {
       return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
     }
@@ -114,7 +117,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   if (deliveryStatus === 'undelivered' || deliveryStatus === 'exception') {
-    // Lost — issue refund
+    if (order.status === 'refunded') {
+      return NextResponse.json({ result: 'already_refunded', message: 'This order has already been refunded.' })
+    }
     if (!order.stripe_payment_intent_id) {
       return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
     }

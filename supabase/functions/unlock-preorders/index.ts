@@ -61,12 +61,12 @@ Deno.serve(async (req) => {
       const grantToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
       const expiresAt = new Date(Date.now() + GRANT_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-      await admin.from('download_grants').insert({
+      await admin.from('download_grants').upsert({
         purchase_id: purchase.id,
         token: grantToken,
         expires_at: expiresAt,
         max_uses: GRANT_MAX_USES,
-      });
+      }, { onConflict: 'purchase_id', ignoreDuplicates: true });
     }
   }
 

@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request.headers)
+    const ipHash = await hashIp(ip)
+    const rateLimited = await checkRateLimit(ipHash, 'log_play', 120, 1)
+    if (rateLimited) return rateLimited
+
     const { trackId, isPreview } = await request.json()
 
     if (!trackId || typeof trackId !== 'string') {

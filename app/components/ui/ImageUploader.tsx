@@ -123,6 +123,7 @@ export function ImageUploader({
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
+            aria-label="Upload avatar"
             className={`w-20 h-20 rounded-full overflow-hidden shrink-0 relative group transition-all ${dragOver ? 'ring-2 ring-offset-2 ring-offset-zinc-900' : ''}`}
           >
             {currentUrl ? (
@@ -173,6 +174,7 @@ export function ImageUploader({
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
+        aria-label="Upload banner image"
         className={`w-full aspect-[3/1] rounded-2xl overflow-hidden relative group transition-all border border-zinc-800 ${dragOver ? 'ring-2 ring-offset-2 ring-offset-zinc-900' : ''}`}
       >
         {currentUrl ? (

@@ -99,6 +99,9 @@ Deno.serve(async (req) => {
             console.error('Failed to fetch balance transaction:', (e as Error).message);
           }
         }
+        if (stripeFeePence === 0 && amountPaid > 0) {
+          console.warn(`Stripe fee is 0 for merch session ${session.id} — fee lookup may have failed`);
+        }
 
         const artistReceived = amountPaid - platformPence - stripeFeePence;
 
@@ -280,7 +283,10 @@ Deno.serve(async (req) => {
         return new Response('ok', { status: 200 });
       }
 
-      const amountPence = session.amount_total ?? 0;
+      const currency = session.currency?.toLowerCase() ?? 'gbp';
+      const isZeroDecimal = currency === 'jpy' || currency === 'krw' || currency === 'vnd';
+      const amountMinor = session.amount_total ?? 0;
+      const amountPence = isZeroDecimal ? amountMinor * 100 : amountMinor;
       const platformPence = Math.round(amountPence * 0.1);
       const artistPence = amountPence - platformPence;
 
@@ -300,6 +306,9 @@ Deno.serve(async (req) => {
         } catch (e) {
           console.error('Failed to fetch balance transaction:', (e as Error).message);
         }
+      }
+      if (stripeFeePence === 0 && amountPence > 0) {
+        console.warn(`Stripe fee is 0 for session ${session.id} — fee lookup may have failed`);
       }
 
       // ── Progressive fan account creation ──
@@ -357,10 +366,9 @@ Deno.serve(async (req) => {
         .single();
 
       if (purchaseErr) {
-        // Duplicate stripe_pi_id or stripe_checkout_id → idempotent, return 200
         if (purchaseErr.code === '23505') return new Response('ok', { status: 200 });
         await logWebhookError(admin, event.type, event.id, `Purchase insert failed: ${purchaseErr.message}`, { releaseId, artistId });
-        return new Response('ok', { status: 200 });
+        return new Response('Purchase insert failed', { status: 500 });
       }
 
       // Check for rapid-fire transactions

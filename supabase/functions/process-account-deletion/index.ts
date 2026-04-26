@@ -149,6 +149,11 @@ async function processArtistDeletion(
         }
       } catch (e) {
         console.error(`Refund failed for purchase ${p.id}:`, (e as Error).message);
+        await admin.from('deletion_requests').update({
+          status: 'failed',
+          error: `Refund failed for purchase ${p.id}: ${(e as Error).message}`,
+        }).eq('id', requestId);
+        return;
       }
     }
   }

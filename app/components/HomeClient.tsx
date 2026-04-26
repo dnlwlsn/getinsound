@@ -7,8 +7,8 @@ import Link from 'next/link'
 import { useCurrency } from '../providers/CurrencyProvider'
 
 /* ── Supabase config ─────────────────────────────────────────── */
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://rvsfriqjobwuzzfdiyxg.supabase.co'
-const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg'
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const TOTAL_SPOTS = 50
 
 /* ── Typewriter items ────────────────────────────────────────── */
@@ -322,7 +322,7 @@ export default function HomeClient() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <input ref={heroEmailRef} type="email" value={heroEmail} onChange={e => { setHeroEmail(e.target.value); setHeroInvalid(false) }}
                   onKeyDown={e => e.key === 'Enter' && submitHero()}
-                  placeholder="your@email.com" autoComplete="email"
+                  placeholder="your@email.com" autoComplete="email" aria-label="Email address"
                   className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${heroInvalid ? 'border-red-500' : 'border-transparent'}`} />
                 <button onClick={submitHero} disabled={heroSending}
                   className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
@@ -348,7 +348,7 @@ export default function HomeClient() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <input type="email" value={heroOvEmail} onChange={e => { setHeroOvEmail(e.target.value); setHeroOvInvalid(false) }}
                       onKeyDown={e => e.key === 'Enter' && submitHeroOv()}
-                      placeholder="your@email.com" autoComplete="email"
+                      placeholder="your@email.com" autoComplete="email" aria-label="Email address"
                       className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${heroOvInvalid ? 'border-red-500' : 'border-transparent'}`} />
                     <button onClick={submitHeroOv} disabled={heroOvSending}
                       className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
@@ -997,7 +997,7 @@ export default function HomeClient() {
               <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4">
                 <input type="email" value={bottomEmail} onChange={e => { setBottomEmail(e.target.value); setBottomInvalid(false) }}
                   onKeyDown={e => e.key === 'Enter' && submitBottom()}
-                  placeholder="your@email.com" autoComplete="email"
+                  placeholder="your@email.com" autoComplete="email" aria-label="Email address"
                   className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${bottomInvalid ? 'border-red-500' : 'border-transparent'}`} />
                 <button onClick={submitBottom} disabled={bottomSending}
                   className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
@@ -1023,7 +1023,7 @@ export default function HomeClient() {
                   <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
                     <input type="email" value={bottomOvEmail} onChange={e => { setBottomOvEmail(e.target.value); setBottomOvInvalid(false) }}
                       onKeyDown={e => e.key === 'Enter' && submitBottomOv()}
-                      placeholder="your@email.com" autoComplete="email"
+                      placeholder="your@email.com" autoComplete="email" aria-label="Email address"
                       className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${bottomOvInvalid ? 'border-red-500' : 'border-transparent'}`} />
                     <button onClick={submitBottomOv} disabled={bottomOvSending}
                       className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">

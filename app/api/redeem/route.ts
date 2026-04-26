@@ -68,6 +68,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
+    const emailRateLimited = await checkRateLimit(email, 'redeem_code', 10, 1)
+    if (emailRateLimited) return emailRateLimited
+
     // Progressive account creation: try to create, fall back to existing
     let userId: string
     const { data: newUser, error: createErr } = await admin.auth.admin.createUser({

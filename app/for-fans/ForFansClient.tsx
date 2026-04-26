@@ -5,8 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useCurrency } from '../providers/CurrencyProvider'
 
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://rvsfriqjobwuzzfdiyxg.supabase.co'
-const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg'
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 const isValidEmail = (e: string) => !!e && /\S+@\S+\.\S+/.test(e)
 

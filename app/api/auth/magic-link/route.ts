@@ -32,11 +32,13 @@ export async function POST(req: NextRequest) {
   const rateLimited = await checkRateLimit(email, 'magic_link', 3, 1)
   if (rateLimited) return rateLimited
 
+  const safeRedirect = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : undefined;
+
   const { data: linkData, error: linkErr } = await getAdminClient().auth.admin.generateLink({
     type: 'magiclink',
     email,
     options: {
-      redirectTo: redirectTo ? `${SITE_URL}${redirectTo}` : `${SITE_URL}/welcome`,
+      redirectTo: safeRedirect ? `${SITE_URL}${safeRedirect}` : `${SITE_URL}/welcome`,
     },
   });
 
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to generate link' }, { status: 500 });
   }
 
-  const callbackPath = redirectTo || '/auth/callback?next=/welcome';
+  const callbackPath = safeRedirect || '/auth/callback?next=/welcome';
   const separator = callbackPath.includes('?') ? '&' : '?';
   const magicLink = `${SITE_URL}${callbackPath}${separator}token_hash=${tokenHash}&type=magiclink`;
 

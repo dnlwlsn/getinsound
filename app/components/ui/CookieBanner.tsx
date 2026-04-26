@@ -12,6 +12,15 @@ function setCookie(name: string, value: string, days: number) {
   document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/;SameSite=Lax`
 }
 
+export function getConsentLevel(): 'accepted' | 'functional' | 'essential-only' | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(/(^| )insound_consent=([^;]+)/)
+  const val = match ? decodeURIComponent(match[2]) : null
+  if (val === 'accepted' || val === 'functional') return val
+  if (val === 'essential-only') return val
+  return null
+}
+
 export function CookieBanner() {
   const [visible, setVisible] = useState(false)
   const [managing, setManaging] = useState(false)
