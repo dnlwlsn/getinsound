@@ -28,8 +28,6 @@ export default function TermsPage() {
           <p>Insound provides a platform that allows independent artists to list and sell music, digital content, and merchandise directly to fans. Unless checkout states otherwise, the Artist is the seller of the Content or merchandise, and Insound acts as the platform provider and payment facilitator.</p>
           <p>For digital music purchases, Insound provides hosting, delivery, download access, and customer support tooling. For merchandise purchases, the Artist is responsible for fulfilment, delivery, returns, product descriptions, and product quality.</p>
 
-          {/* TODO: Add tax clause after accountant consultation */}
-
           <h2>1. Definitions</h2>
           <ul>
             <li>&ldquo;the Platform&rdquo; or &ldquo;Insound&rdquo; &mdash; the service at getinsound.com, operated by Insound Music Ltd (Company Number: 17179694).</li>

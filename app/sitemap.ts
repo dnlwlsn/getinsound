@@ -11,14 +11,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/discover`, changeFrequency: 'daily', priority: 0.8 },
     { url: `${base}/for-artists`, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/for-fans`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/for-press`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/why-us`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/terms`, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${base}/privacy`, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${base}/ai-policy`, changeFrequency: 'monthly', priority: 0.3 },
   ]
 
-  const { data: artists } = await supabase
-    .from('artists')
-    .select('slug, updated_at')
+  const [{ data: artists }, { data: releases }] = await Promise.all([
+    supabase.from('artists').select('slug, updated_at'),
+    supabase.from('releases').select('slug, updated_at').eq('published', true),
+  ])
 
   const artistRoutes: MetadataRoute.Sitemap = (artists ?? []).map(a => ({
     url: `${base}/${a.slug}`,
@@ -27,5 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
-  return [...staticRoutes, ...artistRoutes]
+  const releaseRoutes: MetadataRoute.Sitemap = (releases ?? []).map(r => ({
+    url: `${base}/release/${r.slug}`,
+    lastModified: r.updated_at,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticRoutes, ...artistRoutes, ...releaseRoutes]
 }
