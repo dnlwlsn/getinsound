@@ -100,7 +100,9 @@ Deno.serve(async (req) => {
           }
         }
         if (stripeFeePence === 0 && amountPaid > 0) {
-          console.warn(`Stripe fee is 0 for merch session ${session.id} — fee lookup may have failed`);
+          stripeFeePence = Math.round(amountPaid * 0.015) + 20;
+          console.warn(`Stripe fee estimated at ${stripeFeePence}p for merch session ${session.id} — fee lookup failed`);
+          await logWebhookError(admin, event.type, event.id, `Merch Stripe fee estimated (lookup failed)`, { session_id: session.id, estimated_fee: stripeFeePence });
         }
 
         const artistReceived = amountPaid - platformPence - stripeFeePence;
@@ -254,6 +256,442 @@ Deno.serve(async (req) => {
           buildMerchOrderEmail(merchItem?.name || 'Your order', variant),
         );
 
+        // Auto-follow artist on merch purchase
+        if (userId) {
+          await admin
+            .from('fan_follows')
+            .upsert(
+              { user_id: userId, artist_id: artistId },
+              { onConflict: 'user_id,artist_id' },
+            )
+            .then(() => {})
+            .catch((e: Error) => console.error('Auto-follow failed:', e.message));
+        }
+
+        return new Response('ok', { status: 200 });
+      }
+
+      // ── Basket (multi-artist) order flow ──────────────────────
+      if (sessionType === 'basket') {
+        const basketSessionId = session.metadata?.basket_session_id;
+        if (!basketSessionId) {
+          console.error('Missing basket_session_id on session', session.id);
+          return new Response('ok', { status: 200 });
+        }
+
+        // Idempotency
+        const { data: existingBasketPurchase } = await admin
+          .from('purchases')
+          .select('id')
+          .eq('stripe_checkout_id', session.id)
+          .maybeSingle();
+        if (existingBasketPurchase) return new Response('ok', { status: 200 });
+
+        const { data: basketSession } = await admin
+          .from('basket_sessions')
+          .select('items, fan_currency, ref_code')
+          .eq('id', basketSessionId)
+          .single();
+
+        if (!basketSession) {
+          await logWebhookError(admin, event.type, event.id, 'Basket session not found', { basketSessionId });
+          return new Response('ok', { status: 200 });
+        }
+
+        const basketItems = basketSession.items as any[];
+        for (const item of basketItems) {
+          if (!item.type) item.type = 'release';
+        }
+        const refCode = basketSession.ref_code;
+        const buyerEmail = (
+          session.customer_details?.email ?? session.customer_email ?? ''
+        ).trim().toLowerCase();
+
+        if (!buyerEmail) {
+          await logWebhookError(admin, event.type, event.id, 'No buyer email on basket session', session);
+          return new Response('ok', { status: 200 });
+        }
+
+        // Get charge ID for transfers
+        const piId = typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent?.id;
+
+        let chargeId: string | null = null;
+        let stripeFeePence = 0;
+        if (piId) {
+          try {
+            const pi = await stripe.paymentIntents.retrieve(piId, {
+              expand: ['latest_charge.balance_transaction'],
+            });
+            const charge = pi.latest_charge as Stripe.Charge | null;
+            chargeId = charge?.id ?? null;
+            const bt = charge?.balance_transaction as Stripe.BalanceTransaction | null;
+            if (bt?.fee) stripeFeePence = bt.fee;
+          } catch (e) {
+            console.error('Failed to fetch charge for basket:', (e as Error).message);
+          }
+        }
+
+        // Progressive fan account creation
+        let userId: string | null = null;
+        let isNewAccount = false;
+
+        const { data: existingUserId } = await admin.rpc('get_user_id_by_email', {
+          lookup_email: buyerEmail,
+        });
+
+        if (existingUserId) {
+          userId = existingUserId;
+        } else {
+          const { data: newUser, error: createErr } = await admin.auth.admin.createUser({
+            email: buyerEmail,
+            email_confirm: true,
+          });
+          if (newUser?.user) {
+            userId = newUser.user.id;
+            isNewAccount = true;
+          } else if (createErr) {
+            await logWebhookError(admin, event.type, event.id, `User creation failed: ${createErr.message}`, { email: buyerEmail });
+          }
+        }
+
+        // Distribute Stripe fee proportionally
+        const totalAmount = basketItems.reduce((s: number, i: any) => {
+          if (i.type === 'merch') return s + i.amount_pence + i.postage_pence;
+          return s + i.amount_pence;
+        }, 0);
+        const transferGroup = `basket_${session.id}`;
+
+        // Process each item
+        const purchasedTitles: string[] = [];
+        for (let idx = 0; idx < basketItems.length; idx++) {
+          const item = basketItems[idx];
+          const itemAmount = item.type === 'merch' ? item.amount_pence + item.postage_pence : item.amount_pence;
+          const itemFraction = totalAmount > 0 ? itemAmount / totalAmount : 1 / basketItems.length;
+          const itemStripeFee = idx === basketItems.length - 1
+            ? stripeFeePence - basketItems.slice(0, -1).reduce((s: number, _: any, j: number) => {
+                const jItem = basketItems[j];
+                const jAmount = jItem.type === 'merch' ? jItem.amount_pence + jItem.postage_pence : jItem.amount_pence;
+                return s + Math.round(stripeFeePence * (totalAmount > 0 ? jAmount / totalAmount : 1 / basketItems.length));
+              }, 0)
+            : Math.round(stripeFeePence * itemFraction);
+
+          if (item.type === 'release') {
+            const platformPence = Math.round(item.amount_pence * 0.1);
+            const artistPence = item.amount_pence - platformPence;
+
+            // Fetch release title
+            const { data: release } = await admin
+              .from('releases')
+              .select('title, preorder_enabled, release_date, artists!inner(name)')
+              .eq('id', item.release_id)
+              .single();
+
+            const releaseTitle = release?.title ?? 'Unknown';
+            purchasedTitles.push(releaseTitle);
+            const isPreOrder = release?.preorder_enabled && release?.release_date && new Date(release.release_date) > new Date();
+
+            // Insert purchase
+            const { data: purchase, error: purchaseErr } = await admin
+              .from('purchases')
+              .insert({
+                release_id: item.release_id,
+                artist_id: item.artist_id,
+                buyer_email: buyerEmail,
+                buyer_user_id: userId,
+                amount_pence: item.amount_pence,
+                artist_pence: artistPence,
+                platform_pence: platformPence,
+                stripe_fee_pence: itemStripeFee,
+                stripe_pi_id: piId ?? null,
+                stripe_checkout_id: session.id,
+                status: 'paid',
+                paid_at: new Date().toISOString(),
+                pre_order: !!isPreOrder,
+                release_date: isPreOrder ? release!.release_date : null,
+              })
+              .select('id')
+              .single();
+
+            if (purchaseErr) {
+              if (purchaseErr.code === '23505') continue;
+              await logWebhookError(admin, event.type, event.id, `Basket purchase insert failed: ${purchaseErr.message}`, { item });
+              continue;
+            }
+
+            // Create transfer to artist
+            if (chargeId && artistPence > 0) {
+              try {
+                await stripe.transfers.create({
+                  amount: artistPence,
+                  currency: (basketSession.fan_currency || 'GBP').toLowerCase(),
+                  destination: item.stripe_account_id,
+                  source_transaction: chargeId,
+                  transfer_group: transferGroup,
+                  metadata: {
+                    release_id: item.release_id,
+                    basket_session_id: basketSessionId,
+                  },
+                });
+              } catch (e) {
+                console.error(`Transfer failed for ${item.release_id}:`, (e as Error).message);
+                await logWebhookError(admin, event.type, event.id, `Transfer failed: ${(e as Error).message}`, { item });
+                await admin.from('purchases').update({ status: 'transfer_failed' }).eq('id', purchase!.id);
+                await upsertFlag(admin, item.artist_id, 'transfer_failed', {
+                  purchase_id: purchase!.id,
+                  release_id: item.release_id,
+                  amount_pence: artistPence,
+                  error: (e as Error).message,
+                });
+              }
+            }
+
+            // Download grant (skip pre-orders)
+            if (!isPreOrder && purchase) {
+              const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
+              const expiresAt = new Date(Date.now() + GRANT_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+              await admin
+                .from('download_grants')
+                .insert({
+                  purchase_id: purchase.id,
+                  token,
+                  expires_at: expiresAt,
+                  max_uses: GRANT_MAX_USES,
+                });
+            }
+
+            // Notify artist
+            const saleLabel = `£${(item.amount_pence / 100).toFixed(2)}`;
+            await admin.from('notifications').insert({
+              user_id: item.artist_id,
+              type: isPreOrder ? 'preorder' : 'sale',
+              title: isPreOrder
+                ? `New pre-order: ${releaseTitle}`
+                : `New sale: ${releaseTitle}`,
+              body: `${buyerEmail} purchased for ${saleLabel}`,
+              link: '/dashboard',
+            });
+
+            // Founding Artist: record first sale timestamp
+            try {
+              await admin.rpc('set_founding_artist_first_sale', {
+                p_artist_id: item.artist_id,
+                p_sale_at: new Date().toISOString(),
+              });
+            } catch (e) {
+              console.error('Founding Artist first sale failed:', (e as Error).message);
+            }
+
+            // Auto-follow artist on purchase
+            if (userId) {
+              await admin
+                .from('fan_follows')
+                .upsert(
+                  { user_id: userId, artist_id: item.artist_id },
+                  { onConflict: 'user_id,artist_id' },
+                )
+                .then(() => {})
+                .catch((e: Error) => console.error('Auto-follow failed:', e.message));
+            }
+          } else if (item.type === 'merch') {
+            const platformPence = Math.round(item.amount_pence * 0.1);
+            const artistPence = item.amount_pence + item.postage_pence - platformPence;
+
+            const { data: merchItem } = await admin
+              .from('merch')
+              .select('name, price, postage, currency')
+              .eq('id', item.merch_id)
+              .single();
+
+            const itemName = item.variant ? `${merchItem?.name ?? 'Item'} (${item.variant})` : (merchItem?.name ?? 'Item');
+            purchasedTitles.push(itemName);
+
+            // Shipping address from Stripe session
+            const shippingDetails = session.shipping_details ?? session.customer_details;
+            const shippingAddress = shippingDetails?.address
+              ? {
+                  name: shippingDetails.name || '',
+                  line1: shippingDetails.address.line1 || '',
+                  line2: shippingDetails.address.line2 || '',
+                  city: shippingDetails.address.city || '',
+                  postcode: shippingDetails.address.postal_code || '',
+                  country: shippingDetails.address.country || '',
+                }
+              : {};
+
+            // Atomic stock decrement
+            const { data: updated, error: stockErr } = await admin.rpc('decrement_merch_stock', {
+              merch_id: item.merch_id,
+            });
+
+            if (stockErr || updated === false) {
+              if (userId) {
+                await admin.from('notifications').insert({
+                  user_id: userId,
+                  type: 'merch_order',
+                  title: `${itemName} is sold out`,
+                  body: 'This item from your basket could not be fulfilled. Contact us for a partial refund.',
+                  link: '/library',
+                });
+              }
+              await logWebhookError(admin, event.type, event.id, 'Merch sold out during basket checkout', { merch_id: item.merch_id });
+              continue;
+            }
+
+            // Insert order
+            const { error: orderErr } = await admin
+              .from('orders')
+              .insert({
+                fan_id: userId,
+                artist_id: item.artist_id,
+                merch_id: item.merch_id,
+                variant_selected: item.variant,
+                amount_paid: item.amount_pence + item.postage_pence,
+                amount_paid_currency: merchItem?.currency || 'GBP',
+                artist_received: artistPence,
+                artist_received_currency: merchItem?.currency || 'GBP',
+                platform_pence: platformPence,
+                stripe_fee_pence: itemStripeFee,
+                postage_paid: item.postage_pence,
+                shipping_address: shippingAddress,
+                status: 'pending',
+                stripe_payment_intent_id: piId ?? null,
+                stripe_checkout_id: session.id,
+              });
+
+            if (orderErr) {
+              if (orderErr.code === '23505') continue;
+              await logWebhookError(admin, event.type, event.id, `Basket merch order insert failed: ${orderErr.message}`, { item });
+              continue;
+            }
+
+            // Transfer to artist
+            if (chargeId && artistPence > 0) {
+              try {
+                await stripe.transfers.create({
+                  amount: artistPence,
+                  currency: (basketSession.fan_currency || 'GBP').toLowerCase(),
+                  destination: item.stripe_account_id,
+                  source_transaction: chargeId,
+                  transfer_group: transferGroup,
+                  metadata: { merch_id: item.merch_id, basket_session_id: basketSessionId },
+                });
+              } catch (e) {
+                console.error(`Transfer failed for merch ${item.merch_id}:`, (e as Error).message);
+                await logWebhookError(admin, event.type, event.id, `Merch transfer failed: ${(e as Error).message}`, { item });
+              }
+            }
+
+            // Notify artist
+            if (await shouldNotifyInApp(admin, item.artist_id, 'merch_order')) {
+              await admin.from('notifications').insert({
+                user_id: item.artist_id,
+                type: 'merch_order',
+                title: `New merch order: ${itemName}`,
+                body: `${buyerEmail} ordered${item.variant ? ` (${item.variant})` : ''}.`,
+                link: '/dashboard',
+              });
+            }
+
+            if (await shouldNotifyEmail(admin, item.artist_id, 'merch_order')) {
+              const { data: artistRow } = await admin
+                .from('artists')
+                .select('email, name')
+                .eq('id', item.artist_id)
+                .single();
+              if (artistRow?.email) {
+                await sendEmail(
+                  artistRow.email,
+                  `New merch order: ${itemName}`,
+                  buildMerchOrderArtistEmail(itemName, buyerEmail, item.variant ? ` (${item.variant})` : ''),
+                );
+              }
+            }
+
+            // Auto-follow artist on merch purchase
+            if (userId) {
+              await admin
+                .from('fan_follows')
+                .upsert(
+                  { user_id: userId, artist_id: item.artist_id },
+                  { onConflict: 'user_id,artist_id' },
+                )
+                .then(() => {})
+                .catch((e: Error) => console.error('Auto-follow failed:', e.message));
+            }
+
+            // Notify fan
+            if (userId && await shouldNotifyInApp(admin, userId, 'merch_order')) {
+              await admin.from('notifications').insert({
+                user_id: userId,
+                type: 'merch_order',
+                title: `Order confirmed: ${itemName}`,
+                body: "You'll be notified when it ships.",
+                link: '/library',
+              });
+            }
+          }
+        }
+
+        // Record referral for tracking only (no discount benefit)
+        if (userId && refCode) {
+          try {
+            await admin
+              .from('fan_profiles')
+              .update({ referred_by: refCode })
+              .eq('id', userId)
+              .is('referred_by', null);
+          } catch (e) {
+            console.error('Referral tracking failed:', (e as Error).message);
+          }
+        }
+
+        // Founding fan badge
+        if (userId) {
+          try {
+            const { data: alreadyHas } = await admin
+              .from('fan_badges')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('badge_type', 'founding_fan')
+              .maybeSingle();
+
+            if (!alreadyHas) {
+              const { data: distinctResult } = await admin.rpc('count_distinct_purchasers');
+              const distinctCount = distinctResult ?? 0;
+              if (distinctCount <= 1000) {
+                await admin.from('fan_badges').insert({
+                  user_id: userId,
+                  badge_type: 'founding_fan',
+                  metadata: { position: distinctCount },
+                });
+              }
+            }
+          } catch (e) {
+            console.error('Founding fan badge failed:', (e as Error).message);
+          }
+        }
+
+        // Email
+        if (isNewAccount) {
+          const { data: linkData } = await admin.auth.admin.generateLink({
+            type: 'magiclink',
+            email: buyerEmail,
+            options: { redirectTo: `${SITE_URL}/library` },
+          });
+          const magicLink = linkData?.properties?.action_link;
+          if (magicLink) {
+            await sendEmail(buyerEmail, 'Your music is ready', buildNewAccountEmail(magicLink));
+          }
+        } else {
+          await sendEmail(
+            buyerEmail,
+            'New music in your library',
+            buildBasketReceiptEmail(purchasedTitles, session.amount_total ?? 0),
+          );
+        }
+
         return new Response('ok', { status: 200 });
       }
 
@@ -307,7 +745,10 @@ Deno.serve(async (req) => {
         }
       }
       if (stripeFeePence === 0 && amountPence > 0) {
-        console.warn(`Stripe fee is 0 for session ${session.id} — fee lookup may have failed`);
+        // Estimate: Stripe UK card fee is 1.5% + 20p
+        stripeFeePence = Math.round(amountPence * 0.015) + 20;
+        console.warn(`Stripe fee estimated at ${stripeFeePence}p for session ${session.id} — fee lookup failed`);
+        await logWebhookError(admin, event.type, event.id, `Stripe fee estimated (lookup failed)`, { session_id: session.id, estimated_fee: stripeFeePence });
       }
 
       // ── Progressive fan account creation ──
@@ -403,55 +844,27 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── Process referral for new accounts ──
+      // Record referral for tracking only (no discount benefit)
       if (userId && refCode) {
         try {
-          const { data: justUnlocked } = await admin.rpc('record_referral', {
-            referrer_code: refCode,
-            new_user_id: userId,
-          });
-
-          if (justUnlocked) {
-            const { data: referrer } = await admin
-              .from('fan_profiles')
-              .select('id')
-              .eq('referral_code', refCode)
-              .single();
-
-            if (referrer) {
-              await admin.functions.invoke('notify-referral-unlock', {
-                body: { user_id: referrer.id },
-              });
-
-              // Notify referrer about zero fees unlock
-              const { data: prefRow } = await admin
-                .from('notification_preferences')
-                .select('in_app')
-                .eq('user_id', referrer.id)
-                .eq('type', 'zero_fees_unlocked')
-                .maybeSingle();
-
-              if (!prefRow || prefRow.in_app) {
-                await admin.from('notifications').insert({
-                  user_id: referrer.id,
-                  type: 'zero_fees_unlocked',
-                  title: 'You unlocked zero platform fees!',
-                  body: 'Your referrals hit the threshold — you now pay 0% platform fees on all sales.',
-                  link: '/dashboard',
-                });
-              }
-            }
-          }
+          await admin
+            .from('fan_profiles')
+            .update({ referred_by: refCode })
+            .eq('id', userId)
+            .is('referred_by', null);
         } catch (e) {
-          console.error('Referral recording failed:', (e as Error).message);
+          console.error('Referral tracking failed:', (e as Error).message);
         }
       }
 
-      // ── Set zero-fees start date on first sale ──
+      // ── Founding Artist: record first sale timestamp ──
       try {
-        await admin.rpc('set_zero_fees_start', { artist_id: artistId });
+        await admin.rpc('set_founding_artist_first_sale', {
+          p_artist_id: artistId,
+          p_sale_at: new Date().toISOString(),
+        });
       } catch (e) {
-        console.error('Zero-fees start failed:', (e as Error).message);
+        console.error('Founding Artist first sale failed:', (e as Error).message);
       }
 
       // ── First sale milestone ──
@@ -511,6 +924,18 @@ Deno.serve(async (req) => {
         } catch (e) {
           console.error('Founding fan badge failed:', (e as Error).message);
         }
+      }
+
+      // Auto-follow artist on purchase
+      if (userId) {
+        await admin
+          .from('fan_follows')
+          .upsert(
+            { user_id: userId, artist_id: artistId },
+            { onConflict: 'user_id,artist_id' },
+          )
+          .then(() => {})
+          .catch((e: Error) => console.error('Auto-follow failed:', e.message));
       }
 
       // ── Send email via Resend ──
@@ -609,6 +1034,23 @@ Deno.serve(async (req) => {
               stripe_verified_at: new Date().toISOString(),
             })
             .eq('id', artistAccount.id);
+
+          // Check Founding Artist eligibility: Stripe now verified, check for published release
+          try {
+            const { data: hasRelease } = await admin
+              .from('releases')
+              .select('id')
+              .eq('artist_id', artistAccount.id)
+              .eq('published', true)
+              .limit(1)
+              .maybeSingle();
+
+            if (hasRelease) {
+              await admin.rpc('confirm_founding_artist', { artist_id: artistAccount.id });
+            }
+          } catch (e) {
+            console.error('Founding Artist confirmation failed:', (e as Error).message);
+          }
         }
       }
     } else if (event.type === 'charge.dispute.created') {
@@ -962,6 +1404,43 @@ function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amo
         </td></tr>
         <tr><td style="color:#A1A1AA;font-size:14px;line-height:1.6;padding-bottom:32px;">
           Amount paid: <strong style="color:#FAFAFA;">${amountLabel}</strong>
+        </td></tr>
+        <tr><td style="padding-bottom:48px;">
+          <a href="${SITE_URL}/library" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
+            Listen now &rarr;
+          </a>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
+          If you have any questions about your purchase, please contact us.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildBasketReceiptEmail(titles: string[], amountPence: number): string {
+  const amountLabel = `£${(amountPence / 100).toFixed(2)}`;
+  const itemsList = titles.map(t => `<li style="color:#FAFAFA;font-size:14px;line-height:1.8;">${escapeHtml(t)}</li>`).join('');
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:60px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0">
+        <tr><td style="padding-bottom:40px;">
+          <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
+        </td></tr>
+        <tr><td style="color:#FAFAFA;font-size:20px;font-weight:700;line-height:1.4;padding-bottom:24px;">
+          Thank you for your purchase!
+        </td></tr>
+        <tr><td style="padding-bottom:8px;">
+          <ul style="margin:0;padding:0 0 0 20px;">${itemsList}</ul>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:14px;line-height:1.6;padding-bottom:32px;">
+          Total paid: <strong style="color:#FAFAFA;">${amountLabel}</strong>
         </td></tr>
         <tr><td style="padding-bottom:48px;">
           <a href="${SITE_URL}/library" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
