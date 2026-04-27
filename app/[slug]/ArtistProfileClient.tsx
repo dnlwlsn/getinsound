@@ -11,9 +11,11 @@ import { BadgeList } from '@/app/components/ui/Badge'
 import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import { SocialLinksRow } from '@/app/components/ui/SocialLinks'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
-import { WishlistButton } from '@/app/components/ui/WishlistButton'
 import type { SocialLinks } from '@/lib/verification'
 import { MerchCard } from '@/app/components/ui/MerchCard'
+import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
+import { FollowButton } from '@/app/components/ui/FollowButton'
+import { WallPostCard } from '@/app/[slug]/components/WallPost'
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -67,6 +69,15 @@ interface MerchItem {
   variants: string[] | null
 }
 
+interface ArtistPost {
+  id: string
+  artist_id: string
+  post_type: string
+  content: string
+  media_url: string | null
+  created_at: string
+}
+
 interface Props {
   artist: Artist
   releases: Release[]
@@ -74,6 +85,8 @@ interface Props {
   verified?: boolean
   socialLinks?: SocialLinks | null
   merch?: MerchItem[]
+  followerCount?: number
+  posts?: ArtistPost[]
 }
 
 /* ── Gradient fallback ────────────────────────────────────────── */
@@ -152,7 +165,7 @@ function isPreorder(release: Release) {
 
 /* ── Component ────────────────────────────────────────────────── */
 
-export default function ArtistProfileClient({ artist, releases, badges = [], verified = false, socialLinks, merch = [] }: Props) {
+export default function ArtistProfileClient({ artist, releases, badges = [], verified = false, socialLinks, merch = [], followerCount = 0, posts = [] }: Props) {
   const accent = resolveAccent(artist.accent_colour)
   const { currency, formatPrice, convertPrice } = useCurrency()
   const play = usePlayerStore(s => s.play)
@@ -254,6 +267,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                 {releases.length} release{releases.length === 1 ? '' : 's'}
               </p>
             )}
+            <FollowButton artistId={artist.id} initialCount={followerCount} />
           </div>
           <button
             onClick={handleShare}
@@ -312,7 +326,23 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                           <span className="flex-1" />
                           <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
                           <FavouriteButton releaseId={release.id} size={16} />
-                          <WishlistButton releaseId={release.id} size={16} className="ml-1" />
+                          <AddToBasketButton
+                            item={{
+                              type: 'release',
+                              releaseId: release.id,
+                              releaseTitle: release.title,
+                              releaseSlug: release.slug,
+                              artistId: artist.id,
+                              artistName: artist.name,
+                              artistSlug: artist.slug,
+                              coverUrl: release.cover_url,
+                              pricePence: release.price_pence,
+                              currency: release.currency || 'GBP',
+                              accentColour: artist.accent_colour,
+                            }}
+                            size={16}
+                            className="ml-1"
+                          />
                           <button
                             onClick={() => {
                               if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -365,7 +395,23 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                             <span className="flex-1" />
                             <span className="text-[13px] font-semibold flex-shrink-0" style={{ color: accent }}>{price.label}</span>
                             <FavouriteButton releaseId={release.id} size={16} />
-                            <WishlistButton releaseId={release.id} size={16} className="ml-1" />
+                            <AddToBasketButton
+                              item={{
+                                type: 'release',
+                                releaseId: release.id,
+                                releaseTitle: release.title,
+                                releaseSlug: release.slug,
+                                artistId: artist.id,
+                                artistName: artist.name,
+                                artistSlug: artist.slug,
+                                coverUrl: release.cover_url,
+                                pricePence: release.price_pence,
+                                currency: release.currency || 'GBP',
+                                accentColour: artist.accent_colour,
+                              }}
+                              size={16}
+                              className="ml-1"
+                            />
                             <button
                               onClick={() => {
                                 if (release.tracks.length > 0) handlePlayTrack(release, release.tracks[0], 0)
@@ -513,7 +559,24 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                               {preorder ? 'Pre-order' : 'Buy'} {price.label}
                             </Link>
                             <FavouriteButton releaseId={release.id} size={20} />
-                            <WishlistButton releaseId={release.id} size={20} className="ml-2" />
+                            <AddToBasketButton
+                              item={{
+                                type: 'release',
+                                releaseId: release.id,
+                                releaseTitle: release.title,
+                                releaseSlug: release.slug,
+                                artistId: artist.id,
+                                artistName: artist.name,
+                                artistSlug: artist.slug,
+                                coverUrl: release.cover_url,
+                                pricePence: release.price_pence,
+                                currency: release.currency || 'GBP',
+                                accentColour: artist.accent_colour,
+                              }}
+                              size={20}
+                              variant="pill"
+                              className="ml-2"
+                            />
                           </div>
                         </div>
                       </div>
@@ -546,7 +609,6 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                             <p className="font-bold text-sm text-white truncate group-hover:opacity-80 transition-opacity">{release.title}</p>
                           </Link>
                           <FavouriteButton releaseId={release.id} size={16} />
-                          <WishlistButton releaseId={release.id} size={16} className="ml-1" />
                         </div>
                         <p className="text-xs mt-0.5 font-semibold" style={{ color: accent }}>
                           {price.label}
@@ -601,6 +663,28 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                 />
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {posts.length > 0 && (
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-32">
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-8">Updates</p>
+          <div className="space-y-4 max-w-2xl">
+            {posts.map((post) => (
+              <WallPostCard
+                key={post.id}
+                post={{
+                  ...post,
+                  artists: {
+                    slug: artist.slug,
+                    name: artist.name,
+                    accent_colour: artist.accent_colour,
+                    avatar_url: artist.avatar_url,
+                  },
+                }}
+              />
+            ))}
           </div>
         </div>
       )}

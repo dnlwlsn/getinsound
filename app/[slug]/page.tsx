@@ -225,7 +225,7 @@ export default async function ProfilePage({ params }: Props) {
 
   if (!artist) notFound()
 
-  const [{ data: releases }, { data: artistBadges }, { data: accountData }, { data: merchItems }] = await Promise.all([
+  const [{ data: releases }, { data: artistBadges }, { data: accountData }, { data: merchItems }, { count: followerCount }, { data: artistPosts }] = await Promise.all([
     supabase
       .from('releases')
       .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, tracks(id, title, position, duration_sec), release_tags(tag)')
@@ -248,6 +248,16 @@ export default async function ProfilePage({ params }: Props) {
       .eq('artist_id', artist.id)
       .eq('is_active', true)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('fan_follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('artist_id', artist.id),
+    supabase
+      .from('artist_posts')
+      .select('id, artist_id, post_type, content, media_url, created_at')
+      .eq('artist_id', artist.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
   ])
 
   const releaseCount = (releases || []).length
@@ -278,6 +288,8 @@ export default async function ProfilePage({ params }: Props) {
       verified={isVerified}
       socialLinks={artist.social_links}
       merch={merchItems || []}
+      followerCount={followerCount ?? 0}
+      posts={artistPosts || []}
     />
     </>
   )
