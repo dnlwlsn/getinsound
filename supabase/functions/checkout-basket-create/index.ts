@@ -168,18 +168,21 @@ Deno.serve(async (req) => {
       let unitAmount = release.price_pence;
       if (release.pwyw_enabled && reqItem.custom_amount != null) {
         const minimum = release.pwyw_minimum_pence ?? release.price_pence;
+        const maxAmount = release.price_pence * 50;
         if (reqItem.custom_amount >= minimum && reqItem.custom_amount >= release.price_pence) {
-          unitAmount = reqItem.custom_amount;
+          unitAmount = Math.min(reqItem.custom_amount, maxAmount);
         }
       }
       if (!unitAmount || unitAmount < 200) {
         return json({ error: `Invalid price for ${release.title}` }, 400);
       }
+      const bps = foundingArtistMap.get(release.artist_id) ? FOUNDING_ARTIST_FEE_BPS : STANDARD_FEE_BPS;
       basketItems.push({
         type: 'release',
         release_id: release.id,
         artist_id: release.artist_id,
         amount_pence: unitAmount,
+        fee_bps: bps,
         stripe_account_id: accountMap.get(release.artist_id)!,
       });
     }
@@ -252,8 +255,9 @@ Deno.serve(async (req) => {
       let unitAmount = release.price_pence;
       if (release.pwyw_enabled && reqItem.custom_amount != null) {
         const minimum = release.pwyw_minimum_pence ?? release.price_pence;
+        const maxAmount = release.price_pence * 50;
         if (reqItem.custom_amount >= minimum && reqItem.custom_amount >= release.price_pence) {
-          unitAmount = reqItem.custom_amount;
+          unitAmount = Math.min(reqItem.custom_amount, maxAmount);
         }
       }
 

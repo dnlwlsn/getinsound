@@ -7,6 +7,7 @@
 
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { STANDARD_FEE_BPS } from '../_shared/constants.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-06-20',
@@ -17,6 +18,13 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://getinsound.com';
 const GRANT_TTL_DAYS = 7;
 const GRANT_MAX_USES = 5;
+
+function estimateStripeFee(amountPence: number, currency: string): number {
+  const c = (currency || 'GBP').toUpperCase();
+  if (c === 'GBP') return Math.round(amountPence * 0.015) + 20;
+  if (c === 'EUR') return Math.round(amountPence * 0.015) + 25;
+  return Math.round(amountPence * 0.029) + 30;
+}
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -100,7 +108,8 @@ Deno.serve(async (req) => {
           }
         }
         if (stripeFeePence === 0 && amountPaid > 0) {
-          stripeFeePence = Math.round(amountPaid * 0.015) + 20;
+          const currency = session.metadata?.fan_currency || merchItem?.currency || 'GBP';
+          stripeFeePence = estimateStripeFee(amountPaid, currency);
           console.warn(`Stripe fee estimated at ${stripeFeePence}p for merch session ${session.id} — fee lookup failed`);
           await logWebhookError(admin, event.type, event.id, `Merch Stripe fee estimated (lookup failed)`, { session_id: session.id, estimated_fee: stripeFeePence });
         }
@@ -298,10 +307,14 @@ Deno.serve(async (req) => {
           return new Response('ok', { status: 200 });
         }
 
-        const basketItems = basketSession.items as any[];
-        for (const item of basketItems) {
+        const allBasketItems = basketSession.items as any[];
+        for (const item of allBasketItems) {
           if (!item.type) item.type = 'release';
         }
+        const currentArtistId = session.metadata?.artist_id;
+        const basketItems = currentArtistId
+          ? allBasketItems.filter((i: any) => i.artist_id === currentArtistId)
+          : allBasketItems;
         const refCode = basketSession.ref_code;
         const buyerEmail = (
           session.customer_details?.email ?? session.customer_email ?? ''
@@ -361,8 +374,6 @@ Deno.serve(async (req) => {
           if (i.type === 'merch') return s + i.amount_pence + i.postage_pence;
           return s + i.amount_pence;
         }, 0);
-        const transferGroup = `basket_${session.id}`;
-
         // Process each item
         const purchasedTitles: string[] = [];
         for (let idx = 0; idx < basketItems.length; idx++) {
@@ -378,7 +389,8 @@ Deno.serve(async (req) => {
             : Math.round(stripeFeePence * itemFraction);
 
           if (item.type === 'release') {
-            const platformPence = Math.round(item.amount_pence * 0.1);
+            const feeBps = item.fee_bps || STANDARD_FEE_BPS;
+            const platformPence = Math.round(item.amount_pence * feeBps / 10000);
             const artistPence = item.amount_pence - platformPence;
 
             // Fetch release title
@@ -418,33 +430,6 @@ Deno.serve(async (req) => {
               if (purchaseErr.code === '23505') continue;
               await logWebhookError(admin, event.type, event.id, `Basket purchase insert failed: ${purchaseErr.message}`, { item });
               continue;
-            }
-
-            // Create transfer to artist
-            if (chargeId && artistPence > 0) {
-              try {
-                await stripe.transfers.create({
-                  amount: artistPence,
-                  currency: (basketSession.fan_currency || 'GBP').toLowerCase(),
-                  destination: item.stripe_account_id,
-                  source_transaction: chargeId,
-                  transfer_group: transferGroup,
-                  metadata: {
-                    release_id: item.release_id,
-                    basket_session_id: basketSessionId,
-                  },
-                });
-              } catch (e) {
-                console.error(`Transfer failed for ${item.release_id}:`, (e as Error).message);
-                await logWebhookError(admin, event.type, event.id, `Transfer failed: ${(e as Error).message}`, { item });
-                await admin.from('purchases').update({ status: 'transfer_failed' }).eq('id', purchase!.id);
-                await upsertFlag(admin, item.artist_id, 'transfer_failed', {
-                  purchase_id: purchase!.id,
-                  release_id: item.release_id,
-                  amount_pence: artistPence,
-                  error: (e as Error).message,
-                });
-              }
             }
 
             // Download grant (skip pre-orders)
@@ -495,7 +480,7 @@ Deno.serve(async (req) => {
                 .catch((e: Error) => console.error('Auto-follow failed:', e.message));
             }
           } else if (item.type === 'merch') {
-            const platformPence = Math.round(item.amount_pence * 0.1);
+            const platformPence = Math.round(item.amount_pence * STANDARD_FEE_BPS / 10000);
             const artistPence = item.amount_pence + item.postage_pence - platformPence;
 
             const { data: merchItem } = await admin
@@ -526,16 +511,25 @@ Deno.serve(async (req) => {
             });
 
             if (stockErr || updated === false) {
+              const refundAmount = item.amount_pence + (item.postage_pence || 0);
+              if (piId && refundAmount > 0) {
+                try {
+                  await stripe.refunds.create({ payment_intent: piId, amount: refundAmount });
+                } catch (e) {
+                  console.error('Basket merch refund failed:', (e as Error).message);
+                  await logWebhookError(admin, event.type, event.id, `Basket merch refund failed: ${(e as Error).message}`, { merch_id: item.merch_id, refundAmount });
+                }
+              }
               if (userId) {
                 await admin.from('notifications').insert({
                   user_id: userId,
                   type: 'merch_order',
                   title: `${itemName} is sold out`,
-                  body: 'This item from your basket could not be fulfilled. Contact us for a partial refund.',
+                  body: 'This item from your basket could not be fulfilled. A refund has been issued.',
                   link: '/library',
                 });
               }
-              await logWebhookError(admin, event.type, event.id, 'Merch sold out during basket checkout', { merch_id: item.merch_id });
+              await logWebhookError(admin, event.type, event.id, 'Merch sold out during basket checkout — refund issued', { merch_id: item.merch_id });
               continue;
             }
 
@@ -564,23 +558,6 @@ Deno.serve(async (req) => {
               if (orderErr.code === '23505') continue;
               await logWebhookError(admin, event.type, event.id, `Basket merch order insert failed: ${orderErr.message}`, { item });
               continue;
-            }
-
-            // Transfer to artist
-            if (chargeId && artistPence > 0) {
-              try {
-                await stripe.transfers.create({
-                  amount: artistPence,
-                  currency: (basketSession.fan_currency || 'GBP').toLowerCase(),
-                  destination: item.stripe_account_id,
-                  source_transaction: chargeId,
-                  transfer_group: transferGroup,
-                  metadata: { merch_id: item.merch_id, basket_session_id: basketSessionId },
-                });
-              } catch (e) {
-                console.error(`Transfer failed for merch ${item.merch_id}:`, (e as Error).message);
-                await logWebhookError(admin, event.type, event.id, `Merch transfer failed: ${(e as Error).message}`, { item });
-              }
             }
 
             // Notify artist
@@ -724,7 +701,8 @@ Deno.serve(async (req) => {
       // Stripe amount_total is always in the smallest currency unit
       // (pence for GBP, cents for USD, whole yen for JPY). Store as-is.
       const amountPence = session.amount_total ?? 0;
-      const platformPence = Math.round(amountPence * 0.1);
+      const feeBps = parseInt(session.metadata?.fee_bps || String(STANDARD_FEE_BPS), 10);
+      const platformPence = Math.round(amountPence * feeBps / 10000);
       const artistPence = amountPence - platformPence;
 
       // Pull the Stripe fee from the PaymentIntent's latest charge balance transaction.
@@ -745,8 +723,8 @@ Deno.serve(async (req) => {
         }
       }
       if (stripeFeePence === 0 && amountPence > 0) {
-        // Estimate: Stripe UK card fee is 1.5% + 20p
-        stripeFeePence = Math.round(amountPence * 0.015) + 20;
+        const currency = session.metadata?.fan_currency || 'GBP';
+        stripeFeePence = estimateStripeFee(amountPence, currency);
         console.warn(`Stripe fee estimated at ${stripeFeePence}p for session ${session.id} — fee lookup failed`);
         await logWebhookError(admin, event.type, event.id, `Stripe fee estimated (lookup failed)`, { session_id: session.id, estimated_fee: stripeFeePence });
       }

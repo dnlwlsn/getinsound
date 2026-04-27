@@ -37,7 +37,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   let refund: Stripe.Refund
   try {
-    refund = await stripe.refunds.create({ payment_intent: order.stripe_payment_intent_id })
+    refund = await stripe.refunds.create(
+      { payment_intent: order.stripe_payment_intent_id },
+      { idempotencyKey: `refund_order_${id}` },
+    )
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

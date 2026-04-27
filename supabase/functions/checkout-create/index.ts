@@ -99,10 +99,10 @@ Deno.serve(async (req) => {
     let unitAmount = release.price_pence;
     if (release.pwyw_enabled && customAmount != null) {
       const minimum = release.pwyw_minimum_pence ?? release.price_pence;
+      const maxAmount = release.price_pence * 50;
       if (customAmount >= minimum && customAmount >= release.price_pence) {
-        unitAmount = customAmount;
+        unitAmount = Math.min(customAmount, maxAmount);
       }
-      // If custom_amount is below minimum, silently fall back to price_pence
     }
     if (!unitAmount || unitAmount < 200) {
       return json({ error: 'Invalid price' }, 400);
@@ -159,6 +159,7 @@ Deno.serve(async (req) => {
         artist_id: artist.id,
         fan_currency: fanCurrency || release.currency || 'GBP',
         fan_locale: fanLocale || '',
+        fee_bps: String(feeBps),
         ...(refCode ? { ref_code: refCode } : {}),
         ...(release.preorder_enabled ? { pre_order: 'true', release_date: release.release_date } : {}),
       },
