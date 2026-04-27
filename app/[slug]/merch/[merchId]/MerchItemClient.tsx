@@ -2,14 +2,28 @@
 
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { resolveAccent } from '@/lib/accent'
 import { useCurrency } from '@/app/providers/CurrencyProvider'
 import { calculateMerchFees } from '@/app/lib/fees'
 import { loadStripe } from '@stripe/stripe-js'
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js'
 import { useBasketStore, type MerchBasketItem } from '@/lib/stores/basket'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+const StripeCheckoutEmbed = dynamic(
+  () => import('@stripe/react-stripe-js').then(mod => {
+    const { EmbeddedCheckoutProvider, EmbeddedCheckout } = mod
+    return function StripeEmbed({ clientSecret, stripePromise: sp }: { clientSecret: string; stripePromise: Promise<any> }) {
+      return (
+        <EmbeddedCheckoutProvider stripe={sp} options={{ clientSecret }}>
+          <EmbeddedCheckout />
+        </EmbeddedCheckoutProvider>
+      )
+    }
+  }),
+  { ssr: false }
+)
 
 interface MerchData {
   id: string
@@ -140,9 +154,7 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
           <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter font-display">insound.</Link>
         </nav>
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret: checkoutClientSecret }}>
-            <EmbeddedCheckout />
-          </EmbeddedCheckoutProvider>
+          <StripeCheckoutEmbed clientSecret={checkoutClientSecret} stripePromise={stripePromise} />
         </div>
       </main>
     )
@@ -182,7 +194,7 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
                     className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${i === selectedPhoto ? 'border-orange-500' : 'border-zinc-800 hover:border-zinc-600'}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photo} alt="" className="w-full h-full object-cover" />
+                    <img src={photo} alt={`${merch.name} photo ${i + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

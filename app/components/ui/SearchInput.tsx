@@ -148,7 +148,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
 "
                     >
                       {a.avatar_url ? (
-                        <img src={a.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/[0.1]" />
+                        <img src={a.avatar_url} alt={a.name} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/[0.1]" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-zinc-800 ring-1 ring-white/[0.1] flex items-center justify-center text-xs font-bold text-zinc-400">
                           {a.name.charAt(0).toUpperCase()}
@@ -177,7 +177,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
 "
                     >
                       {r.cover_url ? (
-                        <img src={r.cover_url} alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/[0.1]" />
+                        <img src={r.cover_url} alt={`${r.title} by ${r.artist_name}`} className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/[0.1]" />
                       ) : (
                         <div className="w-8 h-8 rounded-lg bg-zinc-800 ring-1 ring-white/[0.1]" />
                       )}

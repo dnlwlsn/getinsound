@@ -16,6 +16,7 @@ export function FollowButton({ artistId, initialFollowing = false, initialCount 
   const [loading, setLoading] = useState(false)
   const [showPrompt, setShowPrompt] = useState(false)
   const [hover, setHover] = useState(false)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -43,6 +44,7 @@ export function FollowButton({ artistId, initialFollowing = false, initialCount 
     }
 
     setLoading(true)
+    setError(false)
     const wasFollowing = following
     setFollowing(!wasFollowing)
     setCount(c => wasFollowing ? c - 1 : c + 1)
@@ -56,10 +58,14 @@ export function FollowButton({ artistId, initialFollowing = false, initialCount 
       if (!res.ok) {
         setFollowing(wasFollowing)
         setCount(c => wasFollowing ? c + 1 : c - 1)
+        setError(true)
+        setTimeout(() => setError(false), 3000)
       }
     } catch {
       setFollowing(wasFollowing)
       setCount(c => wasFollowing ? c + 1 : c - 1)
+      setError(true)
+      setTimeout(() => setError(false), 3000)
     } finally {
       setLoading(false)
     }
@@ -98,6 +104,11 @@ export function FollowButton({ artistId, initialFollowing = false, initialCount 
       {showPrompt && (
         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-zinc-800 border border-zinc-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl z-50">
           Sign in to follow
+        </span>
+      )}
+      {error && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-red-900/80 border border-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl z-50" role="alert">
+          Something went wrong
         </span>
       )}
     </span>

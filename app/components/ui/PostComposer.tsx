@@ -215,7 +215,7 @@ export function PostComposer({ artistId, artistName, onPostCreated }: Props) {
           </div>
         )}
 
-        {error && <p className="text-xs text-red-400 font-bold">{error}</p>}
+        {error && <p role="alert" className="text-xs text-red-400 font-bold">{error}</p>}
 
         {/* Preview */}
         {(content.trim() || file) && (

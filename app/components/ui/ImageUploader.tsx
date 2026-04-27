@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
+import dynamic from 'next/dynamic'
+import type { Crop, PixelCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
+
+const ReactCrop = dynamic(() => import('react-image-crop'), { ssr: false })
+
+const cropHelpersPromise = import('react-image-crop')
 
 interface ImageUploaderProps {
   currentUrl: string | null
@@ -18,7 +23,8 @@ interface ImageUploaderProps {
   accent?: string
 }
 
-function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number): Crop {
+async function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number): Promise<Crop> {
+  const { centerCrop, makeAspectCrop } = await cropHelpersPromise
   return centerCrop(
     makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight),
     mediaWidth,
@@ -78,9 +84,10 @@ export function ImageUploader({
     reader.readAsDataURL(file)
   }, [accept, acceptExts, maxSizeMB])
 
-  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+  async function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget
-    setCrop(centerAspectCrop(w, h, aspect))
+    const initialCrop = await centerAspectCrop(w, h, aspect)
+    setCrop(initialCrop)
   }
 
   async function handleConfirmCrop() {

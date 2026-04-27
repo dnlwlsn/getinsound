@@ -30,10 +30,47 @@ export function BasketDrawer({ onClose }: Props) {
   const sessionIdRef = useRef<string | null>(null)
   const stripeMountRef = useRef<HTMLDivElement>(null)
   const embeddedCheckoutRef = useRef<any>(null)
+  const drawerRef = useRef<HTMLDivElement>(null)
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
+  }, [])
+
+  // Focus trap: keep focus inside the drawer while open
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null
+    const drawer = drawerRef.current
+    if (!drawer) return
+
+    const focusableSelector = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+    const getFocusable = () => Array.from(drawer.querySelectorAll<HTMLElement>(focusableSelector)).filter(el => el.offsetParent !== null)
+
+    // Focus first focusable element
+    requestAnimationFrame(() => {
+      const els = getFocusable()
+      if (els.length > 0) els[0].focus()
+    })
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const els = getFocusable()
+      if (els.length === 0) return
+      const first = els[0]
+      const last = els[els.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      previouslyFocusedRef.current?.focus()
+    }
   }, [])
 
   useEffect(() => {
@@ -171,10 +208,12 @@ export function BasketDrawer({ onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-[400] bg-black/70 backdrop-blur-sm"
-      role="presentation"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Shopping basket"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
     >
-      <div className="absolute top-0 right-0 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-[slide-in-right_0.3s_ease_both]">
+      <div ref={drawerRef} className="absolute top-0 right-0 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-[slide-in-right_0.3s_ease_both]">
         <button
           onClick={handleClose}
           aria-label="Close"

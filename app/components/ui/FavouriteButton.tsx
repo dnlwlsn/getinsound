@@ -82,7 +82,7 @@ export function FavouriteButton({ trackId, releaseId, size = 18, className = '',
         </span>
       )}
       {error && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-red-900/80 border border-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl z-50">
+        <span role="alert" className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-red-900/80 border border-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl z-50">
           Failed to save
         </span>
       )}

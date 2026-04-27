@@ -19,6 +19,12 @@ const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://getinsound.com';
 const GRANT_TTL_DAYS = 7;
 const GRANT_MAX_USES = 5;
 
+function formatPrice(amountPence: number, currency: string): string {
+  const amount = (amountPence / 100).toFixed(2)
+  const symbols: Record<string, string> = { GBP: '£', USD: '$', EUR: '€' }
+  return `${symbols[currency.toUpperCase()] || currency + ' '}${amount}`
+}
+
 function estimateStripeFee(amountPence: number, currency: string): number {
   const c = (currency || 'GBP').toUpperCase();
   if (c === 'GBP') return Math.round(amountPence * 0.015) + 20;
@@ -164,13 +170,14 @@ Deno.serve(async (req) => {
             }
           }
           if (userId) {
-            await admin.from('notifications').insert({
+            const { error: notifErr } = await admin.from('notifications').insert({
               user_id: userId,
               type: 'merch_order',
               title: `${merchItem?.name || 'Item'} is sold out`,
               body: 'Your payment has been refunded.',
               link: '/library',
             });
+            if (notifErr) console.error('Notification insert failed:', notifErr.message);
           }
           return new Response('ok', { status: 200 });
         }
@@ -210,23 +217,25 @@ Deno.serve(async (req) => {
           .single();
 
         if (currentMerch?.stock === 0 && await shouldNotifyInApp(admin, artistId, 'merch_order')) {
-          await admin.from('notifications').insert({
+          const { error: notifErr } = await admin.from('notifications').insert({
             user_id: artistId,
             type: 'merch_order',
             title: `${merchItem?.name || 'Item'} is now sold out`,
             link: '/dashboard',
           });
+          if (notifErr) console.error('Notification insert failed:', notifErr.message);
         }
 
         // Notify artist (in-app, respecting preferences)
         if (await shouldNotifyInApp(admin, artistId, 'merch_order')) {
-          await admin.from('notifications').insert({
+          const { error: notifErr } = await admin.from('notifications').insert({
             user_id: artistId,
             type: 'merch_order',
             title: `New merch order: ${merchItem?.name || 'Unknown item'}`,
             body: `${buyerEmail} ordered${variant ? ` (${variant})` : ''}.`,
             link: '/dashboard',
           });
+          if (notifErr) console.error('Notification insert failed:', notifErr.message);
         }
 
         // Email artist (respecting preferences)
@@ -249,13 +258,14 @@ Deno.serve(async (req) => {
 
         // Notify fan (in-app, respecting preferences)
         if (userId && await shouldNotifyInApp(admin, userId, 'merch_order')) {
-          await admin.from('notifications').insert({
+          const { error: notifErr } = await admin.from('notifications').insert({
             user_id: userId,
             type: 'merch_order',
             title: `Order confirmed: ${merchItem?.name || 'Your order'}`,
             body: 'You\'ll be notified when it ships.',
             link: '/library',
           });
+          if (notifErr) console.error('Notification insert failed:', notifErr.message);
         }
 
         // Email fan
@@ -447,16 +457,19 @@ Deno.serve(async (req) => {
             }
 
             // Notify artist
-            const saleLabel = `£${(item.amount_pence / 100).toFixed(2)}`;
-            await admin.from('notifications').insert({
-              user_id: item.artist_id,
-              type: isPreOrder ? 'preorder' : 'sale',
-              title: isPreOrder
-                ? `New pre-order: ${releaseTitle}`
-                : `New sale: ${releaseTitle}`,
-              body: `${buyerEmail} purchased for ${saleLabel}`,
-              link: '/dashboard',
-            });
+            const saleLabel = formatPrice(item.amount_pence, basketSession.fan_currency || session.currency || 'GBP');
+            {
+              const { error: notifErr } = await admin.from('notifications').insert({
+                user_id: item.artist_id,
+                type: isPreOrder ? 'preorder' : 'sale',
+                title: isPreOrder
+                  ? `New pre-order: ${releaseTitle}`
+                  : `New sale: ${releaseTitle}`,
+                body: `${buyerEmail} purchased for ${saleLabel}`,
+                link: '/dashboard',
+              });
+              if (notifErr) console.error('Notification insert failed:', notifErr.message);
+            }
 
             // Founding Artist: record first sale timestamp
             try {
@@ -521,13 +534,14 @@ Deno.serve(async (req) => {
                 }
               }
               if (userId) {
-                await admin.from('notifications').insert({
+                const { error: notifErr } = await admin.from('notifications').insert({
                   user_id: userId,
                   type: 'merch_order',
                   title: `${itemName} is sold out`,
                   body: 'This item from your basket could not be fulfilled. A refund has been issued.',
                   link: '/library',
                 });
+                if (notifErr) console.error('Notification insert failed:', notifErr.message);
               }
               await logWebhookError(admin, event.type, event.id, 'Merch sold out during basket checkout — refund issued', { merch_id: item.merch_id });
               continue;
@@ -562,13 +576,14 @@ Deno.serve(async (req) => {
 
             // Notify artist
             if (await shouldNotifyInApp(admin, item.artist_id, 'merch_order')) {
-              await admin.from('notifications').insert({
+              const { error: notifErr } = await admin.from('notifications').insert({
                 user_id: item.artist_id,
                 type: 'merch_order',
                 title: `New merch order: ${itemName}`,
                 body: `${buyerEmail} ordered${item.variant ? ` (${item.variant})` : ''}.`,
                 link: '/dashboard',
               });
+              if (notifErr) console.error('Notification insert failed:', notifErr.message);
             }
 
             if (await shouldNotifyEmail(admin, item.artist_id, 'merch_order')) {
@@ -600,13 +615,14 @@ Deno.serve(async (req) => {
 
             // Notify fan
             if (userId && await shouldNotifyInApp(admin, userId, 'merch_order')) {
-              await admin.from('notifications').insert({
+              const { error: notifErr } = await admin.from('notifications').insert({
                 user_id: userId,
                 type: 'merch_order',
                 title: `Order confirmed: ${itemName}`,
                 body: "You'll be notified when it ships.",
                 link: '/library',
               });
+              if (notifErr) console.error('Notification insert failed:', notifErr.message);
             }
           }
         }
@@ -665,7 +681,7 @@ Deno.serve(async (req) => {
           await sendEmail(
             buyerEmail,
             'New music in your library',
-            buildBasketReceiptEmail(purchasedTitles, session.amount_total ?? 0),
+            buildBasketReceiptEmail(purchasedTitles, session.amount_total ?? 0, basketSession.fan_currency || session.currency || 'GBP'),
           );
         }
 
@@ -931,18 +947,21 @@ Deno.serve(async (req) => {
       // ── In-app notifications ──
       try {
         const salePence = amountPence;
-        const saleLabel = `£${(salePence / 100).toFixed(2)}`;
+        const saleLabel = formatPrice(salePence, session.metadata?.fan_currency || session.currency || 'GBP');
 
         // Notify artist of sale
-        await admin.from('notifications').insert({
-          user_id: artistId,
-          type: isPreOrder ? 'preorder' : 'sale',
-          title: isPreOrder
-            ? `New pre-order: ${releaseTitle}`
-            : `New sale: ${releaseTitle}`,
-          body: `${buyerEmail} purchased for ${saleLabel}`,
-          link: '/dashboard',
-        });
+        {
+          const { error: notifErr } = await admin.from('notifications').insert({
+            user_id: artistId,
+            type: isPreOrder ? 'preorder' : 'sale',
+            title: isPreOrder
+              ? `New pre-order: ${releaseTitle}`
+              : `New sale: ${releaseTitle}`,
+            body: `${buyerEmail} purchased for ${saleLabel}`,
+            link: '/dashboard',
+          });
+          if (notifErr) console.error('Notification insert failed:', notifErr.message);
+        }
 
         // Check if this was the first sale — notify with special type
         const { count: saleCount } = await admin
@@ -952,13 +971,14 @@ Deno.serve(async (req) => {
           .eq('status', 'paid');
 
         if (saleCount === 1) {
-          await admin.from('notifications').insert({
+          const { error: notifErr } = await admin.from('notifications').insert({
             user_id: artistId,
             type: 'first_sale',
             title: 'Your first sale!',
             body: `${releaseTitle} just got its first purchase. Congratulations!`,
             link: '/dashboard',
           });
+          if (notifErr) console.error('Notification insert failed:', notifErr.message);
         }
       } catch (e) {
         console.error('Notification insert failed:', (e as Error).message);
@@ -992,7 +1012,7 @@ Deno.serve(async (req) => {
       await sendEmail(
         buyerEmail,
         `Receipt: ${releaseTitle} by ${artistName}`,
-        buildPurchaseReceiptEmail(releaseTitle, artistName, amountPence),
+        buildPurchaseReceiptEmail(releaseTitle, artistName, amountPence, session.metadata?.fan_currency || session.currency || 'GBP'),
       );
     } else if (event.type === 'account.updated') {
       const account = event.data.object as Stripe.Account;
@@ -1123,6 +1143,58 @@ Deno.serve(async (req) => {
               })
             }
           }
+        }
+      }
+    } else if (event.type === 'charge.refunded') {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntent = typeof charge.payment_intent === 'string'
+        ? charge.payment_intent
+        : (charge.payment_intent as Stripe.PaymentIntent | null)?.id;
+
+      if (!paymentIntent) {
+        await logWebhookError(admin, event.type, event.id, 'No payment_intent on refunded charge', { charge_id: charge.id });
+        return new Response('ok', { status: 200 });
+      }
+
+      // Update purchases with this payment intent
+      const { data: refundedPurchases, error: purchaseLookupErr } = await admin
+        .from('purchases')
+        .select('id, artist_id, release_id, buyer_email')
+        .eq('stripe_pi_id', paymentIntent);
+
+      if (purchaseLookupErr) {
+        await logWebhookError(admin, event.type, event.id, `Purchase lookup failed: ${purchaseLookupErr.message}`, { paymentIntent });
+      } else if (refundedPurchases && refundedPurchases.length > 0) {
+        const { error: purchaseUpdateErr } = await admin
+          .from('purchases')
+          .update({ status: 'refunded' })
+          .eq('stripe_pi_id', paymentIntent);
+
+        if (purchaseUpdateErr) {
+          await logWebhookError(admin, event.type, event.id, `Purchase refund update failed: ${purchaseUpdateErr.message}`, { paymentIntent });
+        } else {
+          console.log(`Marked ${refundedPurchases.length} purchase(s) as refunded for PI ${paymentIntent}`);
+        }
+      }
+
+      // Update merch orders with this payment intent
+      const { data: refundedOrders, error: orderLookupErr } = await admin
+        .from('orders')
+        .select('id, artist_id, fan_id')
+        .eq('stripe_payment_intent_id', paymentIntent);
+
+      if (orderLookupErr) {
+        await logWebhookError(admin, event.type, event.id, `Order lookup failed: ${orderLookupErr.message}`, { paymentIntent });
+      } else if (refundedOrders && refundedOrders.length > 0) {
+        const { error: orderUpdateErr } = await admin
+          .from('orders')
+          .update({ status: 'refunded' })
+          .eq('stripe_payment_intent_id', paymentIntent);
+
+        if (orderUpdateErr) {
+          await logWebhookError(admin, event.type, event.id, `Order refund update failed: ${orderUpdateErr.message}`, { paymentIntent });
+        } else {
+          console.log(`Marked ${refundedOrders.length} order(s) as refunded for PI ${paymentIntent}`);
         }
       }
     }
@@ -1362,8 +1434,8 @@ function buildMerchOrderArtistEmail(itemName: string, buyerEmail: string, varian
 </html>`;
 }
 
-function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amountPence: number): string {
-  const amountLabel = `£${(amountPence / 100).toFixed(2)}`;
+function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amountPence: number, currency = 'GBP'): string {
+  const amountLabel = formatPrice(amountPence, currency);
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1398,8 +1470,8 @@ function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amo
 </html>`;
 }
 
-function buildBasketReceiptEmail(titles: string[], amountPence: number): string {
-  const amountLabel = `£${(amountPence / 100).toFixed(2)}`;
+function buildBasketReceiptEmail(titles: string[], amountPence: number, currency = 'GBP'): string {
+  const amountLabel = formatPrice(amountPence, currency);
   const itemsList = titles.map(t => `<li style="color:#FAFAFA;font-size:14px;line-height:1.8;">${escapeHtml(t)}</li>`).join('');
   return `<!DOCTYPE html>
 <html>

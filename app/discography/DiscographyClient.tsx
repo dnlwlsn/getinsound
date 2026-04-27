@@ -419,7 +419,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                           <div className="w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
                             {r.cover_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={r.cover_url} alt="" className="w-full h-full object-cover" />
+                              <img src={r.cover_url} alt={`${r.title} cover art`} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-zinc-600">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
@@ -640,7 +640,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                   >
                     {coverPreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={coverPreview} alt="" className="w-16 h-16 rounded-lg object-cover" />
+                      <img src={coverPreview} alt="Cover preview" className="w-16 h-16 rounded-lg object-cover" />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-600">
                         <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>

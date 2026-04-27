@@ -205,6 +205,31 @@ export function PlayerBar() {
     setCurrentTime(ratio * displayDuration)
   }, [displayDuration, setCurrentTime])
 
+  const handleScrubberKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    const step = 5
+    let newTime: number | null = null
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        newTime = Math.max(0, currentTime - step)
+        break
+      case 'ArrowRight':
+      case 'ArrowUp':
+        newTime = Math.min(displayDuration, currentTime + step)
+        break
+      case 'Home':
+        newTime = 0
+        break
+      case 'End':
+        newTime = displayDuration
+        break
+      default:
+        return
+    }
+    e.preventDefault()
+    setCurrentTime(newTime)
+  }, [currentTime, displayDuration, setCurrentTime])
+
   const expandedRef = useRef<HTMLDivElement>(null)
   const touchRef = useRef({ startY: 0, startTime: 0, dragging: false })
   const draggedRef = useRef(false)
@@ -363,6 +388,14 @@ export function PlayerBar() {
                   ref={canvasRef}
                   className="flex-1 h-8 cursor-pointer"
                   onClick={handleScrubberClick}
+                  onKeyDown={handleScrubberKeyDown}
+                  tabIndex={0}
+                  role="slider"
+                  aria-label="Track position"
+                  aria-valuemin={0}
+                  aria-valuemax={displayDuration}
+                  aria-valuenow={currentTime}
+                  aria-valuetext={`${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
                 />
                 <span className="text-[10px] text-zinc-500 w-8 tabular-nums">
                   {formatTime(displayDuration)}
@@ -477,6 +510,14 @@ export function PlayerBar() {
                     ref={canvasRef}
                     className="flex-1 h-10 cursor-pointer"
                     onClick={handleScrubberClick}
+                    onKeyDown={handleScrubberKeyDown}
+                    tabIndex={0}
+                    role="slider"
+                    aria-label="Track position"
+                    aria-valuemin={0}
+                    aria-valuemax={displayDuration}
+                    aria-valuenow={currentTime}
+                    aria-valuetext={`${formatTime(currentTime)} of ${formatTime(displayDuration)}`}
                   />
                   <span className="text-[10px] text-zinc-500 w-8 tabular-nums">
                     {formatTime(displayDuration)}

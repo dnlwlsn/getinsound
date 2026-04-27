@@ -937,7 +937,7 @@ function WishlistTab({ items }: { items: WishlistItem[] }) {
             </Link>
             <button
               onClick={() => remove(w.releaseId)}
-              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0 hidden sm:block"
+              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
               aria-label="Remove from wishlist"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1016,7 +1016,7 @@ function SavedTab({ items }: { items: FavouriteItem[] }) {
             </Link>
             <button
               onClick={() => remove(item)}
-              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0 hidden sm:block"
+              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
               aria-label="Remove from saved"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
 import ReleaseClient from './ReleaseClient'
 
 const FALLBACK_METADATA: Metadata = {
@@ -79,7 +80,63 @@ export async function generateMetadata({
   }
 }
 
-export default function ReleasePage() {
+async function ReleasePageInner({
+  searchParams,
+}: {
+  searchParams: Promise<{ a?: string; r?: string }>
+}) {
+  const { a: artistSlug, r: releaseSlug } = await searchParams
+  if (!artistSlug || !releaseSlug) notFound()
+
+  const supabase = await createClient()
+
+  const { data: artist } = await supabase
+    .from('artists')
+    .select('id, slug, name, bio, avatar_url, accent_colour')
+    .eq('slug', artistSlug)
+    .maybeSingle()
+
+  if (!artist) notFound()
+
+  const { data: release } = await supabase
+    .from('releases')
+    .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, tracks(id, title, position, duration_sec)')
+    .eq('artist_id', artist.id)
+    .eq('slug', releaseSlug)
+    .eq('published', true)
+    .maybeSingle()
+
+  if (!release) notFound()
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicRelease',
+    name: release.title,
+    byArtist: { '@type': 'MusicGroup', name: artist.name },
+    image: release.cover_url,
+    offers: {
+      '@type': 'Offer',
+      price: (release.price_pence / 100).toFixed(2),
+      priceCurrency: release.currency || 'GBP',
+    },
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ReleaseClient artist={artist} release={release} />
+    </>
+  )
+}
+
+export default async function ReleasePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ a?: string; r?: string }>
+}) {
   return (
     <Suspense
       fallback={
@@ -88,7 +145,7 @@ export default function ReleasePage() {
         </div>
       }
     >
-      <ReleaseClient />
+      <ReleasePageInner searchParams={searchParams} />
     </Suspense>
   )
 }

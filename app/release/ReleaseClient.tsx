@@ -1,7 +1,7 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, useCallback, useRef } from 'react'
+import Script from 'next/script'
 import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -69,15 +69,11 @@ type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'preorder-confi
 
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
-export default function ReleaseClient() {
-  const searchParams = useSearchParams()
-  const artistSlug = searchParams.get('a')
-  const releaseSlug = searchParams.get('r')
-
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
-  const [artist, setArtist] = useState<Artist | null>(null)
-  const [release, setRelease] = useState<Release | null>(null)
+export default function ReleaseClient({ artist, release }: { artist: Artist; release: Release }) {
+  // Set accent colour CSS variable
+  useEffect(() => {
+    document.documentElement.style.setProperty('--artist-accent', artist.accent_colour || '#F56D00')
+  }, [artist.accent_colour])
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
@@ -92,38 +88,6 @@ export default function ReleaseClient() {
 
   const stripeMountRef = useRef<HTMLDivElement>(null)
   const embeddedCheckoutRef = useRef<any>(null)
-
-  useEffect(() => {
-    async function load() {
-      if (!artistSlug || !releaseSlug) { setNotFound(true); setLoading(false); return }
-
-      const supabase = createClient()
-      const { data: a, error: aErr } = await supabase
-        .from('artists')
-        .select('id, slug, name, bio, avatar_url, accent_colour')
-        .eq('slug', artistSlug)
-        .maybeSingle()
-      if (aErr || !a) { setNotFound(true); setLoading(false); return }
-
-      const { data: rel, error: rErr } = await supabase
-        .from('releases')
-        .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, tracks(id, title, position, duration_sec)')
-        .eq('artist_id', a.id)
-        .eq('slug', releaseSlug)
-        .eq('published', true)
-        .maybeSingle()
-      if (rErr || !rel) { setNotFound(true); setLoading(false); return }
-
-      const accent = a.accent_colour || '#F56D00'
-      document.documentElement.style.setProperty('--artist-accent', accent)
-      document.title = `${rel.title} — ${a.name} | Insound`
-
-      setArtist(a)
-      setRelease(rel)
-      setLoading(false)
-    }
-    load()
-  }, [artistSlug, releaseSlug])
 
   const closeModal = useCallback(() => {
     setModalOpen(false)
@@ -237,29 +201,6 @@ export default function ReleaseClient() {
     setStage('error')
   }
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto px-6 py-24 text-center text-zinc-600 font-bold text-sm">
-        Loading...
-      </div>
-    )
-  }
-
-  if (notFound) {
-    return (
-      <div className="max-w-lg mx-auto px-6 py-24 text-center">
-        <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">404</p>
-        <h1 className="text-3xl font-black mb-3 font-display">Release not found.</h1>
-        <p className="text-zinc-500 font-medium mb-8">This release doesn&apos;t exist, or it&apos;s been unpublished by the artist.</p>
-        <Link href="/" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">
-          Back to Home
-        </Link>
-      </div>
-    )
-  }
-
-  if (!artist || !release) return null
-
   const tracks = [...release.tracks].sort((a, b) => a.position - b.position)
   const effectiveType = release.type === 'album' && tracks.length === 1 ? 'single' : release.type
   const typeLabel = { single: 'Single', ep: 'EP', album: 'Album' }[effectiveType] || 'Release'
@@ -268,21 +209,8 @@ export default function ReleaseClient() {
 
   return (
     <>
-      {/* JSON-LD structured data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'MusicRelease',
-          name: release.title,
-          byArtist: { '@type': 'MusicGroup', name: artist.name },
-          image: release.cover_url,
-          offers: { '@type': 'Offer', price: (release.price_pence / 100).toFixed(2), priceCurrency: 'GBP' },
-        }) }}
-      />
       {/* Stripe.js script */}
-      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-      <script src="https://js.stripe.com/v3/" async />
+      <Script src="https://js.stripe.com/v3/" strategy="lazyOnload" />
 
       <ReleasePageContent
         artist={artist}
