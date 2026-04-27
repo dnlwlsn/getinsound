@@ -348,7 +348,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
           <SidebarLink href="/discography" label="Discography" icon="music" active />
           <SidebarLink href="/sales" label="Sales & Payouts" icon="dollar" />
           <SidebarLink href="/library" label="My Collection" icon="music" />
-          <SidebarLink href="/explore" label="Browse Store" icon="search" />
+          <SidebarLink href="/explore" label="Explore" icon="search" />
         </nav>
         <div className="pt-6 border-t border-zinc-900">
           <button onClick={handleLogout} className="flex items-center gap-3 p-3.5 text-zinc-600 hover:text-red-400 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors w-full">

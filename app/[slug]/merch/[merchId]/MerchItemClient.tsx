@@ -7,6 +7,7 @@ import { useCurrency } from '@/app/providers/CurrencyProvider'
 import { calculateMerchFees } from '@/app/lib/fees'
 import { loadStripe } from '@stripe/stripe-js'
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js'
+import { useBasketStore, type MerchBasketItem } from '@/lib/stores/basket'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -48,6 +49,33 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
   const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { add: addToBasket, has: inBasket } = useBasketStore()
+  const [addedToBasket, setAddedToBasket] = useState(false)
+
+  const merchBasketItem: MerchBasketItem | null = selectedVariant ? {
+    type: 'merch',
+    merchId: merch.id,
+    merchName: merch.name,
+    variant: selectedVariant === '__none__' ? null : selectedVariant,
+    pricePence: merch.price,
+    postagePence: merch.postage,
+    currency: merch.currency || 'GBP',
+    photoUrl: merch.photos[0] || null,
+    artistId: artist.id,
+    artistName: artist.name,
+    artistSlug: artist.slug,
+    accentColour: artist.accent_colour,
+  } : null
+
+  const isInBasket = merchBasketItem ? inBasket(merchBasketItem) : false
+
+  const handleAddToBasket = useCallback(() => {
+    if (!merchBasketItem || isInBasket) return
+    addToBasket(merchBasketItem)
+    setAddedToBasket(true)
+    setTimeout(() => setAddedToBasket(false), 2000)
+  }, [merchBasketItem, isInBasket, addToBasket])
 
   const artistCurrency = merch.currency || 'GBP'
   const itemDisplay = formatPrice(convertPrice(merch.price / 100, artistCurrency, currency))
@@ -226,14 +254,33 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
 
             {/* Buy button */}
             {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-            <button
-              onClick={handleBuy}
-              disabled={!canBuy || loading}
-              className="w-full py-3.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: canBuy ? accent : undefined, color: canBuy ? '#000' : undefined }}
-            >
-              {loading ? 'Loading...' : soldOut ? 'Sold Out' : needsVariant && !selectedVariant ? 'Select a size' : `Buy — ${totalDisplay}`}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleBuy}
+                disabled={!canBuy || loading}
+                className="flex-1 py-3.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: canBuy ? accent : undefined, color: canBuy ? '#000' : undefined }}
+              >
+                {loading ? 'Loading...' : soldOut ? 'Sold Out' : needsVariant && !selectedVariant ? 'Select a size' : `Buy — ${totalDisplay}`}
+              </button>
+              {!soldOut && (
+                <button
+                  onClick={handleAddToBasket}
+                  disabled={!canBuy || isInBasket}
+                  className="relative px-4 py-3.5 rounded-xl border border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label={isInBasket ? 'In basket' : 'Add to basket'}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill={isInBasket ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isInBasket ? 'text-orange-500' : ''}>
+                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
+                  </svg>
+                  {addedToBasket && (
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-zinc-800 border border-zinc-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl z-50">
+                      Added to basket
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

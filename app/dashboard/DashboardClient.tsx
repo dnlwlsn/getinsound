@@ -2,13 +2,13 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ColourPicker } from '@/app/components/ui/ColourPicker'
 import { ImageUploader } from '@/app/components/ui/ImageUploader'
 import { SoftNudge } from '@/app/components/ui/SoftNudge'
 import { generateGradientDataUri } from '@/lib/gradient'
 import { referralShareUrl, twitterShareUrl, whatsappShareUrl, emailShareUrl } from '@/lib/referral'
-import { isZeroFeesActive } from '@/app/lib/fees'
 import { NotificationBell } from '@/app/components/ui/NotificationBell'
 import { Badge } from '@/app/components/ui/Badge'
 import { PostComposer } from '@/app/components/ui/PostComposer'
@@ -41,8 +41,7 @@ type DownloadCode = {
 }
 
 type Referral = {
-  code: string; count: number; zeroFeesUnlocked: boolean
-  zeroFeesStart: string | null; artistHasZeroFees: boolean
+  code: string; count: number
 }
 
 type Milestone = {
@@ -108,6 +107,12 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [postsLoaded, setPostsLoaded] = useState(false)
   const [deletingPost, setDeletingPost] = useState<string | null>(null)
 
+  // Artist name/bio editing
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [editName, setEditName] = useState(artist.name)
+  const [editBio, setEditBio] = useState(artist.bio || '')
+  const [profileSaving, setProfileSaving] = useState(false)
+
   // Merch state
   const [merch, setMerch] = useState(merchItems)
   const [orders, setOrders] = useState(merchOrders)
@@ -129,6 +134,21 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [showReturnAddrForm, setShowReturnAddrForm] = useState(!returnAddress)
 
   const hasPublishedContent = rels.some(r => r.published) || !!artist.bio
+  const isAllZero = stats.totalEarningsPence === 0 && stats.totalSales === 0 && stats.totalPreviewPlays === 0 && stats.totalFullPlays === 0 && stats.uniqueFans === 0
+
+  // ── Save artist name/bio ────────────────────────────────────
+  async function saveProfile() {
+    const name = editName.trim()
+    if (!name) return
+    setProfileSaving(true)
+    const { error } = await supabase.from('artists').update({ name, bio: editBio.trim() || null }).eq('id', artist.id)
+    if (!error) {
+      artist.name = name
+      artist.bio = editBio.trim() || null
+      setEditingProfile(false)
+    }
+    setProfileSaving(false)
+  }
 
   // ── Stripe payouts ───────────────────────────────────────────
   async function loadPayouts() {
@@ -558,12 +578,12 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           <SidebarLink href="/dashboard" label="Dashboard" active />
           <SidebarLink href="/discography" label="Discography" />
           <SidebarLink href="/sales" label="Sales & Payouts" />
-          <SidebarLink href="/explore" label="Browse Store" />
+          <SidebarLink href="/explore" label="Explore" />
         </nav>
         <div className="pt-6 border-t border-zinc-900 space-y-3">
           {fanUsername && fanIsPublic && (
             <a
-              href={`/${fanUsername}`}
+              href={`/@${fanUsername}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-zinc-500 hover:text-white font-bold text-xs uppercase tracking-wider py-2 transition-colors"
@@ -574,10 +594,13 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               </svg>
             </a>
           )}
-          {fanUsername && !fanIsPublic && (
-            <p className="text-zinc-600 text-[10px] leading-relaxed py-2">
-              Your fan profile is private. <a href="/settings/profile" className="text-orange-500 hover:text-orange-400 transition-colors">Make it public</a> in Settings to see how others see you.
-            </p>
+          {(!fanUsername || !fanIsPublic) && (
+            <a
+              href="/settings/profile"
+              className="flex items-center gap-2 text-zinc-500 hover:text-white font-bold text-xs uppercase tracking-wider py-2 transition-colors"
+            >
+              Fan Profile
+            </a>
           )}
           <button onClick={handleLogout} className="block text-zinc-600 hover:text-red-400 font-bold text-xs uppercase tracking-wider py-2 transition-colors">Log Out</button>
         </div>
@@ -619,6 +642,19 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               + Upload Track
             </a>
           </header>
+
+          {/* ── Welcome Banner (all zero) ──────────────── */}
+          {isAllZero && (
+            <div className="bg-gradient-to-br from-orange-600/10 via-zinc-900 to-zinc-900 border border-orange-600/20 rounded-2xl p-8 mb-10">
+              <h2 className="font-display text-2xl font-bold tracking-tight mb-2">Welcome to Insound</h2>
+              <p className="text-zinc-400 text-sm leading-relaxed mb-5 max-w-lg">
+                Your artist page is live. Upload your first release to start selling — your stats will appear here once fans find you.
+              </p>
+              <a href="/discography" className="inline-flex items-center gap-2 bg-orange-600 text-black font-bold text-sm px-5 py-3 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">
+                + Upload your first release
+              </a>
+            </div>
+          )}
 
           {/* ── 1. Stats ───────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
@@ -1188,6 +1224,60 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
             )}
           </Section>
 
+          {/* ── Name & Bio ─────────────────────────────── */}
+          <Section title="Name & Bio">
+            {editingProfile ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 block mb-2">Artist Name</label>
+                  <input
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white focus:border-orange-600 outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 block mb-2">Bio</label>
+                  <textarea
+                    value={editBio}
+                    onChange={e => setEditBio(e.target.value)}
+                    maxLength={500}
+                    rows={4}
+                    placeholder="Tell fans about yourself..."
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white placeholder-zinc-700 focus:border-orange-600 outline-none transition-colors resize-none"
+                  />
+                  <p className="text-right text-[10px] text-zinc-600 mt-1">{editBio.length}/500</p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setEditName(artist.name); setEditBio(artist.bio || ''); setEditingProfile(false) }}
+                    className="px-5 py-2.5 text-sm font-bold text-zinc-400 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveProfile}
+                    disabled={profileSaving || !editName.trim()}
+                    className="px-5 py-2.5 text-sm font-bold text-black bg-orange-600 hover:bg-orange-500 rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    {profileSaving ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className="font-bold text-lg mb-1">{artist.name}</p>
+                <p className="text-sm text-zinc-400 mb-4 whitespace-pre-wrap">{artist.bio || <span className="italic text-zinc-600">No bio set</span>}</p>
+                <button
+                  onClick={() => setEditingProfile(true)}
+                  className="text-xs font-bold text-orange-500 hover:text-orange-400 transition-colors"
+                >
+                  Edit name & bio
+                </button>
+              </div>
+            )}
+          </Section>
+
           {/* ── Profile Images ────────────────────────────── */}
           <Section title="Profile Images">
             <div className="space-y-8">
@@ -1358,11 +1448,35 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           </div>
         )
       })()}
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-md z-50 flex">
+        <MobileNavLink href="/dashboard" label="Home" icon="grid" active />
+        <MobileNavLink href="/discography" label="Music" icon="music" />
+        <MobileNavLink href="/sales" label="Sales" icon="dollar" />
+        <MobileNavLink href="/explore" label="Store" icon="search" />
+      </nav>
     </div>
   )
 }
 
 // ── Sub-components ─────────────────────────────────────────────
+
+const MOBILE_ICONS: Record<string, JSX.Element> = {
+  grid: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>,
+  music: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z" /></svg>,
+  dollar: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>,
+  search: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>,
+}
+
+function MobileNavLink({ href, label, icon, active }: { href: string; label: string; icon: string; active?: boolean }) {
+  return (
+    <Link href={href} className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${active ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}>
+      {MOBILE_ICONS[icon] && <span className="[&>svg]:w-5 [&>svg]:h-5">{MOBILE_ICONS[icon]}</span>}
+      <span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
+    </Link>
+  )
+}
 
 function SidebarLink({ href, label, active }: { href: string; label: string; active?: boolean }) {
   return (
@@ -1565,8 +1679,6 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 function ReferralWidget({ referral }: { referral: Referral }) {
   const [copied, setCopied] = useState(false)
   const shareLink = referralShareUrl(referral.code)
-  const filled = Math.min(referral.count, 5)
-  const zeroFees = isZeroFeesActive(referral.artistHasZeroFees, referral.zeroFeesStart)
 
   async function copyLink() {
     try {
@@ -1578,60 +1690,12 @@ function ReferralWidget({ referral }: { referral: Referral }) {
 
   return (
     <div className="mb-6 space-y-4">
-      {/* Zero-fees status */}
-      {referral.artistHasZeroFees && (
-        <div className="bg-orange-600/[0.06] border border-orange-600/20 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-full bg-orange-600/15 flex items-center justify-center">
-              <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p className="font-display font-bold text-sm">Zero Insound Fees</p>
-          </div>
-          <p className="text-sm text-zinc-400">
-            {zeroFees.active
-              ? `Active — ${zeroFees.monthsRemaining} month${zeroFees.monthsRemaining !== 1 ? 's' : ''} remaining`
-              : zeroFees.monthsRemaining === 0
-                ? `Expired${referral.zeroFeesStart ? ` (started ${new Date(referral.zeroFeesStart).toLocaleDateString()})` : ''}`
-                : 'Starts with your first sale'}
-          </p>
-        </div>
-      )}
-
-      {/* Referral share widget */}
-      <Section title="Invite Friends" count={referral.count}>
+      <Section title="Share Insound" count={referral.count}>
         <div className="space-y-4">
           <p className="text-sm text-zinc-400">
-            {referral.zeroFeesUnlocked
-              ? "You've unlocked zero fees! Keep sharing to help more artists discover Insound."
-              : `Invite ${5 - filled} more friend${5 - filled !== 1 ? 's' : ''} to unlock 0% Insound fees for your first year.`}
+            Share your link to help more artists discover Insound.
           </p>
 
-          {/* Progress circles */}
-          <div className="flex gap-2">
-            {[0, 1, 2, 3, 4].map(i => (
-              <div
-                key={i}
-                className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all"
-                style={{
-                  borderColor: i < filled ? '#F56D00' : 'rgba(255,255,255,0.08)',
-                  background: i < filled ? 'rgba(245, 109, 0, 0.15)' : 'transparent',
-                }}
-              >
-                {i < filled && (
-                  <svg width="12" height="12" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
-            ))}
-            <span className="text-xs text-zinc-500 font-bold self-center ml-2">
-              {filled}/5
-            </span>
-          </div>
-
-          {/* Share link */}
           <div className="bg-black/30 rounded-xl p-3 flex items-center gap-3">
             <p className="text-orange-500 font-bold text-xs flex-1 truncate">{shareLink}</p>
             <button
@@ -1642,7 +1706,6 @@ function ReferralWidget({ referral }: { referral: Referral }) {
             </button>
           </div>
 
-          {/* Share buttons */}
           <div className="flex gap-2">
             <a href={twitterShareUrl(referral.code)} target="_blank" rel="noopener noreferrer"
               className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] rounded-lg py-2 text-center text-[10px] font-bold text-zinc-400 transition-all">

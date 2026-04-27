@@ -6,7 +6,10 @@ import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useCurrency } from '../providers/CurrencyProvider'
-import { WishlistButton } from '@/app/components/ui/WishlistButton'
+import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
+import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
+import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
+import { resolveAccent } from '@/lib/accent'
 
 /* ── Deterministic gradient fallback ──────────────────────────── */
 function cyrb53(str: string, seed = 0) {
@@ -146,6 +149,9 @@ export default function ReleaseClient() {
     document.body.style.overflow = 'hidden'
 
     try {
+      if (!(window as any).Stripe) {
+        throw new Error('Payment system unavailable. Please check your connection and try again.')
+      }
       const stripe = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY)
       const supabase = createClient()
       const refCookie = document.cookie.split('; ').find(c => c.startsWith('insound_ref='))
@@ -158,7 +164,15 @@ export default function ReleaseClient() {
           ...(customAmountPence ? { custom_amount: customAmountPence } : {}),
         },
       })
-      if (error) throw error
+      if (error) {
+        if (data?.error === 'You already own this release.') {
+          setErrorTitle('Already purchased')
+          setErrorMsg('This release is in your collection.')
+          setStage('error')
+          return
+        }
+        throw error
+      }
       if (!data?.client_secret) throw new Error('No checkout session returned')
 
       sessionIdRef.current = data.session_id
@@ -247,8 +261,10 @@ export default function ReleaseClient() {
   if (!artist || !release) return null
 
   const tracks = [...release.tracks].sort((a, b) => a.position - b.position)
-  const typeLabel = { single: 'Single', ep: 'EP', album: 'Album' }[release.type] || 'Release'
+  const effectiveType = release.type === 'album' && tracks.length === 1 ? 'single' : release.type
+  const typeLabel = { single: 'Single', ep: 'EP', album: 'Album' }[effectiveType] || 'Release'
   const coverSrc = release.cover_url || generateGradientDataUri(artist.id, release.id)
+  const accent = resolveAccent(artist.accent_colour)
 
   return (
     <>
@@ -268,48 +284,15 @@ export default function ReleaseClient() {
       {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
       <script src="https://js.stripe.com/v3/" async />
 
-      <main className="flex-1 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,109,0,0.05),transparent_60%)] pointer-events-none" />
-
-        <article className="max-w-5xl mx-auto px-6 md:px-12 py-12 md:py-16 animate-slide-in-up">
-          <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-start">
-            {/* Cover */}
-            <div className="relative">
-              <div className="aspect-square w-full rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverSrc} alt={`${release.title} cover art`} className="w-full h-full object-cover" />
-              </div>
-            </div>
-
-            {/* Details */}
-            <div>
-              <Link href={`/${artist.slug}`} className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-400 transition-colors">
-                {artist.name}
-              </Link>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight mt-3 mb-2 font-display">{release.title}</h1>
-              <p className="text-zinc-500 text-sm mb-8">{typeLabel} · {tracks.length} track{tracks.length === 1 ? '' : 's'}</p>
-
-              <div className="flex items-center gap-4">
-                <PriceSection release={release} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
-                <WishlistButton releaseId={release.id} size={24} />
-              </div>
-
-              {/* Tracklist */}
-              <div className="mt-10 border-t border-zinc-800 pt-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">Tracklist</p>
-                <ol className="space-y-2">
-                  {tracks.map((t, i) => (
-                    <li key={t.id} className="flex items-center gap-4 py-2">
-                      <span className="text-zinc-600 font-mono text-xs w-6">{String(i + 1).padStart(2, '0')}</span>
-                      <span className="font-bold text-sm flex-1">{t.title}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          </div>
-        </article>
-      </main>
+      <ReleasePageContent
+        artist={artist}
+        release={release}
+        tracks={tracks}
+        typeLabel={typeLabel}
+        coverSrc={coverSrc}
+        accent={accent}
+        openCheckout={openCheckout}
+      />
 
       {/* Toast */}
       <div id="toast" className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 opacity-0 translate-y-4" />
@@ -448,9 +431,144 @@ export default function ReleaseClient() {
   )
 }
 
+/* ── Release page content ────────────────────────────────────── */
+
+function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, accent, openCheckout }: {
+  artist: Artist; release: Release; tracks: Track[]; typeLabel: string; coverSrc: string; accent: string
+  openCheckout: (customAmountPence?: number) => void
+}) {
+  const play = usePlayerStore(s => s.play)
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
+  const pause = usePlayerStore(s => s.pause)
+  const resume = usePlayerStore(s => s.resume)
+
+  const handleToggleTrack = useCallback((track: Track, index: number) => {
+    if (currentTrack?.id === track.id) {
+      isPlaying ? pause() : resume()
+    } else {
+      const queue: PlayerTrack[] = tracks.map(t => ({
+        id: t.id,
+        title: t.title,
+        artistName: artist.name,
+        artistSlug: artist.slug,
+        releaseId: release.id,
+        releaseTitle: release.title,
+        coverUrl: release.cover_url,
+        position: t.position,
+        durationSec: t.duration_sec,
+        accentColour: artist.accent_colour,
+        purchased: false,
+      }))
+      play(queue[index], queue)
+    }
+  }, [currentTrack, isPlaying, pause, resume, play, tracks, artist, release])
+
+  const formatDuration = (sec: number) => {
+    const m = Math.floor(sec / 60)
+    const s = Math.floor(sec % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <main className="flex-1 relative pb-36">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--accent-glow),transparent_60%)] pointer-events-none" style={{ '--accent-glow': `${accent}0d` } as React.CSSProperties} />
+
+      <article className="max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-14">
+        <div className="flex flex-col sm:flex-row gap-8 md:gap-10 items-start">
+          {/* Cover — constrained size */}
+          <div className="w-40 mx-auto sm:mx-0 sm:w-56 md:w-64 shrink-0">
+            <div className="aspect-square w-full rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={coverSrc} alt={`${release.title} cover art`} className="w-full h-full object-cover" />
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="flex-1 min-w-0">
+            <Link href={`/${artist.slug}`} className="text-[10px] font-black uppercase tracking-widest hover:opacity-70 transition-opacity" style={{ color: accent }}>
+              {artist.name}
+            </Link>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight mt-2 mb-1.5 font-display">{release.title}</h1>
+            <p className="text-zinc-500 text-sm mb-6">{typeLabel} · {tracks.length} track{tracks.length === 1 ? '' : 's'}</p>
+
+            <PriceSection release={release} accent={accent} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
+
+            <div className="flex items-center gap-3 mt-4">
+              <FavouriteButton releaseId={release.id} size={20} />
+              <AddToBasketButton
+                item={{
+                  type: 'release',
+                  releaseId: release.id,
+                  releaseTitle: release.title,
+                  releaseSlug: release.slug,
+                  artistId: artist.id,
+                  artistName: artist.name,
+                  artistSlug: artist.slug,
+                  coverUrl: release.cover_url,
+                  pricePence: release.price_pence,
+                  currency: release.currency || 'GBP',
+                  accentColour: artist.accent_colour,
+                }}
+                size={16}
+                variant="pill"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Tracklist */}
+        <div className="mt-10 border-t border-zinc-800 pt-6">
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">Tracklist</p>
+          <ol>
+            {tracks.map((t, i) => {
+              const isActive = currentTrack?.id === t.id
+              const isTrackPlaying = isActive && isPlaying
+
+              return (
+                <li key={t.id} className="group/track">
+                  <button
+                    onClick={() => handleToggleTrack(t, i)}
+                    className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-lg transition-colors text-left ${isActive ? 'bg-zinc-800/60' : 'hover:bg-zinc-800/40'}`}
+                  >
+                    <span className="w-6 text-center shrink-0 relative">
+                      {isTrackPlaying ? (
+                        <span className="inline-flex gap-[2px] items-end h-3">
+                          <span className="w-[3px] h-full rounded-full animate-pulse" style={{ background: accent }} />
+                          <span className="w-[3px] h-2/3 rounded-full animate-pulse" style={{ background: accent, animationDelay: '150ms' }} />
+                          <span className="w-[3px] h-1/3 rounded-full animate-pulse" style={{ background: accent, animationDelay: '300ms' }} />
+                        </span>
+                      ) : isActive ? (
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style={{ color: accent }}>
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      ) : (
+                        <>
+                          <span className="text-zinc-600 font-mono text-xs group-hover/track:opacity-0">{String(i + 1).padStart(2, '0')}</span>
+                          <svg className="absolute inset-0 m-auto opacity-0 group-hover/track:opacity-100 transition-opacity" width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style={{ color: accent }}>
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </>
+                      )}
+                    </span>
+                    <span className={`font-bold text-sm flex-1 truncate ${isActive ? 'text-white' : 'text-zinc-300'}`}>{t.title}</span>
+                    {t.duration_sec > 0 && (
+                      <span className="text-zinc-600 text-xs font-mono shrink-0">{formatDuration(t.duration_sec)}</span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      </article>
+    </main>
+  )
+}
+
 /* ── Price section with PWYW support ──────────────────────────── */
 
-function PriceSection({ release, onBuy }: { release: Release; onBuy: (customAmountPence?: number) => void }) {
+function PriceSection({ release, accent, onBuy }: { release: Release; accent: string; onBuy: (customAmountPence?: number) => void }) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const relCurrency = release.currency || 'GBP'
 
@@ -463,44 +581,77 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: (customAmou
 
   const amountPence = Math.round(parseFloat(customAmount || '0') * 100)
   const isValid = amountPence >= minPence
-  const { artistReceived: artistGetsPence } = calculateFeesPence(amountPence)
-  const artistGetsAmount = convertPrice(Math.max(0, artistGetsPence) / 100, relCurrency, currency)
+  const fees = calculateFeesPence(amountPence)
+  const artistGetsAmount = convertPrice(Math.max(0, fees.artistReceived) / 100, relCurrency, currency)
+  const insoundFeeAmount = convertPrice(fees.insoundFee / 100, relCurrency, currency)
+  const stripeFeeAmount = convertPrice(fees.stripeFee / 100, relCurrency, currency)
 
   const displayPrice = formatPrice(convertPrice(release.price_pence / 100, relCurrency, currency))
   const displayMin = formatPrice(convertPrice(minPence / 100, relCurrency, currency))
   const displayCustom = formatPrice(convertPrice(parseFloat(customAmount || '0'), relCurrency, currency))
 
   return (
-    <div className="mb-6">
+    <div>
       {release.pwyw_enabled ? (
         <>
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Name your price</p>
-          <div className="flex items-center gap-3 mb-2">
-            <input
-              type="number"
-              step="0.01"
-              min={minPounds}
-              value={customAmount}
-              onChange={(e) => setCustomAmount(e.target.value)}
-              className="text-4xl font-black text-orange-600 bg-transparent border-b-2 border-zinc-700 focus:border-orange-600 outline-none w-32 transition-colors"
-            />
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const current = parseFloat(customAmount || '0')
+                  const next = Math.max(parseFloat(minPounds), current - 1)
+                  setCustomAmount(next.toFixed(2))
+                }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-black font-black text-lg transition-opacity hover:opacity-80"
+                style={{ background: accent }}
+                aria-label="Decrease price"
+              >
+                −
+              </button>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={customAmount}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) setCustomAmount(v)
+                }}
+                className="text-3xl font-black bg-transparent border-b-2 border-zinc-700 focus:border-current outline-none w-24 text-center transition-colors"
+                style={{ color: accent }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const current = parseFloat(customAmount || '0')
+                  setCustomAmount((current + 1).toFixed(2))
+                }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-black font-black text-lg transition-opacity hover:opacity-80"
+                style={{ background: accent }}
+                aria-label="Increase price"
+              >
+                +
+              </button>
+            </div>
             <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{relCurrency}</span>
           </div>
           <p className="text-[10px] text-zinc-600 mb-1">Minimum {displayMin}</p>
         </>
       ) : (
         <div className="flex items-baseline gap-3 mb-1">
-          <span className="text-4xl font-black text-orange-600">{displayPrice}</span>
+          <span className="text-3xl font-black" style={{ color: accent }}>{displayPrice}</span>
           <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{relCurrency}</span>
         </div>
       )}
+
       {isValid && (
-        <p className="text-[11px] text-zinc-600 mb-6">
-          {formatPrice(artistGetsAmount)} goes to the artist after fees (10% Insound + Stripe processing fee).
-        </p>
+        <div className="text-[11px] text-zinc-600 mb-5 space-y-0.5">
+          <p>{formatPrice(artistGetsAmount)} to the artist · {formatPrice(insoundFeeAmount)} Insound fee · {formatPrice(stripeFeeAmount)} processing</p>
+        </div>
       )}
       {!isValid && (
-        <p className="text-[11px] text-red-400 mb-6">
+        <p className="text-[11px] text-red-400 mb-5">
           Minimum amount is {displayMin}
         </p>
       )}
@@ -508,14 +659,15 @@ function PriceSection({ release, onBuy }: { release: Release; onBuy: (customAmou
       <button
         onClick={() => onBuy(release.pwyw_enabled ? amountPence : undefined)}
         disabled={!isValid}
-        className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ background: accent, color: '#000' }}
       >
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" /><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /></svg>
         <span>Buy for {release.pwyw_enabled ? displayCustom : displayPrice}</span>
       </button>
 
-      <p className="text-center text-[10px] text-zinc-600 mt-4">
-        Instant download after payment.
+      <p className="text-[10px] text-zinc-600 mt-3">
+        Added to your collection and available for download after payment.
       </p>
     </div>
   )

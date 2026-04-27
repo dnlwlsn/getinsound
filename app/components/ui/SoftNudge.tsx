@@ -1,12 +1,10 @@
 type Props = {
   balance: string
-  message?: string
   className?: string
 }
 
 export function SoftNudge({
   balance,
-  message = 'Your balance is ready to withdraw',
   className = '',
 }: Props) {
   return (
@@ -17,15 +15,15 @@ export function SoftNudge({
         ${className}`}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white">
-          {message}
-        </p>
-        <p className="font-display text-2xl font-bold text-orange-500 tracking-tight mt-0.5">
+        <p className="font-display text-2xl font-bold text-orange-500 tracking-tight">
           {balance}
+        </p>
+        <p className="text-sm text-zinc-400 mt-1">
+          Below Stripe's £2 minimum — your balance will be paid out automatically once it reaches the threshold.
         </p>
       </div>
       <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400/60 shrink-0">
-        Informational
+        Pending
       </span>
     </div>
   )

@@ -19,10 +19,10 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = {
   title: 'insound. — Music That Pays Artists',
-  description: 'The music platform that only takes 10%. Stripe processing shown transparently at checkout. No labels, no middlemen. Join the waitlist.',
+  description: 'The music platform that only takes 10%. Stripe processing shown transparently at checkout. No labels, no middlemen.',
   openGraph: {
     title: 'Insound — Music That Pays Artists',
-    description: 'Upload your music. We only take 10%. Stripe processing shown at checkout. Own your masters. No monthly fee. Join the waitlist.',
+    description: 'Upload your music. We only take 10%. Stripe processing shown at checkout. Own your masters. No monthly fee.',
     url: 'https://getinsound.com',
     siteName: 'Insound',
     type: 'website',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Insound — Music That Pays Artists',
-    description: 'Upload your music. We only take 10%. Stripe processing shown at checkout. Own your masters. No monthly fee. Join the waitlist.',
+    description: 'Upload your music. We only take 10%. Stripe processing shown at checkout. Own your masters. No monthly fee.',
     images: ['https://getinsound.com/og-image.png'],
   },
   icons: { icon: '/favicon.svg' },

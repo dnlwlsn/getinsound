@@ -8,12 +8,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="bg-zinc-950 text-white min-h-screen">
-      <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors font-display">insound.</Link>
-        <Link href="/" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">&larr; Back</Link>
-      </nav>
-
+    <main className="min-h-screen pb-24">
       <div className="max-w-2xl mx-auto px-6 py-20">
         <h1 className="text-4xl font-black tracking-tighter mb-2 font-display">Terms of Service</h1>
         <p className="text-zinc-500 text-sm mb-12">Last updated: April 2026</p>

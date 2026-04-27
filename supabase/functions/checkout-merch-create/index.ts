@@ -1,11 +1,10 @@
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { STANDARD_FEE_BPS, SHIPPING_COUNTRIES } from '../_shared/constants.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-06-20',
 });
-
-const PLATFORM_FEE_BPS = 1000;
 
 const SITE_URL = Deno.env.get('SITE_URL') || 'https://getinsound.com';
 const corsHeaders = {
@@ -78,7 +77,7 @@ Deno.serve(async (req) => {
 
     const itemAmount = merch.price;
     const postageAmount = merch.postage;
-    const applicationFee = Math.round((itemAmount * PLATFORM_FEE_BPS) / 10000);
+    const applicationFee = Math.round((itemAmount * STANDARD_FEE_BPS) / 10000);
 
     const currency = (fanCurrency || merch.currency || 'GBP').toLowerCase();
     const photos = (merch.photos as string[]) || [];
@@ -113,7 +112,7 @@ Deno.serve(async (req) => {
         }] : []),
       ],
       shipping_address_collection: {
-        allowed_countries: ['GB', 'US', 'CA', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'IE', 'PT', 'FI', 'SE', 'DK', 'NO', 'JP'],
+        allowed_countries: SHIPPING_COUNTRIES as [string, ...string[]],
       },
       payment_intent_data: {
         application_fee_amount: applicationFee,

@@ -406,7 +406,7 @@ export function PlayerBar() {
       </div>
 
       {/* Mobile player bar */}
-      <div className="player-bar-active fixed bottom-0 left-0 right-0 z-40 sm:hidden">
+      <div className="player-bar-active fixed bottom-[60px] left-0 right-0 z-40 sm:hidden">
         <div
           className="border-t border-white/[0.06] backdrop-blur-xl"
           style={{ background: 'rgba(10,10,10,0.95)' }}
@@ -516,9 +516,12 @@ export function PlayerBar() {
             </div>
           ) : (
             /* Collapsed mobile view */
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={toggleExpanded}
-              className="w-full flex items-center gap-3 px-3 py-2.5"
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpanded() } }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 cursor-pointer"
             >
               {currentTrack.coverUrl ? (
                 <img
@@ -557,7 +560,7 @@ export function PlayerBar() {
                   </svg>
                 )}
               </button>
-            </button>
+            </div>
           )}
         </div>
       </div>

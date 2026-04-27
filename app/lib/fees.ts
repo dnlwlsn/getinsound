@@ -54,21 +54,19 @@ function round2(n: number): number {
 export const STRIPE_RATE = 0.015
 export const STRIPE_FIXED = 0.20
 
-export function calculateFees(salePrice: number, zeroFees = false) {
+export function calculateFees(salePrice: number) {
   const result = calculateStripeFee(salePrice, 'GB', 'GB', 'GBP', 'GBP')
   return {
-    insoundFee: zeroFees ? 0 : result.insoundFee,
+    insoundFee: result.insoundFee,
     stripeFee: round2(result.stripeFee + result.internationalFee + result.conversionFee),
-    artistReceived: zeroFees
-      ? round2(salePrice - round2(result.stripeFee + result.internationalFee + result.conversionFee))
-      : result.artistReceived,
+    artistReceived: result.artistReceived,
   }
 }
 
-export function calculateFeesPence(amountPence: number, zeroFees = false) {
+export function calculateFeesPence(amountPence: number) {
   const result = calculateStripeFee(amountPence / 100, 'GB', 'GB', 'GBP', 'GBP')
   const stripePence = Math.round((result.stripeFee + result.internationalFee + result.conversionFee) * 100)
-  const insoundPence = zeroFees ? 0 : Math.round(result.insoundFee * 100)
+  const insoundPence = Math.round(result.insoundFee * 100)
   return {
     insoundFee: insoundPence,
     stripeFee: stripePence,
@@ -76,24 +74,8 @@ export function calculateFeesPence(amountPence: number, zeroFees = false) {
   }
 }
 
-export function isZeroFeesActive(
-  hasZeroFees: boolean,
-  startDate: string | null,
-): { active: boolean; monthsRemaining: number | null } {
-  if (!hasZeroFees) return { active: false, monthsRemaining: null }
-  if (!startDate) return { active: true, monthsRemaining: 12 }
-
-  const start = new Date(startDate)
-  const expiry = new Date(start)
-  expiry.setFullYear(expiry.getFullYear() + 1)
-  const now = new Date()
-
-  if (now >= expiry) return { active: false, monthsRemaining: 0 }
-
-  const msRemaining = expiry.getTime() - now.getTime()
-  const monthsRemaining = Math.ceil(msRemaining / (30 * 24 * 60 * 60 * 1000))
-  return { active: true, monthsRemaining }
-}
+// DEPRECATED: isZeroFeesActive removed — zero-fees referral feature retired 2026-04-27.
+// Replaced by Founding Artist programme (7.5% fee for 12 months from first sale).
 
 export interface MerchFeeResult {
   insoundFee: number

@@ -5,12 +5,11 @@
 
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { STANDARD_FEE_BPS, FOUNDING_ARTIST_FEE_BPS } from '../_shared/constants.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-06-20',
 });
-
-const PLATFORM_FEE_BPS = 1000; // 10.00%
 
 const SITE_URL = Deno.env.get('SITE_URL') || 'https://getinsound.com';
 const corsHeaders = {
@@ -73,6 +72,29 @@ Deno.serve(async (req) => {
       return json({ error: 'This artist has not finished setting up payouts yet.' }, 400);
     }
 
+    // Check auth header for logged-in user to prevent duplicate purchases
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const userClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { authorization: authHeader } } },
+      );
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user) {
+        const { data: existing } = await admin
+          .from('purchases')
+          .select('id')
+          .eq('release_id', releaseId)
+          .eq('buyer_user_id', user.id)
+          .eq('status', 'paid')
+          .maybeSingle();
+        if (existing) {
+          return json({ error: 'You already own this release.' }, 409);
+        }
+      }
+    }
+
     // Determine unit amount — support PWYW custom amounts
     let unitAmount = release.price_pence;
     if (release.pwyw_enabled && customAmount != null) {
@@ -86,19 +108,21 @@ Deno.serve(async (req) => {
       return json({ error: 'Invalid price' }, 400);
     }
 
-    // Check zero-fees eligibility
-    let applicationFee = Math.round((unitAmount * PLATFORM_FEE_BPS) / 10000);
+    // Founding Artist fee: 7.5% for music if within 12-month window, else 10%
+    let feeBps = STANDARD_FEE_BPS;
 
-    const { data: zeroFees } = await admin
-      .rpc('get_artist_zero_fees', { artist_id: release.artist_id })
+    const { data: faFee } = await admin
+      .rpc('get_founding_artist_fee', { p_artist_id: release.artist_id })
       .maybeSingle();
 
-    if (zeroFees?.zero_fees) {
-      const start = zeroFees.fees_start;
-      if (!start || (Date.now() - new Date(start).getTime()) < 365 * 24 * 60 * 60 * 1000) {
-        applicationFee = 0;
+    if (faFee?.is_founding) {
+      const firstSale = faFee.first_sale_at;
+      if (!firstSale || (Date.now() - new Date(firstSale).getTime()) < 365 * 24 * 60 * 60 * 1000) {
+        feeBps = FOUNDING_ARTIST_FEE_BPS;
       }
     }
+
+    const applicationFee = Math.round((unitAmount * feeBps) / 10000);
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',

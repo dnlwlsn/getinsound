@@ -6,11 +6,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCurrency } from '../providers/CurrencyProvider'
 
-/* ── Supabase config ─────────────────────────────────────────── */
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const TOTAL_SPOTS = 50
-
 /* ── Typewriter items ────────────────────────────────────────── */
 const COST_ITEMS = [
   'Recording studio time',
@@ -28,29 +23,7 @@ const COST_ITEMS = [
 /* ── Phone mockup tracks ─────────────────────────────────────── */
 const TRACKS: { name: string; type: string; year: string; price: number; color1: string; color2: string; glow: string }[] = []
 
-/* ── Email validation ────────────────────────────────────────── */
-const isValidEmail = (e: string) => !!e && /\S+@\S+\.\S+/.test(e)
-
 export default function HomeClient() {
-  /* Waitlist */
-  const [wPhase, setWPhase]         = useState<'form' | 'success' | 'overflow'>('form')
-  const [ovPhase, setOvPhase]       = useState<'form' | 'success'>('form')
-  const [spacesLeft, setSpacesLeft] = useState(50)
-
-  /* Form inputs */
-  const [heroEmail, setHeroEmail]                   = useState('')
-  const [bottomEmail, setBottomEmail]               = useState('')
-  const [heroOvEmail, setHeroOvEmail]               = useState('')
-  const [bottomOvEmail, setBottomOvEmail]           = useState('')
-  const [heroInvalid, setHeroInvalid]               = useState(false)
-  const [bottomInvalid, setBottomInvalid]           = useState(false)
-  const [heroOvInvalid, setHeroOvInvalid]           = useState(false)
-  const [bottomOvInvalid, setBottomOvInvalid]       = useState(false)
-  const [heroSending, setHeroSending]               = useState(false)
-  const [bottomSending, setBottomSending]           = useState(false)
-  const [heroOvSending, setHeroOvSending]           = useState(false)
-  const [bottomOvSending, setBottomOvSending]       = useState(false)
-
   /* Calculator */
   const [calcPrice, setCalcPrice]   = useState(10)
 
@@ -70,9 +43,6 @@ export default function HomeClient() {
   const [banner, setBanner]         = useState({ color1: TRACKS[0]?.color1 ?? '#F56D00', color2: TRACKS[0]?.color2 ?? '#431407', glow: TRACKS[0]?.glow ?? '234,88,12' })
   const [basket, setBasket]         = useState<string[]>([])
 
-  /* Hero email ref for focus-pop */
-  const heroEmailRef = useRef<HTMLInputElement>(null)
-
   /* ── Scroll reveals ──────────────────────────────────────────── */
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -82,106 +52,6 @@ export default function HomeClient() {
     document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
     return () => obs.disconnect()
   }, [])
-
-  /* ── Already signed up ───────────────────────────────────────── */
-  useEffect(() => {
-    if (localStorage.getItem('insound_interested')) setWPhase('success')
-  }, [])
-
-  /* ── Spaces left ─────────────────────────────────────────────── */
-  function refreshSpaces() {
-    fetch(`${SB_URL}/rest/v1/rpc/get_waitlist_count`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-      body: '{}',
-    })
-      .then(r => r.json())
-      .then(count => {
-        if (typeof count === 'number') {
-          const left = Math.max(0, TOTAL_SPOTS - count)
-          setSpacesLeft(left)
-          if (left <= 0) setWPhase('overflow')
-        }
-      })
-      .catch(() => {})
-  }
-  useEffect(() => { refreshSpaces() }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Waitlist submit helpers ─────────────────────────────────── */
-  function postWaitlist(
-    email: string,
-    setSending: (v: boolean) => void,
-    onSuccess: () => void,
-  ) {
-    setSending(true)
-    fetch(`${SB_URL}/rest/v1/waitlist`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Prefer: 'return=minimal' },
-      body: JSON.stringify({ email }),
-    })
-      .then(r => {
-        if (r.ok || r.status === 409) {
-          localStorage.setItem('insound_interested', '1')
-          refreshSpaces()
-          onSuccess()
-        } else { setSending(false) }
-      })
-      .catch(() => { setSending(false) })
-  }
-
-  function postOverflow(
-    email: string,
-    setSending: (v: boolean) => void,
-    onSuccess: () => void,
-  ) {
-    setSending(true)
-    fetch(`${SB_URL}/rest/v1/waitlist_overflow`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Prefer: 'return=minimal' },
-      body: JSON.stringify({ email }),
-    })
-      .then(r => {
-        if (r.ok || r.status === 409) { onSuccess() } else { setSending(false) }
-      })
-      .catch(() => { setSending(false) })
-  }
-
-  function submitHero() {
-    if (!isValidEmail(heroEmail)) { setHeroInvalid(true); return }
-    setHeroInvalid(false)
-    postWaitlist(heroEmail, setHeroSending, () => setWPhase('success'))
-  }
-
-  function submitBottom() {
-    if (!isValidEmail(bottomEmail)) { setBottomInvalid(true); return }
-    setBottomInvalid(false)
-    postWaitlist(bottomEmail, setBottomSending, () => setWPhase('success'))
-  }
-
-  function submitHeroOv() {
-    if (!isValidEmail(heroOvEmail)) { setHeroOvInvalid(true); return }
-    setHeroOvInvalid(false)
-    postOverflow(heroOvEmail, setHeroOvSending, () => setOvPhase('success'))
-  }
-
-  function submitBottomOv() {
-    if (!isValidEmail(bottomOvEmail)) { setBottomOvInvalid(true); return }
-    setBottomOvInvalid(false)
-    postOverflow(bottomOvEmail, setBottomOvSending, () => setOvPhase('success'))
-  }
-
-  /* ── Nav CTA — scroll to top + pop email ─────────────────────── */
-  function scrollAndPop(e: React.MouseEvent) {
-    e.preventDefault()
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    setTimeout(() => {
-      const el = heroEmailRef.current
-      if (!el) return
-      el.classList.add('email-pop')
-      el.focus()
-      el.addEventListener('animationend', () => el.classList.remove('email-pop'), { once: true })
-    }, 400)
-  }
 
   /* ── Phone clock ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -286,7 +156,7 @@ export default function HomeClient() {
           <div className="flex items-center gap-3">
             <a href="#signup"
               className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
-              Join the waitlist
+              Sign up free
             </a>
           </div>
         </div>
@@ -302,7 +172,7 @@ export default function HomeClient() {
         <div className="relative z-10 mx-auto text-center" style={{ maxWidth: '64rem' }}>
           <div className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot" />
-            Waitlist open
+            Now live
           </div>
 
           <h1 className="font-display font-bold mb-8" style={{ fontSize: 'clamp(3.5rem,6vw,5.5rem)', letterSpacing: '-0.04em', lineHeight: '0.88' }}>
@@ -313,59 +183,14 @@ export default function HomeClient() {
             Upload your music. We only take <strong className="text-white font-bold">10%</strong>. No surprises. No monthly fee. No labels.
           </p>
           <p className="t-muted text-sm max-w-md mx-auto mb-12">
-            For independent and unsigned artists only. We&apos;re building this now — founding artists get first access.
+            For independent and unsigned artists only. Start selling today — no monthly fee, no approval process.
           </p>
 
           <div id="signup" className="max-w-md mx-auto" style={{ scrollMarginTop: '6rem' }}>
-            {/* Primary form */}
-            {wPhase === 'form' && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input ref={heroEmailRef} type="email" value={heroEmail} onChange={e => { setHeroEmail(e.target.value); setHeroInvalid(false) }}
-                  onKeyDown={e => e.key === 'Enter' && submitHero()}
-                  placeholder="your@email.com" autoComplete="email" aria-label="Email address"
-                  className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${heroInvalid ? 'border-red-500' : 'border-transparent'}`} />
-                <button onClick={submitHero} disabled={heroSending}
-                  className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
-                  {heroSending ? 'Sending…' : 'Join the waitlist →'}
-                </button>
-              </div>
-            )}
-
-            {/* Success */}
-            {wPhase === 'success' && (
-              <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                <span className="text-orange-400 font-bold text-sm">You&apos;re on the list. We&apos;ll be in touch.</span>
-              </div>
-            )}
-
-            {/* Overflow */}
-            {wPhase === 'overflow' && (
-              <div className="text-left">
-                <h3 className="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em] text-white mb-2 text-center">The founding 50 are in.</h3>
-                <p className="text-zinc-400 text-sm leading-relaxed mb-6 text-center">Leave your email and we&apos;ll let you know when we open to everyone.</p>
-                {ovPhase === 'form' ? (
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input type="email" value={heroOvEmail} onChange={e => { setHeroOvEmail(e.target.value); setHeroOvInvalid(false) }}
-                      onKeyDown={e => e.key === 'Enter' && submitHeroOv()}
-                      placeholder="your@email.com" autoComplete="email" aria-label="Email address"
-                      className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${heroOvInvalid ? 'border-red-500' : 'border-transparent'}`} />
-                    <button onClick={submitHeroOv} disabled={heroOvSending}
-                      className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
-                      {heroOvSending ? 'Sending…' : 'Notify me →'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                      <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                      <span className="text-orange-400 font-bold text-sm">We&apos;ll let you know when we open to everyone.</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
+            <a href="/signup"
+              className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap">
+              Get started →
+            </a>
             <p className="text-zinc-700 text-xs mt-4 font-medium">
               No spam, ever &nbsp;·&nbsp; Unsubscribe anytime &nbsp;·&nbsp;{' '}
               <Link href="/privacy" className="hover:text-zinc-500 transition-colors">Privacy Policy</Link>
@@ -394,8 +219,8 @@ export default function HomeClient() {
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Monthly fee, ever</p>
             </div>
             <div className="reveal reveal-delay-2">
-              <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">{spacesLeft}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Founding spaces left</p>
+              <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">~87%</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Goes to the artist</p>
             </div>
             <div className="reveal reveal-delay-3">
               <p className="font-display text-4xl font-bold text-white tracking-tight">100%</p>
@@ -710,7 +535,8 @@ export default function HomeClient() {
             <h3 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Built different.</h3>
             <p className="t-muted text-base leading-relaxed mb-5">Bandcamp was sold to Epic Games in 2022. Then sold again to Songtradr in 2023, who laid off most of the team within weeks. By Q1 2026, active Bandcamp stores had declined 50% quarter-over-quarter. The platform artists trusted most became a cautionary tale in under three years.</p>
             <p className="text-white font-medium leading-relaxed mb-5">We&apos;re building Insound independently. No investors. No exit strategy. No cap table that could ever change the deal. Just a platform that works for artists, permanently.</p>
-            <p className="t-muted text-base leading-relaxed">Sign up now and your rate is locked from your first sale. We only take 10%. Stripe&apos;s processing fee  is shown transparently at checkout. What you keep is everything else. No thresholds, no waiting, no asterisks.</p>
+            <p className="t-muted text-base leading-relaxed mb-5">Sign up now and your rate is locked from your first sale. We only take 10%. Stripe&apos;s processing fee  is shown transparently at checkout. What you keep is everything else. No thresholds, no waiting, no asterisks.</p>
+            <p className="text-orange-400 font-medium leading-relaxed">Be one of the first 50 artists on Insound. Founding Artists pay 7.5% — a 25% reduction on our standard fee — for their first 12 months of sales.</p>
           </div>
         </div>
       </section>
@@ -852,8 +678,8 @@ export default function HomeClient() {
             {/* FAQ list */}
             <div className="faq-list flex-1 space-y-0 reveal">
               {[
-                { q: 'When does Insound launch?', a: "We're in development now. Founding members get first access before we open to everyone — that's what the waitlist is for." },
-                { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee , shown transparently at checkout. Both fees are permanent." },
+                { q: 'Is Insound live?', a: "Yes. You can sign up, upload your music, and start selling today. We're actively building new features — check the roadmap below." },
+                { q: 'Is the 10% rate permanent?', a: "Yes. Our standard 10% is the whole business model — not a launch promotion. Founding Artists (the first 50) pay 7.5% for their first 12 months of sales. Stripe separately charges their standard processing fee, shown transparently at checkout." },
                 { q: 'How do I get paid?', a: `Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end.` },
                 { q: 'Does Insound hold my money?', a: "Never. We use Stripe Connect direct charges — when a fan buys your music, the payment is created directly in your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes. We are never in the middle." },
                 { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
@@ -891,12 +717,12 @@ export default function HomeClient() {
                   'Artist music upload (WAV, FLAC, AIFF, MP3).',
                   'Stripe Connect direct payments.',
                   'Artist pages with sharing and track downloads.',
-                  'Founding artist waitlist (1,000 spaces).',
+                  'Founding artist badges for early adopters.',
                   'Persistent music player.',
                   'Artist dashboard and analytics.',
                   'Pay what you want pricing.',
                   'Unified signup — one account, upgrade to sell.',
-                  'Referral system — invite 5, unlock zero fees for a year.',
+                  'Founding Artist programme — first 50 artists pay 7.5% for 12 months.',
                   'Pre-orders with automatic unlock.',
                   'Multi-currency and locale detection.',
                   'Genre mood board for fans.',
@@ -984,65 +810,22 @@ export default function HomeClient() {
           <div className="reveal">
             <div className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot" />
-              Waitlist open
+              Now live
             </div>
             <h2 className="font-display text-4xl md:text-6xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">Your music.<br />Your money.</h2>
             <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-sm mx-auto">
-              Sign up now and get first access when we launch. We only take 10%. No surprises. Stripe&apos;s processing fee is shown transparently at checkout. From your first sale. No thresholds. No asterisks.
+              We only take 10%. No surprises. Stripe&apos;s processing fee is shown transparently at checkout. From your first sale. No thresholds. No asterisks.
             </p>
           </div>
 
           <div className="reveal reveal-delay-1">
-            {wPhase === 'form' && (
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-4">
-                <input type="email" value={bottomEmail} onChange={e => { setBottomEmail(e.target.value); setBottomInvalid(false) }}
-                  onKeyDown={e => e.key === 'Enter' && submitBottom()}
-                  placeholder="your@email.com" autoComplete="email" aria-label="Email address"
-                  className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${bottomInvalid ? 'border-red-500' : 'border-transparent'}`} />
-                <button onClick={submitBottom} disabled={bottomSending}
-                  className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
-                  {bottomSending ? 'Sending…' : 'Join the waitlist →'}
-                </button>
-              </div>
-            )}
-
-            {wPhase === 'success' && (
-              <div className="mb-4">
-                <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                  <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                  <span className="text-orange-400 font-bold text-sm">You&apos;re on the list. We&apos;ll be in touch.</span>
-                </div>
-              </div>
-            )}
-
-            {wPhase === 'overflow' && (
-              <div className="mb-4">
-                <h3 className="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em] text-white mb-2">The founding 50 are in.</h3>
-                <p className="text-zinc-400 text-sm leading-relaxed mb-6 max-w-sm mx-auto">Leave your email and we&apos;ll let you know when we open to everyone.</p>
-                {ovPhase === 'form' ? (
-                  <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                    <input type="email" value={bottomOvEmail} onChange={e => { setBottomOvEmail(e.target.value); setBottomOvInvalid(false) }}
-                      onKeyDown={e => e.key === 'Enter' && submitBottomOv()}
-                      placeholder="your@email.com" autoComplete="email" aria-label="Email address"
-                      className={`flex-1 bg-zinc-900 ring-1 ring-white/[0.08] border rounded-2xl px-5 py-4 text-sm text-white placeholder-zinc-600 transition-all ${bottomOvInvalid ? 'border-red-500' : 'border-transparent'}`} />
-                    <button onClick={submitBottomOv} disabled={bottomOvSending}
-                      className="bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap disabled:opacity-70">
-                      {bottomOvSending ? 'Sending…' : 'Notify me →'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-3">
-                    <div className="inline-flex items-center gap-3 bg-orange-600/10 ring-1 ring-orange-600/20 rounded-2xl px-6 py-4">
-                      <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                      <span className="text-orange-400 font-bold text-sm">We&apos;ll let you know when we open to everyone.</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <a href="/signup"
+              className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap mb-4">
+              Get started →
+            </a>
 
             <p className="text-zinc-700 text-xs font-medium">
-              No spam, ever &nbsp;·&nbsp; Unsubscribe anytime &nbsp;·&nbsp;{' '}
+              Free to join &nbsp;·&nbsp; No credit card required &nbsp;·&nbsp;{' '}
               <Link href="/privacy" className="hover:text-zinc-500 transition-colors">Privacy Policy</Link>
             </p>
           </div>

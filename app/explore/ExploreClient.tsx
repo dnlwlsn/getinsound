@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCurrency } from '../providers/CurrencyProvider'
@@ -42,13 +42,6 @@ function SearchIcon({ className }: { className?: string }) {
     </svg>
   )
 }
-function CloseIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  )
-}
 function PlayIcon({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
@@ -67,7 +60,7 @@ function CheckIcon({ size = 40 }: { size?: number }) {
 /* ── Helpers ──────────────────────────────────────────────────── */
 
 function releaseUrl(r: ExploreRelease) {
-  return `/${r.artist_slug}/${r.slug}`
+  return `/release?a=${r.artist_slug}&r=${r.slug}`
 }
 
 function coverSrc(r: ExploreRelease) {
@@ -89,34 +82,10 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
   const [loading, setLoading] = useState(true)
   const { mode: viewMode, set: setViewMode } = useViewMode()
 
-  // Register interest state
-  const [registered, setRegistered] = useState(false)
-  const [stickyVisible, setStickyVisible] = useState(false)
-  const [stickyDismissed, setStickyDismissed] = useState(false)
-  const registerEmailRef = useRef<HTMLInputElement>(null)
-  const stickyEmailRef = useRef<HTMLInputElement>(null)
-
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400)
     return () => clearTimeout(t)
   }, [])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (localStorage.getItem('insound_interested')) setRegistered(true)
-      if (sessionStorage.getItem('insound_bar_dismissed')) setStickyDismissed(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (registered || stickyDismissed) return
-    const handler = () => {
-      const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight || 1)
-      if (pct > 0.35) setStickyVisible(true)
-    }
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
-  }, [registered, stickyDismissed])
 
   /* ── Derive genres from real data ────────────────────────────── */
   const genres = useMemo(() => {
@@ -164,40 +133,6 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
   }, [])
 
   const headingText = currentGenre === 'All' ? 'All Releases' : currentGenre
-
-  /* ── Register interest ────────────────────────────────────── */
-  const submitInterest = useCallback(async (email: string, inputRef: React.RefObject<HTMLInputElement | null>) => {
-    if (!email || !/\S+@\S+\.\S+/.test(email)) {
-      if (inputRef.current) {
-        inputRef.current.style.borderColor = '#ef4444'
-        inputRef.current.focus()
-      }
-      return
-    }
-    try {
-      const res = await fetch('https://formspree.io/f/mbjergwz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ email, source: 'Explore | insound.' }),
-      })
-      if (res.ok) {
-        localStorage.setItem('insound_interested', '1')
-        setRegistered(true)
-        setStickyDismissed(true)
-        sessionStorage.setItem('insound_bar_dismissed', '1')
-      } else if (inputRef.current) {
-        inputRef.current.style.borderColor = '#ef4444'
-      }
-    } catch {
-      if (inputRef.current) inputRef.current.style.borderColor = '#ef4444'
-    }
-  }, [])
-
-  const dismissStickyBar = useCallback(() => {
-    setStickyDismissed(true)
-    setStickyVisible(false)
-    sessionStorage.setItem('insound_bar_dismissed', '1')
-  }, [])
 
   /* ── Render ───────────────────────────────────────────────── */
   return (
@@ -432,74 +367,20 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
         <div className="max-w-2xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 rounded-full px-4 py-2 mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Early Access Open</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Now Live</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">Be first in line.</h2>
-          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Register your interest and get priority access, a founding member badge, and your rate locked in forever &mdash; before we open to everyone.</p>
-          {!registered ? (
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-5">
-              <input
-                ref={registerEmailRef}
-                type="email"
-                placeholder="your@email.com"
-                onKeyDown={e => { if (e.key === 'Enter') submitInterest(registerEmailRef.current?.value.trim() ?? '', registerEmailRef) }}
-                className="flex-1 bg-zinc-900 border border-zinc-800 focus:border-orange-600 focus:outline-none rounded-xl px-4 py-4 text-sm font-medium text-white placeholder-zinc-600 transition-colors"
-              />
-              <button
-                onClick={() => submitInterest(registerEmailRef.current?.value.trim() ?? '', registerEmailRef)}
-                className="bg-orange-600 hover:bg-orange-500 text-black font-black px-7 py-4 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20"
-              >
-                Register &rarr;
-              </button>
-            </div>
-          ) : (
-            <div className="mb-5">
-              <div className="inline-flex items-center gap-3 bg-orange-600/10 border border-orange-600/20 rounded-xl px-6 py-4">
-                <CheckIcon size={16} />
-                <span className="text-orange-500 font-black text-sm">{"You're on the list. We'll be in touch."}</span>
-              </div>
-            </div>
-          )}
+          <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">Start selling today.</h2>
+          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Upload your music, set your price, and get paid directly. We only take 10% &mdash; no monthly fee, no approval process.</p>
+          <a href="/signup?intent=artist"
+            className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-7 py-4 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20 mb-5">
+            Get started &rarr;
+          </a>
           <p className="text-zinc-600 text-xs font-medium">
-            No spam, ever &nbsp;&middot;&nbsp; Unsubscribe anytime &nbsp;&middot;&nbsp;{' '}
+            Free to join &nbsp;&middot;&nbsp; No credit card required &nbsp;&middot;&nbsp;{' '}
             <Link href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>
           </p>
         </div>
       </section>
-
-      {/* STICKY REGISTER BAR */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800 px-5 py-3.5"
-        style={{
-          transform: stickyVisible && !stickyDismissed && !registered ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)',
-        }}
-      >
-        <div className="max-w-4xl mx-auto flex items-center gap-4 flex-wrap sm:flex-nowrap">
-          <div className="hidden sm:block flex-1 min-w-0">
-            <p className="font-black text-sm text-white">Get early access to Insound</p>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Founding member rates &mdash; locked forever</p>
-          </div>
-          <div className="flex gap-2 flex-1 sm:flex-initial">
-            <input
-              ref={stickyEmailRef}
-              type="email"
-              placeholder="your@email.com"
-              onKeyDown={e => { if (e.key === 'Enter') submitInterest(stickyEmailRef.current?.value.trim() ?? '', stickyEmailRef) }}
-              className="flex-1 sm:w-52 bg-zinc-800 border border-zinc-700 focus:border-orange-600 focus:outline-none rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 transition-colors"
-            />
-            <button
-              onClick={() => submitInterest(stickyEmailRef.current?.value.trim() ?? '', stickyEmailRef)}
-              className="bg-orange-600 hover:bg-orange-500 text-black font-black px-5 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20"
-            >
-              Register &rarr;
-            </button>
-          </div>
-          <button onClick={dismissStickyBar} className="text-zinc-600 hover:text-zinc-400 flex-shrink-0 p-1" aria-label="Dismiss">
-            <CloseIcon size={16} />
-          </button>
-        </div>
-      </div>
 
       {/* Shimmer keyframes */}
       <style jsx global>{`

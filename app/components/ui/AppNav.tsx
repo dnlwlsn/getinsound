@@ -7,11 +7,12 @@ import { createClient } from '@/lib/supabase/client'
 import { SearchInput } from './SearchInput'
 import { ProfileMenu } from './ProfileMenu'
 import { NotificationBell } from './NotificationBell'
+import { BasketButton } from './BasketButton'
 
 const NAV_LINKS = [
   { href: '/explore', label: 'Explore' },
   { href: '/discover', label: 'Discover' },
-  { href: '/library', label: 'Library' },
+  { href: '/library', label: 'Collection' },
 ]
 
 const HIDE_NAV_ROUTES = ['/', '/signup', '/auth', '/welcome', '/become-an-artist']
@@ -44,7 +45,7 @@ export function AppNav() {
           </Link>
           <Link href="/signup"
             className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors">
-            Join the Waitlist
+            Sign Up
           </Link>
         </div>
       </nav>
@@ -52,36 +53,63 @@ export function AppNav() {
   }
 
   return (
-    <nav className="sticky top-0 w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
-        <Link href="/explore" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
-          insound.
-        </Link>
+    <>
+      <nav className="sticky top-0 w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
+          <Link href="/explore" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
+            insound.
+          </Link>
 
-        <SearchInput className="flex-1 max-w-md hidden md:block" />
-        <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </Link>
+          <SearchInput className="flex-1 max-w-md hidden md:block" />
+          <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </Link>
 
-        <div className="flex gap-4 items-center text-xs font-black uppercase tracking-widest">
-          {NAV_LINKS.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`hidden sm:block transition-colors ${
-                pathname === link.href ? 'text-white' : 'text-zinc-500 hover:text-white'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <NotificationBell userId={userId} />
-          <ProfileMenu />
+          <div className="flex gap-4 items-center text-xs font-black uppercase tracking-widest">
+            {NAV_LINKS.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`hidden sm:block transition-colors ${
+                  pathname === link.href ? 'text-white' : 'text-zinc-500 hover:text-white'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <NotificationBell userId={userId} />
+            <BasketButton />
+            <ProfileMenu />
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Mobile bottom nav */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-xl flex">
+        {NAV_LINKS.map(link => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
+              pathname === link.href ? 'text-orange-500' : 'text-zinc-500'
+            }`}
+          >
+            {link.href === '/explore' && (
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            )}
+            {link.href === '/discover' && (
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            )}
+            {link.href === '/library' && (
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/></svg>
+            )}
+            <span className="text-[9px] font-black uppercase tracking-wider">{link.label}</span>
+          </Link>
+        ))}
+      </nav>
+    </>
   )
 }

@@ -12,7 +12,7 @@ export default async function DashboardPage() {
 
   // Parallel queries
   const [artistRes, accountRes, releasesRes, purchasesRes, codesRes, fanProfileRes, merchRes, ordersRes] = await Promise.all([
-    supabase.from('artists').select('id, slug, name, bio, avatar_url, banner_url, accent_colour, social_links, first_year_zero_fees, first_year_zero_fees_start, milestone_first_sale, milestone_first_sale_at, milestone_first_sale_shown, return_address').eq('id', user.id).maybeSingle(),
+    supabase.from('artists').select('id, slug, name, bio, avatar_url, banner_url, accent_colour, social_links, milestone_first_sale, milestone_first_sale_at, milestone_first_sale_shown, return_address').eq('id', user.id).maybeSingle(),
     supabase.from('artist_accounts').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('releases')
       .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, created_at, tracks(id, preview_plays, full_plays)')
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       .select('id, release_id, code, redeemed_by, redeemed_at')
       .eq('artist_id', user.id),
     supabase.from('fan_profiles')
-      .select('referral_code, referral_count, first_year_zero_fees, username, is_public')
+      .select('referral_code, referral_count, username, is_public')
       .eq('id', user.id)
       .single(),
     supabase.from('merch')
@@ -172,9 +172,6 @@ export default async function DashboardPage() {
       referral={fanProfile ? {
         code: fanProfile.referral_code,
         count: fanProfile.referral_count,
-        zeroFeesUnlocked: fanProfile.first_year_zero_fees,
-        zeroFeesStart: artist.first_year_zero_fees_start,
-        artistHasZeroFees: artist.first_year_zero_fees,
       } : undefined}
     />
   )

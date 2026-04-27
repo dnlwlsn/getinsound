@@ -11,14 +11,11 @@ import {
 
 type Props = {
   referralCode: string
-  referralCount: number
-  zeroFeesUnlocked: boolean
 }
 
-export function ShareClient({ referralCode, referralCount, zeroFeesUnlocked }: Props) {
+export function ShareClient({ referralCode }: Props) {
   const [copied, setCopied] = useState(false)
   const shareLink = referralShareUrl(referralCode)
-  const filled = Math.min(referralCount, 5)
 
   async function copyLink() {
     try {
@@ -31,7 +28,6 @@ export function ShareClient({ referralCode, referralCount, zeroFeesUnlocked }: P
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#09090b' }}>
       <div className="w-full max-w-md">
-        {/* Founder's Card */}
         <div
           className="rounded-3xl p-8 relative overflow-hidden"
           style={{
@@ -48,12 +44,9 @@ export function ShareClient({ referralCode, referralCount, zeroFeesUnlocked }: P
             You&apos;re in.
           </h1>
           <p className="text-zinc-400 text-sm leading-relaxed mb-8">
-            {zeroFeesUnlocked
-              ? "You've unlocked 0% Insound fees for your first year. Keep sharing to help more artists get discovered."
-              : 'Share your link. Invite 5 friends to unlock 0% Insound fees for your first year.'}
+            Share your link to help more artists discover Insound.
           </p>
 
-          {/* Referral link */}
           <div className="bg-black/40 rounded-xl p-4 mb-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Your referral link</p>
             <div className="flex items-center gap-3">
@@ -67,7 +60,6 @@ export function ShareClient({ referralCode, referralCount, zeroFeesUnlocked }: P
             </div>
           </div>
 
-          {/* Share buttons */}
           <div className="flex gap-3 mb-8">
             <a
               href={twitterShareUrl(referralCode)}
@@ -92,36 +84,8 @@ export function ShareClient({ referralCode, referralCount, zeroFeesUnlocked }: P
               Email
             </a>
           </div>
-
-          {/* Progress indicator */}
-          <div className="text-center">
-            <div className="flex justify-center gap-3 mb-3">
-              {[0, 1, 2, 3, 4].map(i => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center"
-                  style={{
-                    borderColor: i < filled ? '#F56D00' : 'rgba(255,255,255,0.08)',
-                    background: i < filled ? 'rgba(245, 109, 0, 0.15)' : 'transparent',
-                  }}
-                >
-                  {i < filled && (
-                    <svg width="14" height="14" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="text-zinc-500 text-xs font-bold">
-              {zeroFeesUnlocked
-                ? 'Zero fees unlocked!'
-                : `${filled} of 5 friends invited`}
-            </p>
-          </div>
         </div>
 
-        {/* Continue link */}
         <div className="text-center mt-8">
           <Link
             href="/explore"

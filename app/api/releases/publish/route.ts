@@ -29,6 +29,27 @@ export async function POST(req: NextRequest) {
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 
   if (published) {
+    // Check Founding Artist eligibility: Stripe verified + first published release
+    try {
+      const { data: account } = await supabase
+        .from('artist_accounts')
+        .select('stripe_verified')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (account?.stripe_verified) {
+        const { data: artistRow } = await supabase
+          .from('artists')
+          .select('founding_artist')
+          .eq('id', user.id)
+          .single()
+
+        if (artistRow && !artistRow.founding_artist) {
+          await supabase.rpc('confirm_founding_artist', { artist_id: user.id })
+        }
+      }
+    } catch {}
+
     const { data: artist } = await supabase
       .from('artists')
       .select('name, slug')

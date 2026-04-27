@@ -223,7 +223,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
               href="/explore"
               className="text-orange-600 text-sm font-bold hover:text-orange-500 transition-colors"
             >
-              Discover music &rarr;
+              Explore music &rarr;
             </Link>
           </div>
         </div>
@@ -251,13 +251,13 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
           <div className="flex gap-3 w-full md:w-auto">
             <div className="bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl text-right flex-1 md:flex-initial">
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">
-                Contributed
+                Supported
               </p>
               <p className="text-xl sm:text-2xl font-black text-orange-600">{totalContributed}</p>
             </div>
             <div className="bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl text-right flex-1 md:flex-initial">
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">
-                Releases
+                Owned
               </p>
               <p className="text-xl sm:text-2xl font-black">{releasesOwned}</p>
             </div>

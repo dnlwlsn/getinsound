@@ -16,6 +16,7 @@ export default async function AdminPage() {
     .order('key')
 
   const links = [
+    { href: '/admin/founding-artists', label: 'Founding Artists', description: 'View programme status, spots filled, pause toggle' },
     { href: '/admin/broadcast', label: 'Broadcast', description: 'Send emails to artists and fans' },
     { href: '/admin/insound-selects', label: 'Insound Selects', description: 'Curate featured releases' },
     { href: '/admin/flags', label: 'Security Flags', description: 'Review suspicious activity flags' },

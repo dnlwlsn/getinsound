@@ -31,19 +31,12 @@ export default function PrivacyPage() {
             <tr><td><strong>Contact email</strong></td><td><a href="mailto:privacy@getinsound.com">privacy@getinsound.com</a></td></tr>
             <tr><td><strong>Website</strong></td><td><a href="https://getinsound.com">getinsound.com</a></td></tr>
           </tbody></table>
-          <p>This policy applies to all visitors, waitlist subscribers, fans, and artists who use the Insound website and platform. It explains what personal data we collect, why, how long we keep it, who we share it with, and your rights under UK data protection law (UK GDPR and the Data Protection Act 2018).</p>
+          <p>This policy applies to all visitors, fans, and artists who use the Insound website and platform. It explains what personal data we collect, why, how long we keep it, who we share it with, and your rights under UK data protection law (UK GDPR and the Data Protection Act 2018).</p>
 
           <h2>2. What data we collect and why</h2>
           <p>We collect different data depending on how you use Insound. We only collect what is necessary for each purpose.</p>
 
-          <h3>2.1 Waitlist &amp; waitlist overflow subscribers</h3>
-          <table><thead><tr><th>Data</th><th>Purpose</th></tr></thead><tbody>
-            <tr><td>Email address</td><td>To send launch updates, early access invitations, and occasional product news</td></tr>
-            <tr><td>Submission timestamp</td><td>To determine waitlist position and manage priority access</td></tr>
-            <tr><td>Source page</td><td>To understand which page the sign-up came from (analytics, no profiling)</td></tr>
-          </tbody></table>
-
-          <h3>2.2 Artists</h3>
+          <h3>2.1 Artists</h3>
           <table><thead><tr><th>Data</th><th>Purpose</th></tr></thead><tbody>
             <tr><td>Name</td><td>Display name on your artist profile and releases</td></tr>
             <tr><td>Email address</td><td>Account login, transactional notifications (sales, payouts), and optional marketing</td></tr>
@@ -53,23 +46,23 @@ export default function PrivacyPage() {
             <tr><td>Sales analytics (amounts, timestamps, buyer count)</td><td>To provide your dashboard earnings data and generate aggregate platform statistics</td></tr>
           </tbody></table>
 
-          <h3>2.3 Fans</h3>
+          <h3>2.2 Fans</h3>
           <table><thead><tr><th>Data</th><th>Purpose</th></tr></thead><tbody>
             <tr><td>Email address (collected at purchase)</td><td>To deliver download links, purchase receipts, and optional marketing if you opt in</td></tr>
             <tr><td>Purchase history (releases bought, amounts, dates)</td><td>To provide your library, re-download access, and generate artist sales reports</td></tr>
             <tr><td>Pay-what-you-want amounts</td><td>To process the transaction at the price you chose</td></tr>
           </tbody></table>
 
-          <h3>2.4 All users</h3>
+          <h3>2.3 All users</h3>
           <table><thead><tr><th>Data</th><th>Purpose</th></tr></thead><tbody>
             <tr><td>IP address, browser type, device info</td><td>Automatically collected by Cloudflare for security, DDoS protection, and basic analytics. We do not use this to identify individuals</td></tr>
-            <tr><td>localStorage values</td><td>To remember waitlist status, theme preference, and authentication state. These are not cookies and are not shared with third parties</td></tr>
+            <tr><td>localStorage values</td><td>To remember view preferences and authentication state. These are not cookies and are not shared with third parties</td></tr>
           </tbody></table>
 
           <h2>3. Legal basis for processing</h2>
           <p>Under UK GDPR Article 6(1), we rely on the following legal bases:</p>
           <table><thead><tr><th>Basis</th><th>Applies to</th></tr></thead><tbody>
-            <tr><td><strong>Consent</strong> &mdash; Art. 6(1)(a)</td><td>Waitlist sign-up, marketing emails. You can withdraw consent at any time via the unsubscribe link in any email or by contacting us</td></tr>
+            <tr><td><strong>Consent</strong> &mdash; Art. 6(1)(a)</td><td>Marketing emails. You can withdraw consent at any time via the unsubscribe link in any email or by contacting us</td></tr>
             <tr><td><strong>Contract</strong> &mdash; Art. 6(1)(b)</td><td>Processing artist and fan data necessary to provide the platform: account creation, file hosting, payment processing, download delivery</td></tr>
             <tr><td><strong>Legitimate interest</strong> &mdash; Art. 6(1)(f)</td><td>Basic analytics, fraud prevention, platform security, and improving the service</td></tr>
             <tr><td><strong>Legal obligation</strong> &mdash; Art. 6(1)(c)</td><td>Retaining transaction records as required by UK tax and accounting law (HMRC)</td></tr>
@@ -77,7 +70,6 @@ export default function PrivacyPage() {
 
           <h2>4. How long we keep your data</h2>
           <table><thead><tr><th>Data type</th><th>Retention period</th></tr></thead><tbody>
-            <tr><td>Waitlist emails</td><td>Until you unsubscribe, or 12 months after public launch &mdash; whichever is sooner</td></tr>
             <tr><td>Artist account data</td><td>Duration of your account plus 6 years after deletion (UK tax record-keeping)</td></tr>
             <tr><td>Fan purchase history</td><td>Duration of your account plus 6 years (UK tax/accounting obligations)</td></tr>
             <tr><td>Uploaded audio files &amp; artwork</td><td>Deleted within 30 days of an artist removing a release or closing their account</td></tr>
@@ -120,7 +112,6 @@ export default function PrivacyPage() {
           <p>Insound does not use traditional tracking cookies. Here is what we do use:</p>
           <h3>8.1 localStorage (browser)</h3>
           <table><thead><tr><th>Key</th><th>Purpose</th><th>Duration</th></tr></thead><tbody>
-            <tr><td><code>insound_interested</code></td><td>Remembers that you joined the waitlist</td><td>Persistent until cleared</td></tr>
             <tr><td><code>insound_view_mode</code></td><td>Remembers your compact/expanded view preference</td><td>Persistent until cleared</td></tr>
           </tbody></table>
           <p>localStorage values are stored entirely in your browser. They are not sent to our servers, not shared with third parties, and can be cleared at any time via your browser settings.</p>

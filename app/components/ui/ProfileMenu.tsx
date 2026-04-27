@@ -69,15 +69,15 @@ export function ProfileMenu() {
           {profile.isArtist ? (
             <>
               <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Dashboard</MenuLink>
-              <MenuLink href="/library" onClick={() => setOpen(false)}>My Library</MenuLink>
+              <MenuLink href="/library" onClick={() => setOpen(false)}>My Collection</MenuLink>
               <MenuLink href={`/${profile.artistSlug}`} onClick={() => setOpen(false)} external>
                 View my artist page
               </MenuLink>
-              <MenuLink href="/settings" onClick={() => setOpen(false)}>Settings</MenuLink>
+              <MenuLink href="/settings" onClick={() => setOpen(false)}>Fan Profile</MenuLink>
             </>
           ) : (
             <>
-              <MenuLink href="/library" onClick={() => setOpen(false)}>My Library</MenuLink>
+              <MenuLink href="/library" onClick={() => setOpen(false)}>My Collection</MenuLink>
               <MenuLink href="/settings" onClick={() => setOpen(false)}>Settings</MenuLink>
               <div className="mx-1.5 my-1 border-t border-zinc-800" />
               <MenuLink href="/become-an-artist" onClick={() => setOpen(false)} highlight>

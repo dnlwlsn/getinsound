@@ -37,7 +37,11 @@ export function SignupClient() {
       })
       if (!res.ok) {
         const data = await res.json()
-        setErrorMsg(data.error || 'Failed to send magic link.')
+        if (res.status === 429) {
+          setErrorMsg('Too many attempts. Please wait a few minutes and try again.')
+        } else {
+          setErrorMsg(data.error || 'Failed to send magic link.')
+        }
         setPhase('error')
       } else {
         setPhase('sent')
@@ -82,7 +86,7 @@ export function SignupClient() {
 
                 {authError && (
                   <div className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3 mb-5">
-                    Something went wrong. Please try again.
+                    Your sign-in link may have expired or already been used. Please request a new one.
                   </div>
                 )}
 

@@ -157,8 +157,8 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, u
 
       <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
         <div className="w-full max-w-lg relative z-10">
-          <h1 className="font-display text-2xl font-bold mb-2">Settings</h1>
-          <p className="text-zinc-500 text-sm mb-6">Manage your account.</p>
+          <h1 className="font-display text-2xl font-bold mb-2">Fan Profile</h1>
+          <p className="text-zinc-500 text-sm mb-6">This is your personal profile on Insound. Artists also get a separate artist page.</p>
 
           <SettingsTabs />
 
@@ -193,6 +193,9 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, u
                   className="flex-1 bg-transparent py-3.5 outline-none text-white text-sm placeholder-zinc-700" />
               </div>
               <p className="text-[10px] text-zinc-600 mt-1.5">Lowercase letters, numbers and hyphens. 3-40 characters.</p>
+              {username.trim() && (
+                <p className="text-[10px] text-zinc-500 mt-1">This is the URL for your public fan profile. Control what&apos;s visible in Privacy below.</p>
+              )}
             </div>
 
             {/* ── Bio ────────────────────────────────────────── */}
@@ -221,7 +224,7 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, u
             <div className="border-t border-zinc-800 pt-8">
               <h2 className="font-display text-lg font-bold mb-4">Privacy</h2>
 
-              {username && (
+              {username && isPublic && (
                 <a
                   href={`/@${username}`}
                   target="_blank"

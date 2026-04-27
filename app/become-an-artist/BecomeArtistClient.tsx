@@ -283,10 +283,12 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
                   <textarea
                     placeholder="Tell fans about yourself..."
                     rows={4}
+                    maxLength={500}
                     value={bio}
                     onChange={e => setBio(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 outline-none transition-colors text-white text-sm placeholder-zinc-700 focus:border-orange-600 resize-none"
                   />
+                  <p className="text-right text-[10px] text-zinc-600 mt-1">{bio.length}/500</p>
                 </div>
                 <div className="flex gap-3">
                   <button onClick={() => setStep(3)} className="flex-1 bg-zinc-800 text-white font-bold py-4 rounded-xl hover:bg-zinc-700 transition-colors text-sm">

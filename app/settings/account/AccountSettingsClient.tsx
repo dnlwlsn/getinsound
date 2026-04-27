@@ -20,12 +20,13 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
   const [showModal, setShowModal] = useState(false)
   const [pending, setPending] = useState(pendingDeletion)
   const [downloading, setDownloading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [newEmail, setNewEmail] = useState('')
   const [emailChanging, setEmailChanging] = useState(false)
   const [emailChangeSuccess, setEmailChangeSuccess] = useState(false)
   const [emailChangeError, setEmailChangeError] = useState('')
   const [showReverify, setShowReverify] = useState(false)
-  const [pendingAction, setPendingAction] = useState<'email' | 'delete' | null>(null)
+  const [pendingAction, setPendingAction] = useState<'email' | 'delete' | 'export' | null>(null)
 
   useEffect(() => {
     if (searchParams.get('cancel-deletion') === 'true' && pending) {
@@ -108,6 +109,33 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
     setDownloading(false)
   }
 
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const res = await fetch('/api/account/export')
+      if (res.status === 403) {
+        const data = await res.json()
+        if (data.code === 'FRESH_AUTH_REQUIRED') {
+          setPendingAction('export')
+          setShowReverify(true)
+          setExporting(false)
+          return
+        }
+      }
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `insound-data-export-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silent fail — download simply won't start
+    }
+    setExporting(false)
+  }
+
   return (
     <div className="min-h-screen flex flex-col relative"
       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px)', backgroundSize: '48px 48px' }}>
@@ -167,6 +195,21 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
 
             <NotificationPreferences isArtist={false} />
 
+            {/* Data export */}
+            <div className="mt-8 pt-8 border-t border-zinc-800">
+              <h2 className="text-lg font-semibold mb-2">Export your data</h2>
+              <p className="text-xs text-zinc-500 mb-4">
+                Download a copy of all personal data we hold about you (profile, purchases, preferences, sessions).
+              </p>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="text-sm bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {exporting ? 'Preparing export...' : 'Download my data'}
+              </button>
+            </div>
+
             {!pending && (
               <div className="border border-red-900/30 bg-red-950/10 rounded-xl p-6">
                 <p className="text-[10px] font-black uppercase tracking-widest text-orange-500 mb-4">Danger Zone</p>
@@ -205,6 +248,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
             setShowReverify(false)
             if (pendingAction === 'email') handleEmailChange()
             if (pendingAction === 'delete') handleConfirm()
+            if (pendingAction === 'export') handleExport()
             setPendingAction(null)
           }}
           onClose={() => {
