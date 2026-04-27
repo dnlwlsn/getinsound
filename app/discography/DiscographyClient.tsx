@@ -93,7 +93,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
   const [type, setType] = useState<'single' | 'ep' | 'album'>('album')
-  const [pricePounds, setPricePounds] = useState('2.00')
+  const [pricePounds, setPricePounds] = useState('10.00')
   const [pwyw, setPwyw] = useState(false)
   const [pwywMinPounds, setPwywMinPounds] = useState('2.00')
   const [preorder, setPreorder] = useState(false)
@@ -114,7 +114,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
     setSlug('')
     setSlugTouched(false)
     setType('album')
-    setPricePounds('7.00')
+    setPricePounds('10.00')
     setPwyw(false)
     setPwywMinPounds('2.00')
     setPreorder(false)
@@ -205,6 +205,13 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
     setSaving(true)
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Your session has expired. Please refresh the page and sign in again.')
+        setSaving(false)
+        return
+      }
+
       // 1. Create the release row
       setUploadProgress('Creating release...')
       const pwywMinPence = pwyw ? Math.round(parseFloat(pwywMinPounds) * 100) : null
@@ -526,9 +533,9 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                         type="button"
                         onClick={() => {
                           setType(t)
-                          if (t === 'album' && pricePounds === '2.00') setPricePounds('7.00')
+                          if (t === 'album' && pricePounds === '2.00') setPricePounds('10.00')
                           if (t === 'ep' && pricePounds === '2.00') setPricePounds('5.00')
-                          if (t === 'single' && (pricePounds === '7.00' || pricePounds === '5.00')) setPricePounds('2.00')
+                          if (t === 'single' && (pricePounds === '10.00' || pricePounds === '5.00')) setPricePounds('2.00')
                         }}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-bold capitalize transition-colors ${type === t ? 'bg-orange-600 text-black' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'}`}
                       >
@@ -545,15 +552,31 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Price (GBP)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="2.00"
-                      required
-                      value={pricePounds}
-                      onChange={(e) => setPricePounds(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white focus:border-orange-600 outline-none transition-colors"
-                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPricePounds(p => { const v = Math.max(2, parseFloat(p) - 1); return v.toFixed(2) })}
+                        className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center text-lg font-bold"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="2.00"
+                        required
+                        value={pricePounds}
+                        onChange={(e) => setPricePounds(e.target.value)}
+                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white text-center focus:border-orange-600 outline-none transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPricePounds(p => { const v = parseFloat(p) + 1; return v.toFixed(2) })}
+                        className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center text-lg font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
                     <p className="text-[10px] text-zinc-600 mt-1.5">
                       {pwyw ? 'Suggested price shown to fans.' : 'Fixed price fans pay to download.'} Min {formatPriceUtil(2, 'GBP')}.
                       {type === 'album' && ' Most albums sell between £5–£10.'}

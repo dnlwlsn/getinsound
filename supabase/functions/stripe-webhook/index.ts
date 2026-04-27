@@ -701,7 +701,7 @@ Deno.serve(async (req) => {
       // Stripe amount_total is always in the smallest currency unit
       // (pence for GBP, cents for USD, whole yen for JPY). Store as-is.
       const amountPence = session.amount_total ?? 0;
-      const feeBps = parseInt(session.metadata?.fee_bps || String(STANDARD_FEE_BPS), 10);
+      const feeBps = parseInt(session.metadata?.fee_bps ?? '', 10) || STANDARD_FEE_BPS;
       const platformPence = Math.round(amountPence * feeBps / 10000);
       const artistPence = amountPence - platformPence;
 

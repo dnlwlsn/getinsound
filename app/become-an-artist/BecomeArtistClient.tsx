@@ -253,7 +253,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
             {step === 3 && (
               <div className="space-y-5">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-4">Choose your accent colour</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-4">Choose your accent colour. Can be changed later</label>
                   <div className="grid grid-cols-5 gap-3">
                     {ACCENT_COLOURS.map(c => (
                       <button
