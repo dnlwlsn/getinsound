@@ -4,6 +4,7 @@ export type NotificationType =
   | 'new_release' | 'preorder_ready' | 'order_dispatched' | 'artist_post'
   | 'sale' | 'first_sale' | 'preorder' | 'merch_order' | 'code_redeemed' | 'zero_fees_unlocked'
   | 'merch_dispatched' | 'merch_delivered' | 'merch_return' | 'merch_dispute'
+  | 'new_follower'
 
 interface CreateNotificationParams {
   supabase: SupabaseClient
