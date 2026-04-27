@@ -5,6 +5,10 @@ import { requireFreshAuth } from '@/lib/fresh-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/email/send'
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 function getAdminClient() { return createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
           <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
         </td></tr>
         <tr><td style="color:#FAFAFA;font-size:18px;line-height:1.6;padding-bottom:32px;">
-          Your Insound email has been changed to <strong>${email}</strong>.
+          Your Insound email has been changed to <strong>${escapeHtml(email)}</strong>.
         </td></tr>
         <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
           If this wasn't you, please contact us immediately at support@getinsound.com.

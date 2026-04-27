@@ -34,7 +34,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Image must be under 5MB' }, { status: 400 })
   }
 
-  const ext = file.name.split('.').pop() || 'jpg'
+  const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+  const ext = extMap[file.type] || 'jpg'
   const path = `${user.id}/${id}/${crypto.randomUUID()}.${ext}`
 
   const { error: uploadErr } = await supabase.storage
@@ -95,7 +96,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await supabase.storage.from('merch-images').remove([storagePath])
   }
 
-  const ext = file.name.split('.').pop() || 'jpg'
+  const extMap2: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+  const ext = extMap2[file.type] || 'jpg'
   const path = `${user.id}/${id}/${crypto.randomUUID()}.${ext}`
   const { error: uploadErr } = await supabase.storage
     .from('merch-images')

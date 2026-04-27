@@ -10,8 +10,9 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('tracks')
-    .select('id, title, position, duration_sec')
+    .select('id, title, position, duration_sec, releases!inner(published)')
     .eq('release_id', releaseId)
+    .eq('releases.published', true)
     .order('position', { ascending: true })
 
   if (error) {

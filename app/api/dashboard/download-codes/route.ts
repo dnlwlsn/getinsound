@@ -86,9 +86,11 @@ export async function POST(req: NextRequest) {
 
 // Generate a human-friendly code: INSND-XXXX-XXXX
 function generateCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no I/O/0/1 for readability
-  const segment = () => Array.from({ length: 4 }, () =>
-    chars[Math.floor(Math.random() * chars.length)]
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const randomBytes = new Uint8Array(8)
+  crypto.getRandomValues(randomBytes)
+  const segment = (offset: number) => Array.from({ length: 4 }, (_, i) =>
+    chars[randomBytes[offset + i] % chars.length]
   ).join('')
-  return `INSND-${segment()}-${segment()}`
+  return `INSND-${segment(0)}-${segment(4)}`
 }

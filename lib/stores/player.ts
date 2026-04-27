@@ -44,7 +44,6 @@ interface PlayerState {
   resume: () => void
   next: () => void
   previous: () => void
-  seek: (time: number) => void
   setVolume: (vol: number) => void
   toggleMute: () => void
   setCurrentTime: (time: number) => void
@@ -52,7 +51,6 @@ interface PlayerState {
   setAudioUrl: (url: string, isPreview: boolean, previewDuration?: number | null) => void
   setIsPlaying: (playing: boolean) => void
   toggleExpanded: () => void
-  clearPlayer: () => void
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
@@ -125,7 +123,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
   },
 
-  seek: (time) => set({ currentTime: time }),
   setVolume: (vol) => set({ volume: Math.max(0, Math.min(1, vol)), isMuted: false }),
   toggleMute: () => set(s => ({ isMuted: !s.isMuted })),
   setCurrentTime: (time) => set({ currentTime: time }),
@@ -133,18 +130,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setAudioUrl: (url, isPreview, previewDuration) => set({ audioUrl: url, isPreview, previewDuration: previewDuration ?? null }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   toggleExpanded: () => set(s => ({ isExpanded: !s.isExpanded })),
-  clearPlayer: () => set({
-    currentTrack: null,
-    queue: [],
-    queueIndex: -1,
-    isPlaying: false,
-    currentTime: 0,
-    duration: 0,
-    audioUrl: null,
-    isPreview: false,
-    previewDuration: null,
-    isExpanded: false,
-  }),
 }))
 
 // Hydrate from IndexedDB on first load

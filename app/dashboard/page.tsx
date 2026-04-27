@@ -175,8 +175,16 @@ export default async function DashboardPage() {
       } : undefined}
     />
   )
-  } catch (e: any) {
-    return <pre style={{ padding: '2rem', color: '#f97316' }}>Dashboard error: {e?.message ?? String(e)}{'\n'}{e?.stack}</pre>
+  } catch (e) {
+    console.error('Dashboard error:', e)
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-8">
+        <div className="text-center">
+          <h1 className="text-xl font-bold mb-2">Something went wrong</h1>
+          <p className="text-zinc-400">Please try refreshing the page.</p>
+        </div>
+      </div>
+    )
   }
 }
 

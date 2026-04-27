@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   );
 
   const authHeader = req.headers.get('authorization') ?? '';
-  if (!authHeader.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)) {
+  if (authHeader !== `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
   }
 
@@ -149,7 +149,7 @@ async function processArtistDeletion(
         }
       } catch (e) {
         console.error(`Refund failed for purchase ${p.id}:`, (e as Error).message);
-        await admin.from('deletion_requests').update({
+        await admin.from('account_deletion_requests').update({
           status: 'failed',
           error: `Refund failed for purchase ${p.id}: ${(e as Error).message}`,
         }).eq('id', requestId);
@@ -188,12 +188,11 @@ async function processArtistDeletion(
     .update({ visibility: 'deleted', deletion_retain_until: retainUntil })
     .eq('artist_id', userId);
 
-  // 3. Anonymise artist sales records (keep financial data)
+  // 3. Nullify artist_id on sales records (keep buyer data intact)
   await admin
     .from('purchases')
-    .update({ buyer_email: 'deleted@anonymised', buyer_user_id: null })
-    .eq('artist_id', userId)
-    .neq('buyer_email', 'deleted@anonymised');
+    .update({ artist_id: null })
+    .eq('artist_id', userId);
 
   // 4. Delete artist posts + post-media storage
   await admin.from('artist_posts').delete().eq('artist_id', userId);

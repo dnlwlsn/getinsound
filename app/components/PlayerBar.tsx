@@ -15,7 +15,7 @@ export function PlayerBar() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, isMuted,
     audioUrl, isPreview, previewDuration, isExpanded,
-    pause, resume, next, previous, seek,
+    pause, resume, next, previous,
     setVolume, toggleMute, setCurrentTime, setDuration, setAudioUrl,
     setIsPlaying, toggleExpanded,
   } = usePlayerStore()
@@ -202,8 +202,8 @@ export function PlayerBar() {
     if (!canvas || displayDuration <= 0) return
     const rect = canvas.getBoundingClientRect()
     const ratio = (e.clientX - rect.left) / rect.width
-    seek(ratio * displayDuration)
-  }, [displayDuration, seek])
+    setCurrentTime(ratio * displayDuration)
+  }, [displayDuration, setCurrentTime])
 
   const expandedRef = useRef<HTMLDivElement>(null)
   const touchRef = useRef({ startY: 0, startTime: 0, dragging: false })

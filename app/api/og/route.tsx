@@ -1,6 +1,8 @@
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 
+export const revalidate = 86400
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const title = searchParams.get('title') || 'Insound'

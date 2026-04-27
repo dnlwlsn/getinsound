@@ -428,7 +428,7 @@ export default function HomeClient() {
                 <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">{formatPrice(calcPrice)}</p>
               </div>
               <input type="range" min={1} max={50} value={calcPrice}
-                onChange={e => setCalcPrice(parseInt(e.target.value))}
+                onChange={e => setCalcPrice(parseInt(e.target.value, 10))}
                 className="calc-slider w-full"
                 style={{ '--fill': calcFill } as React.CSSProperties} />
               <div className="flex justify-between text-[10px] t-faint mt-2 font-medium">

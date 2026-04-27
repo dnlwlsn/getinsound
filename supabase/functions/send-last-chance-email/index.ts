@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   );
 
   const authHeader = req.headers.get('authorization') ?? '';
-  if (!authHeader.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)) {
+  if (authHeader !== `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
   }
 

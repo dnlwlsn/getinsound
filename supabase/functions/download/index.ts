@@ -58,7 +58,18 @@ Deno.serve(async (req) => {
     if (new Date(grant.expires_at).getTime() < Date.now()) {
       return json({ error: 'Download link has expired.' }, 410);
     }
-    if (grant.used_count >= grant.max_uses) {
+
+    // Atomic increment — only succeeds if under the limit
+    const { data: updated, error: incErr } = await admin
+      .from('download_grants')
+      .update({ used_count: grant.used_count + 1 })
+      .eq('id', grant.id)
+      .lt('used_count', grant.max_uses)
+      .select('id')
+      .maybeSingle();
+
+    if (incErr) return json({ error: incErr.message }, 500);
+    if (!updated) {
       return json({ error: 'Download limit reached.' }, 410);
     }
 
@@ -103,8 +114,6 @@ Deno.serve(async (req) => {
         return { id: t.id, title: t.title, position: t.position, url: data.signedUrl };
       }),
     );
-
-    await admin.rpc('increment_download_grant_usage', { grant_id: grant.id });
 
     return json({
       release: {

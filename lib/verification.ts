@@ -17,13 +17,7 @@ export const SOCIAL_PLATFORMS: { key: SocialPlatform; label: string; placeholder
   { key: 'website', label: 'Website', placeholder: 'https://yourwebsite.com', pattern: /^https?:\/\/.+\..+/i },
 ]
 
-export interface VerificationInput {
-  stripe_verified: boolean
-  independence_confirmed: boolean
-  release_count: number
-}
-
-export function isVerified(artist: VerificationInput): boolean {
+export function isVerified(artist: { stripe_verified: boolean; independence_confirmed: boolean; release_count: number }): boolean {
   return artist.stripe_verified && artist.independence_confirmed && artist.release_count > 0
 }
 

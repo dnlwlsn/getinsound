@@ -1,10 +1,11 @@
 import { get, set } from 'idb-keyval'
+import type { Track } from '@/lib/stores/player'
 
 const STORE_KEY = 'insound-player-state'
 
 export interface PersistedPlayerState {
-  currentTrack: any | null
-  queue: any[]
+  currentTrack: Track | null
+  queue: Track[]
   queueIndex: number
   currentTime: number
   volume: number

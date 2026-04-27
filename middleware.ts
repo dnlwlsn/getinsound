@@ -9,10 +9,12 @@ const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/becom
 const THIRTY_DAYS = 60 * 60 * 24 * 30
 
 function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let result = 0
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  const maxLen = Math.max(a.length, b.length)
+  const paddedA = a.padEnd(maxLen, '\0')
+  const paddedB = b.padEnd(maxLen, '\0')
+  let result = a.length ^ b.length
+  for (let i = 0; i < maxLen; i++) {
+    result |= paddedA.charCodeAt(i) ^ paddedB.charCodeAt(i)
   }
   return result === 0
 }
@@ -71,6 +73,15 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
+
+  // ── CSRF protection for state-changing API requests ──
+  if (path.startsWith('/api') && request.method !== 'GET' && request.method !== 'HEAD') {
+    const origin = request.headers.get('origin')
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    if (origin && siteUrl && !origin.startsWith(siteUrl)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
 
   // ── Preview bypass ──
   const previewParam = request.nextUrl.searchParams.get('preview')
@@ -141,6 +152,7 @@ export async function middleware(request: NextRequest) {
         path: '/',
         maxAge: 300,
         httpOnly: true,
+        secure: true,
         sameSite: 'lax',
       })
     }
@@ -155,12 +167,16 @@ export async function middleware(request: NextRequest) {
     supabaseResponse.cookies.set('insound_locale', detectedCountry, {
       path: '/',
       maxAge: THIRTY_DAYS,
+      secure: true,
+      httpOnly: true,
       sameSite: 'lax',
     })
     if (detectedCurrency && !request.cookies.has('insound_currency')) {
       supabaseResponse.cookies.set('insound_currency', detectedCurrency, {
         path: '/',
         maxAge: THIRTY_DAYS,
+        secure: true,
+        httpOnly: true,
         sameSite: 'lax',
       })
     }
@@ -171,6 +187,7 @@ export async function middleware(request: NextRequest) {
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
       sameSite: 'lax',
+      secure: true,
       httpOnly: false,
     })
   }

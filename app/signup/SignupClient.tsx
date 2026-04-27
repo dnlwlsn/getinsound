@@ -85,7 +85,7 @@ export function SignupClient() {
                 <p className="text-zinc-500 text-sm text-center mb-8">We&apos;ll send you a magic link to sign in.</p>
 
                 {authError && (
-                  <div className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3 mb-5">
+                  <div role="alert" className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3 mb-5">
                     Your sign-in link may have expired or already been used. Please request a new one.
                   </div>
                 )}
@@ -171,7 +171,7 @@ export function SignupClient() {
             </div>
           </div>
 
-          <p className="text-zinc-700 text-xs text-center mt-6 font-medium">
+          <p className="text-zinc-400 text-xs text-center mt-6 font-medium">
             By continuing, you agree to our{' '}
             <Link href="/terms" className="hover:text-zinc-500 transition-colors">Terms</Link>,{' '}
             <Link href="/privacy" className="hover:text-zinc-500 transition-colors">Privacy Policy</Link>, and{' '}

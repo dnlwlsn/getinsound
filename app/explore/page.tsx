@@ -28,7 +28,7 @@ export default async function ExplorePage() {
     `)
     .eq('published', true)
     .order('created_at', { ascending: false })
-    .limit(200)
+    .limit(60)
 
   const mapped = (releases ?? []).map((r: any) => {
     const artist = Array.isArray(r.artists) ? r.artists[0] : r.artists

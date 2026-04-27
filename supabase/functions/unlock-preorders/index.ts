@@ -14,7 +14,7 @@ const GRANT_TTL_DAYS = 7;
 const GRANT_MAX_USES = 5;
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('SITE_URL') || 'https://getinsound.com',
   'Access-Control-Allow-Headers': 'authorization, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };

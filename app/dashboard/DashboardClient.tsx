@@ -16,7 +16,8 @@ import { SocialAccountsEditor } from '@/app/components/ui/SocialAccountsEditor'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import type { SocialLinks } from '@/lib/verification'
 import { CARRIERS } from '@/lib/carriers'
-import { AnalyticsCharts } from './AnalyticsCharts'
+import dynamic from 'next/dynamic'
+const AnalyticsCharts = dynamic(() => import('./AnalyticsCharts').then(m => m.AnalyticsCharts), { ssr: false })
 
 // ── Types ──────────────────────────────────────────────────────
 type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; banner_url: string | null; accent_colour: string | null; social_links: SocialLinks | null }
@@ -197,7 +198,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         })
         if (expandedCodesRelease === releaseId) loadCodesForRelease(releaseId)
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setGeneratingCodes(null)
     setShowGenerateModal(false)
   }
@@ -211,7 +212,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         setCodesForRelease(data.codes || [])
         setCodesSummary(prev => ({ ...prev, [releaseId]: { total: data.total, redeemed: data.redeemed } }))
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setCodesLoading(false)
   }
 
@@ -269,7 +270,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     try {
       const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' })
       if (res.ok) setPosts(prev => prev.filter(p => p.id !== postId))
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setDeletingPost(null)
   }
 
@@ -366,7 +367,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           r.id === cancelTarget ? { ...r, published: false, preorder_enabled: false } : r
         ))
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setCancelling(false)
     setCancelTarget(null)
   }
@@ -384,7 +385,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         setReturnAddr(returnAddrForm)
         setShowReturnAddrForm(false)
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setReturnAddrSaving(false)
   }
 
@@ -432,7 +433,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           price: Math.round(parseFloat(merchForm.price) * 100),
           currency: 'GBP',
           postage: Math.round(parseFloat(merchForm.postage || '0') * 100),
-          stock: parseInt(merchForm.stock),
+          stock: parseInt(merchForm.stock, 10),
           variants: variantsArr,
           dispatch_estimate: merchForm.dispatch_estimate,
         }),
@@ -448,7 +449,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         setMerchPhotoFiles([null, null, null])
         setMerchPhotoPreviews([null, null, null])
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setMerchSaving(false)
   }
 
@@ -477,7 +478,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         description: editMerchForm.description,
         price: Math.round(parseFloat(editMerchForm.price) * 100),
         postage: Math.round(parseFloat(editMerchForm.postage || '0') * 100),
-        stock: parseInt(editMerchForm.stock),
+        stock: parseInt(editMerchForm.stock, 10),
         variants: variantsArr,
         dispatch_estimate: editMerchForm.dispatch_estimate,
       }
@@ -490,7 +491,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         setMerch(prev => prev.map(m => m.id === editingMerch ? { ...m, ...updates } : m))
         setEditingMerch(null)
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setEditMerchSaving(false)
   }
 
@@ -504,7 +505,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         const data = await res.json()
         setMerch(prev => prev.map(m => m.id === merchId ? { ...m, photos: data.photos } : m))
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setUploadingPhotoFor(null)
   }
 
@@ -517,7 +518,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         const data = await res.json()
         setMerch(prev => prev.map(m => m.id === merchId ? { ...m, photos: data.photos } : m))
       }
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
     setUploadingPhotoFor(null)
   }
 
@@ -1577,7 +1578,7 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
                 await navigator.clipboard.writeText(embedCode)
                 setEmbedCopied(true)
                 setTimeout(() => setEmbedCopied(false), 2000)
-              } catch {}
+              } catch (err) { console.error('Operation failed:', err) }
             }}
             className="mt-2 bg-orange-600 text-black font-bold text-[10px] px-3 py-1.5 rounded-lg hover:bg-orange-500 transition-colors"
           >
@@ -1685,7 +1686,7 @@ function ReferralWidget({ referral }: { referral: Referral }) {
       await navigator.clipboard.writeText(shareLink)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch {}
+    } catch (err) { console.error('Operation failed:', err) }
   }
 
   return (
@@ -1750,7 +1751,7 @@ function FirstSaleMilestoneModal({ artistName, onClose }: { artistName: string; 
         await navigator.clipboard.writeText(`${shareText}\nhttps://getinsound.com`)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
-      } catch {}
+      } catch (err) { console.error('Operation failed:', err) }
     }
   }
 

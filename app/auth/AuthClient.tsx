@@ -125,7 +125,7 @@ export default function AuthClient() {
                   {magicBusy ? 'Sending...' : 'Send magic link →'}
                 </button>
                 {magicError && (
-                  <div className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3">
+                  <div role="alert" className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3">
                     {magicError}
                   </div>
                 )}
@@ -168,6 +168,7 @@ export default function AuthClient() {
                     type={showPw ? 'text' : 'password'}
                     placeholder="••••••••"
                     required
+                    autoComplete="current-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 outline-none transition-colors text-white text-sm pr-12 focus:border-orange-600"
@@ -200,7 +201,7 @@ export default function AuthClient() {
                   {busy ? 'Signing in...' : 'Sign In'}
                 </button>
                 {error && (
-                  <div className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3">
+                  <div role="alert" className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3">
                     {error}
                   </div>
                 )}
