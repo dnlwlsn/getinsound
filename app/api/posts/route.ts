@@ -48,15 +48,13 @@ export async function POST(req: NextRequest) {
 
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 })
 
-  const { data: buyers } = await supabase
-    .from('purchases')
-    .select('buyer_user_id')
+  const { data: followers } = await supabase
+    .from('fan_follows')
+    .select('user_id')
     .eq('artist_id', artist.id)
-    .eq('status', 'paid')
-    .not('buyer_user_id', 'is', null)
 
-  if (buyers && buyers.length > 0) {
-    const uniqueIds = [...new Set(buyers.map(b => b.buyer_user_id as string))]
+  if (followers && followers.length > 0) {
+    const uniqueIds = [...new Set(followers.map(f => f.user_id))]
     const CHUNK = 50
     for (let i = 0; i < uniqueIds.length; i += CHUNK) {
       const chunk = uniqueIds.slice(i, i + CHUNK)
