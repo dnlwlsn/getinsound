@@ -11,6 +11,7 @@ out/
 
 # Claude Code
 .claude/
+docs/
 
 # Wrangler
 .wrangler/
