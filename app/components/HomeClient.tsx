@@ -278,7 +278,7 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
           <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-1">Discover by sound</h2>
           <p className="text-xs text-zinc-600 mb-6">Dig into genres and sounds from across the platform</p>
           <div className="flex flex-wrap gap-2">
-            {SOUNDS.map(sound => (
+            {SOUNDS.filter(sound => releases.some(r => r.genre === sound || r.tags.includes(sound))).map(sound => (
               <Link
                 key={sound}
                 href={`/explore?tag=${encodeURIComponent(sound)}`}

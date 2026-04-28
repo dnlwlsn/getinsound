@@ -35,8 +35,8 @@ export default function AiPolicyPage() {
           <h3>AI-assisted composition aids &mdash; <span className="text-emerald-500 font-bold">Yes</span></h3>
           <p>Using AI to generate chord suggestions, melodic ideas, or arrangement sketches that you then develop, rewrite, and make your own is permitted. The key word is <em>assist</em>. If you used it as a starting point and the final work is yours, that&apos;s fine.</p>
 
-          <h3>AI-generated cover art &mdash; <span className="text-yellow-500 font-bold">Permitted with disclosure</span></h3>
-          <p>We know not every independent artist can afford a designer. If you use AI to generate or substantially create your cover artwork, tag it as AI-generated when you upload. We&apos;ll display a small disclosure on the release page. No penalty, no judgement &mdash; just transparency.</p>
+          <h3>AI-generated artwork &mdash; <span className="text-yellow-500 font-bold">Permitted with disclosure</span></h3>
+          <p>We know not every independent artist can afford a designer. If you use AI to generate or substantially create your cover art, banner images, or other visual assets, tag it as AI-generated when you upload. We&apos;ll display a small disclosure on the release page. No penalty, no judgement &mdash; just transparency.</p>
 
           <h2>2. What&apos;s not permitted</h2>
 
