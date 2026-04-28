@@ -68,26 +68,14 @@ export async function GET(request: Request) {
     })
   }
 
-  // Preview — dedicated preview file if available
+  // Preview — public bucket, stable URL so Cloudflare can cache at edge
   if (track.preview_path) {
-    const { data: signed, error: signErr } = await supabase.storage
+    const { data: publicUrl } = supabase.storage
       .from('previews')
-      .createSignedUrl(track.preview_path, SIGNED_URL_EXPIRY)
-
-    if (signErr || !signed) {
-      const { data: publicUrl } = supabase.storage
-        .from('previews')
-        .getPublicUrl(track.preview_path)
-
-      return NextResponse.json({
-        url: publicUrl.publicUrl,
-        isPreview: true,
-        previewDuration: 30,
-      })
-    }
+      .getPublicUrl(track.preview_path)
 
     return NextResponse.json({
-      url: signed.signedUrl,
+      url: publicUrl.publicUrl,
       isPreview: true,
       previewDuration: 30,
     })

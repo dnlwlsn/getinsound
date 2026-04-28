@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 
 interface Report {
@@ -39,20 +39,13 @@ const STATUS_STYLES: Record<string, string> = {
   dismissed: 'bg-zinc-500/20 text-zinc-400',
 }
 
-export function ReportsClient() {
-  const [reports, setReports] = useState<Report[]>([])
-  const [loading, setLoading] = useState(true)
+export function ReportsClient({ initialReports }: { initialReports: Report[] }) {
+  const [reports, setReports] = useState<Report[]>(initialReports)
+  const [loading] = useState(false)
   const [filter, setFilter] = useState<'open' | 'all'>('open')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [actionNotes, setActionNotes] = useState('')
   const [acting, setActing] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/admin/reports')
-      .then(r => r.json())
-      .then(d => setReports(d.reports || []))
-      .finally(() => setLoading(false))
-  }, [])
 
   async function handleAction(id: string, status: 'resolved' | 'dismissed') {
     setActing(true)

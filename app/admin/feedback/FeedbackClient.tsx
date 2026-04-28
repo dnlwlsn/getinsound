@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 
 interface FeedbackItem {
@@ -35,20 +35,13 @@ const STATUS_STYLES: Record<string, string> = {
 
 type Filter = 'active' | 'all'
 
-export function FeedbackClient() {
-  const [items, setItems] = useState<FeedbackItem[]>([])
-  const [loading, setLoading] = useState(true)
+export function FeedbackClient({ initialItems }: { initialItems: FeedbackItem[] }) {
+  const [items, setItems] = useState<FeedbackItem[]>(initialItems)
+  const [loading] = useState(false)
   const [filter, setFilter] = useState<Filter>('active')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
   const [acting, setActing] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/admin/feedback')
-      .then(r => r.json())
-      .then(d => setItems(d.feedback || []))
-      .finally(() => setLoading(false))
-  }, [])
 
   async function handleAction(id: string, status: 'noted' | 'done' | 'dismissed') {
     setActing(true)
