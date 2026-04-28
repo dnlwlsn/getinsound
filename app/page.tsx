@@ -64,11 +64,59 @@ export default async function Page() {
     }
   }
 
+  // Recent activity for social proof
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  const [{ data: recentPurchases }, { data: recentFollows }] = await Promise.all([
+    supabase
+      .from('purchases')
+      .select('created_at, releases ( title, slug, cover_url ), artists!inner ( name, slug )')
+      .eq('status', 'paid')
+      .gte('created_at', twentyFourHoursAgo)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase
+      .from('fan_follows')
+      .select('created_at, artists!inner ( name, slug )')
+      .gte('created_at', twentyFourHoursAgo)
+      .order('created_at', { ascending: false })
+      .limit(10),
+  ])
+
+  const activityItems = [
+    ...(recentPurchases ?? []).map((p: any) => {
+      const release = Array.isArray(p.releases) ? p.releases[0] : p.releases
+      const artist = Array.isArray(p.artists) ? p.artists[0] : p.artists
+      return {
+        type: 'purchase' as const,
+        created_at: p.created_at,
+        release_title: release?.title,
+        release_slug: release?.slug,
+        cover_url: release?.cover_url ?? undefined,
+        artist_name: artist?.name,
+        artist_slug: artist?.slug,
+      }
+    }),
+    ...(recentFollows ?? []).map((f: any) => {
+      const artist = Array.isArray(f.artists) ? f.artists[0] : f.artists
+      return {
+        type: 'follow' as const,
+        created_at: f.created_at,
+        artist_name: artist?.name,
+        artist_slug: artist?.slug,
+      }
+    }),
+  ]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 20)
+
   return (
     <HomeClient
       releases={mapped}
       isLoggedIn={!!user}
       followedArtistReleases={followedArtistReleases}
+      activityItems={activityItems}
+      userEmail={user?.email ?? null}
     />
   )
 }
