@@ -4,6 +4,9 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { generateGradientDataUri } from '@/lib/gradient'
+import { SocialProofStrip, type ActivityItem } from './ui/SocialProofStrip'
+import { NewsletterSignup } from './ui/NewsletterSignup'
+import { SOUNDS } from '@/lib/sounds'
 
 interface Release {
   id: string
@@ -26,6 +29,8 @@ interface HomeClientProps {
   releases: Release[]
   isLoggedIn: boolean
   followedArtistReleases: Release[]
+  activityItems: ActivityItem[]
+  userEmail: string | null
 }
 
 const PAGE_SIZE = 20
@@ -164,7 +169,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
   )
 }
 
-export default function HomeClient({ releases, isLoggedIn, followedArtistReleases }: HomeClientProps) {
+export default function HomeClient({ releases, isLoggedIn, followedArtistReleases, activityItems, userEmail }: HomeClientProps) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const [currentGenre, setCurrentGenre] = useState('All')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -196,7 +201,7 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
               Music that <span className="text-orange-500">pays artists.</span>
             </h1>
             <p className="text-zinc-400 text-sm md:text-base mt-2 max-w-lg">
-              A music publishing and selling platform for new, unsigned, and independent artists.
+              A home for independent artists to sell music directly to fans. No monthly fee. No label required. No approval process. Just upload, set your price, and start selling.
             </p>
           </div>
         </section>
@@ -220,8 +225,30 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
         </section>
       )}
 
+      {/* Social proof strip */}
+      <SocialProofStrip items={activityItems} />
+
       {/* Featured hero */}
       <FeaturedHero releases={featured} formatPrice={formatPrice} convertPrice={convertPrice} currency={currency} />
+
+      {/* Sound tag discovery */}
+      <section className="border-b border-zinc-900">
+        <div className="max-w-7xl mx-auto px-5 md:px-10 py-10">
+          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-1">Discover by sound</h2>
+          <p className="text-xs text-zinc-600 mb-6">Dig into genres and sounds from across the platform</p>
+          <div className="flex flex-wrap gap-2">
+            {SOUNDS.map(sound => (
+              <Link
+                key={sound}
+                href={`/explore?tag=${encodeURIComponent(sound)}`}
+                className="px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest bg-zinc-900 text-zinc-500 hover:text-white ring-1 ring-white/[0.06] transition-colors"
+              >
+                {sound}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Genre filter + all releases grid */}
       <section className="max-w-7xl mx-auto px-5 md:px-10 py-10">
@@ -270,6 +297,9 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
           </div>
         )}
       </section>
+
+      {/* Newsletter signup */}
+      <NewsletterSignup isLoggedIn={isLoggedIn} userEmail={userEmail} />
     </div>
   )
 }
