@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { generateGradient } from '@/lib/gradient'
@@ -15,6 +16,7 @@ import { zipSync } from 'fflate'
 import { NotificationOptIn } from '@/app/components/pwa/NotificationOptIn'
 
 type SortOption = 'newest' | 'oldest' | 'title' | 'artist'
+type TrackSortOption = 'purchased' | 'artist' | 'title'
 type DateRange = 'all' | '7d' | '30d' | '90d' | '1y'
 
 const DATE_RANGE_LABELS: Record<DateRange, string> = {
@@ -78,7 +80,17 @@ export default function LibraryClient({ releases, error, userId, favourites = []
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [expandedReleases, setExpandedReleases] = useState<Set<string>>(new Set())
 
+  const [trackSearch, setTrackSearch] = useState('')
+  const [trackSort, setTrackSort] = useState<TrackSortOption>('purchased')
+
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   const play = usePlayerStore((s) => s.play)
+  const toggleShuffle = usePlayerStore((s) => s.toggleShuffle)
+  const shuffle = usePlayerStore((s) => s.shuffle)
+  const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const isPlaying = usePlayerStore((s) => s.isPlaying)
   const { mode: viewMode, set: setViewMode } = useViewMode()
 
   const uniqueArtists = useMemo(() => {
@@ -120,6 +132,104 @@ export default function LibraryClient({ releases, error, userId, favourites = []
     return items
   }, [releases, artistFilter, dateRange, sort])
 
+  interface FlatTrack {
+    id: string
+    title: string
+    artistName: string
+    artistSlug: string
+    releaseId: string
+    releaseTitle: string
+    coverUrl: string | null
+    accentColour: string | null
+    position: number
+    durationSec: number | null
+    purchasedAt: string
+  }
+
+  const allTracks = useMemo(() => {
+    const tracks: FlatTrack[] = []
+    for (const r of filtered) {
+      if (r.preOrder) continue
+      for (const t of r.tracks) {
+        tracks.push({
+          id: t.id,
+          title: t.title,
+          artistName: r.artistName,
+          artistSlug: r.artistSlug,
+          releaseId: r.releaseId,
+          releaseTitle: r.releaseTitle,
+          coverUrl: r.coverUrl,
+          accentColour: r.accentColour,
+          position: t.position,
+          durationSec: t.durationSec,
+          purchasedAt: r.purchasedAt,
+        })
+      }
+    }
+
+    const q = trackSearch.toLowerCase().trim()
+    let result = q
+      ? tracks.filter(t =>
+          t.title.toLowerCase().includes(q) ||
+          t.artistName.toLowerCase().includes(q) ||
+          t.releaseTitle.toLowerCase().includes(q))
+      : tracks
+
+    switch (trackSort) {
+      case 'artist':
+        result = [...result].sort((a, b) => a.artistName.localeCompare(b.artistName) || a.title.localeCompare(b.title))
+        break
+      case 'title':
+        result = [...result].sort((a, b) => a.title.localeCompare(b.title))
+        break
+    }
+
+    return result
+  }, [filtered, trackSearch, trackSort])
+
+  const totalDurationSec = useMemo(() =>
+    allTracks.reduce((s, t) => s + (t.durationSec ?? 0), 0)
+  , [allTracks])
+
+  const formatTotalDuration = (sec: number) => {
+    const hr = Math.floor(sec / 3600)
+    const min = Math.floor((sec % 3600) / 60)
+    return hr > 0 ? `${hr} hr ${min} min` : `${min} min`
+  }
+
+  const buildFullQueue = useCallback((startIndex: number = 0): PlayerTrack[] => {
+    return allTracks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      artistName: t.artistName,
+      artistSlug: t.artistSlug,
+      releaseId: t.releaseId,
+      releaseTitle: t.releaseTitle,
+      coverUrl: t.coverUrl,
+      position: t.position,
+      durationSec: t.durationSec,
+      accentColour: t.accentColour,
+      purchased: true,
+    }))
+  }, [allTracks])
+
+  const handlePlayAll = useCallback(() => {
+    const queue = buildFullQueue()
+    if (queue.length > 0) play(queue[0], queue)
+  }, [buildFullQueue, play])
+
+  const handleShuffleAll = useCallback(() => {
+    const queue = buildFullQueue()
+    if (queue.length === 0) return
+    if (!shuffle) toggleShuffle()
+    play(queue[0], queue)
+  }, [buildFullQueue, play, shuffle, toggleShuffle])
+
+  const handlePlayTrackFromList = useCallback((index: number) => {
+    const queue = buildFullQueue()
+    if (queue[index]) play(queue[index], queue)
+  }, [buildFullQueue, play])
+
   const primaryCurrency = releases[0]?.displayCurrency ?? 'GBP'
   const totalAmount = releases.reduce((s, r) => s + r.displayAmount, 0)
   const totalContributed = formatPriceUtil(totalAmount / 100, primaryCurrency)
@@ -148,6 +258,18 @@ export default function LibraryClient({ releases, error, userId, favourites = []
       purchased: true,
     }))
   }, [])
+
+  const autoPlayedRef = useRef(false)
+  useEffect(() => {
+    const playReleaseId = searchParams.get('play')
+    if (!playReleaseId || autoPlayedRef.current) return
+    const release = releases.find(r => r.releaseId === playReleaseId)
+    if (!release || release.preOrder) return
+    autoPlayedRef.current = true
+    const queue = buildQueue(release)
+    if (queue.length > 0) play(queue[0], queue)
+    router.replace('/library', { scroll: false })
+  }, [searchParams, releases, buildQueue, play, router])
 
   const handlePlay = (release: LibraryRelease) => {
     const queue = buildQueue(release)
@@ -357,32 +479,178 @@ export default function LibraryClient({ releases, error, userId, favourites = []
                 ))}
               </select>
             )}
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as DateRange)}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors"
-            >
-              {(Object.keys(DATE_RANGE_LABELS) as DateRange[]).map((key) => (
-                <option key={key} value={key}>{DATE_RANGE_LABELS[key]}</option>
-              ))}
-            </select>
+            {viewMode !== 'playlist' && (
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value as DateRange)}
+                className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors"
+              >
+                {(Object.keys(DATE_RANGE_LABELS) as DateRange[]).map((key) => (
+                  <option key={key} value={key}>{DATE_RANGE_LABELS[key]}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors"
-            >
-              <option value="newest">Newest Purchase</option>
-              <option value="oldest">Oldest Purchase</option>
-              <option value="title">By Title</option>
-              <option value="artist">By Artist</option>
-            </select>
+            {viewMode !== 'playlist' && (
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOption)}
+                className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors"
+              >
+                <option value="newest">Newest Purchase</option>
+                <option value="oldest">Oldest Purchase</option>
+                <option value="title">By Title</option>
+                <option value="artist">By Artist</option>
+              </select>
+            )}
             <ViewToggle mode={viewMode} onToggle={setViewMode} />
           </div>
         </div>
 
+        {/* Playlist view */}
+        {viewMode === 'playlist' && (
+          <div className="animate-in fade-in duration-300">
+            {/* Playlist header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+              <div>
+                <p className="text-zinc-400 text-sm font-medium">
+                  {allTracks.length} {allTracks.length === 1 ? 'track' : 'tracks'} · {formatTotalDuration(totalDurationSec)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={trackSearch}
+                  onChange={e => setTrackSearch(e.target.value)}
+                  placeholder="Search tracks..."
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-300 text-xs font-medium placeholder:text-zinc-600 focus:border-orange-600 transition-colors w-44"
+                />
+                <select
+                  value={trackSort}
+                  onChange={e => setTrackSort(e.target.value as TrackSortOption)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors"
+                >
+                  <option value="purchased">Recently Purchased</option>
+                  <option value="artist">A-Z by Artist</option>
+                  <option value="title">A-Z by Title</option>
+                </select>
+                <button
+                  onClick={handlePlayAll}
+                  disabled={allTracks.length === 0}
+                  className="bg-orange-600 text-black font-black px-5 py-2 rounded-full text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  Play All
+                </button>
+                <button
+                  onClick={handleShuffleAll}
+                  disabled={allTracks.length === 0}
+                  className="bg-white/10 border border-white/20 text-white font-black px-5 py-2 rounded-full text-xs uppercase tracking-wider hover:bg-white/20 transition-colors disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
+                  Shuffle
+                </button>
+              </div>
+            </div>
+
+            {/* Column headers */}
+            <div className="flex items-center gap-3 px-3 h-8 text-[10px] font-black uppercase tracking-widest text-zinc-600 border-b border-zinc-800/50 mb-1">
+              <span className="w-8 text-right shrink-0">#</span>
+              <span className="flex-1 min-w-0">Title</span>
+              <span className="hidden md:block w-36 shrink-0">Artist</span>
+              <span className="hidden md:block w-36 shrink-0">Album</span>
+              <span className="hidden sm:block w-12 text-right shrink-0">Time</span>
+            </div>
+
+            {/* Track rows */}
+            <div className="flex flex-col">
+              {allTracks.map((track, idx) => {
+                const playing = currentTrack?.id === track.id
+                return (
+                  <button
+                    key={`${track.id}-${idx}`}
+                    onClick={() => handlePlayTrackFromList(idx)}
+                    className={`group flex items-center gap-3 px-3 rounded-lg transition-colors text-left ${
+                      playing ? 'bg-orange-600/10' : 'hover:bg-zinc-900'
+                    }`}
+                    style={{ minHeight: '48px' }}
+                  >
+                    <span className="w-8 text-right shrink-0">
+                      {playing && isPlaying ? (
+                        <span className="inline-flex items-center gap-[2px]" style={{ color: track.accentColour ?? '#F56D00' }}>
+                          <span className="w-[3px] h-3 rounded-full animate-pulse" style={{ background: 'currentColor' }} />
+                          <span className="w-[3px] h-4 rounded-full animate-pulse" style={{ background: 'currentColor', animationDelay: '0.15s' }} />
+                          <span className="w-[3px] h-2.5 rounded-full animate-pulse" style={{ background: 'currentColor', animationDelay: '0.3s' }} />
+                        </span>
+                      ) : (
+                        <>
+                          <span className={`text-[13px] font-medium group-hover:hidden ${playing ? 'text-orange-500' : 'text-zinc-600'}`}>
+                            {idx + 1}
+                          </span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="hidden group-hover:inline text-white ml-auto">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </>
+                      )}
+                    </span>
+
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {track.coverUrl && (
+                        <img
+                          src={track.coverUrl}
+                          alt=""
+                          className="w-8 h-8 rounded shrink-0 object-cover"
+                          loading="lazy"
+                        />
+                      )}
+                      <span className={`text-sm font-semibold truncate ${playing ? 'text-orange-500' : 'text-white'}`}>
+                        {track.title}
+                      </span>
+                    </div>
+
+                    <span className="hidden md:block w-36 shrink-0">
+                      <Link
+                        href={`/${track.artistSlug}`}
+                        onClick={e => e.stopPropagation()}
+                        className={`text-[13px] truncate block hover:text-orange-500 transition-colors ${playing ? 'text-orange-400' : 'text-zinc-500'}`}
+                      >
+                        {track.artistName}
+                      </Link>
+                    </span>
+
+                    <span className={`hidden md:block w-36 shrink-0 text-[13px] truncate ${playing ? 'text-orange-400/70' : 'text-zinc-600'}`}>
+                      {track.releaseTitle}
+                    </span>
+
+                    <span className={`hidden sm:block w-12 text-right shrink-0 text-[13px] ${playing ? 'text-orange-400/70' : 'text-zinc-600'}`}>
+                      {formatDuration(track.durationSec)}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {allTracks.length === 0 && (
+              <div className="text-center py-16">
+                <p className="text-zinc-500 font-medium">
+                  {trackSearch ? 'No tracks match your search.' : 'No tracks in your collection.'}
+                </p>
+                {trackSearch && (
+                  <button
+                    onClick={() => setTrackSearch('')}
+                    className="text-orange-600 text-sm font-bold mt-2 hover:text-orange-500 transition-colors"
+                  >
+                    Clear search
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Releases - animated view transition */}
+        {viewMode !== 'playlist' && (
         <div
           className="transition-all duration-300 ease-in-out"
           style={{ opacity: 1 }}
@@ -417,8 +685,9 @@ export default function LibraryClient({ releases, error, userId, favourites = []
             </div>
           )}
         </div>
+        )}
 
-        {filtered.length === 0 && releases.length > 0 && (
+        {filtered.length === 0 && releases.length > 0 && viewMode !== 'playlist' && (
           <div className="text-center py-16">
             <p className="text-zinc-500 font-medium">No releases match your filters.</p>
             <button

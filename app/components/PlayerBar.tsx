@@ -15,8 +15,10 @@ export function PlayerBar() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, isMuted,
     audioUrl, isPreview, previewDuration, isExpanded,
+    shuffle, repeat,
     pause, resume, next, previous, stop,
-    setVolume, toggleMute, setCurrentTime, setDuration, setAudioUrl,
+    setVolume, toggleMute, toggleShuffle, cycleRepeat,
+    setCurrentTime, setDuration, setAudioUrl,
     setIsPlaying, toggleExpanded,
   } = usePlayerStore()
 
@@ -349,6 +351,17 @@ export function PlayerBar() {
             <div className="flex flex-col items-center flex-1 gap-1">
               <div className="flex items-center gap-4">
                 <button
+                  onClick={toggleShuffle}
+                  className="transition-colors"
+                  style={{ color: shuffle ? accent : undefined }}
+                  aria-label={shuffle ? 'Disable shuffle' : 'Enable shuffle'}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className={shuffle ? '' : 'text-zinc-400 hover:text-white'}>
+                    <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
+                  </svg>
+                </button>
+
+                <button
                   onClick={previous}
                   className="text-zinc-400 hover:text-white transition-colors"
                   aria-label="Previous"
@@ -383,6 +396,20 @@ export function PlayerBar() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                   </svg>
+                </button>
+
+                <button
+                  onClick={cycleRepeat}
+                  className="relative transition-colors"
+                  style={{ color: repeat !== 'off' ? accent : undefined }}
+                  aria-label={repeat === 'off' ? 'Enable repeat' : repeat === 'all' ? 'Repeat one' : 'Disable repeat'}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className={repeat !== 'off' ? '' : 'text-zinc-400 hover:text-white'}>
+                    <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+                  </svg>
+                  {repeat === 'one' && (
+                    <span className="absolute -top-1.5 -right-1.5 text-[8px] font-bold" style={{ color: accent }}>1</span>
+                  )}
                 </button>
               </div>
 
@@ -543,7 +570,18 @@ export function PlayerBar() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-6">
+                  <button
+                    onClick={toggleShuffle}
+                    className="transition-colors"
+                    style={{ color: shuffle ? accent : undefined }}
+                    aria-label={shuffle ? 'Disable shuffle' : 'Enable shuffle'}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className={shuffle ? '' : 'text-zinc-400'}>
+                      <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
+                    </svg>
+                  </button>
+
                   <button onClick={previous} className="text-zinc-400 hover:text-white" aria-label="Previous">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
@@ -569,6 +607,20 @@ export function PlayerBar() {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                     </svg>
+                  </button>
+
+                  <button
+                    onClick={cycleRepeat}
+                    className="relative transition-colors"
+                    style={{ color: repeat !== 'off' ? accent : undefined }}
+                    aria-label={repeat === 'off' ? 'Enable repeat' : repeat === 'all' ? 'Repeat one' : 'Disable repeat'}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className={repeat !== 'off' ? '' : 'text-zinc-400'}>
+                      <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+                    </svg>
+                    {repeat === 'one' && (
+                      <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold" style={{ color: accent }}>1</span>
+                    )}
                   </button>
                 </div>
               </div>

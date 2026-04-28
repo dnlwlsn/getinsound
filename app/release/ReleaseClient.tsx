@@ -331,7 +331,7 @@ export default function ReleaseClient({ artist, release, discography, supporters
                   </ol>
                 </div>
                 <div className="text-center mt-6">
-                  <a href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3.5 rounded-xl text-sm uppercase tracking-wider transition-colors">
+                  <a href={`/library?play=${release.id}`} className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3.5 rounded-xl text-sm uppercase tracking-wider transition-colors">
                     Go to My Collection →
                   </a>
                   <p className="text-[11px] text-zinc-600 font-medium mt-3">You can always re-download from your collection.</p>

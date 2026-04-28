@@ -31,6 +31,18 @@ function ListIcon({ active }: { active: boolean }) {
   )
 }
 
+function PlaylistIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={active ? 'text-orange-600' : 'text-zinc-500'}>
+      <line x1="3" y1="6" x2="15" y2="6" />
+      <line x1="3" y1="12" x2="15" y2="12" />
+      <line x1="3" y1="18" x2="11" y2="18" />
+      <circle cx="19" cy="16" r="3" />
+      <line x1="19" y1="13" x2="19" y2="10" />
+    </svg>
+  )
+}
+
 export function ViewToggle({ mode, onToggle }: Props) {
   return (
     <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
@@ -49,6 +61,14 @@ export function ViewToggle({ mode, onToggle }: Props) {
         aria-label="List view"
       >
         <ListIcon active={mode === 'compact'} />
+      </button>
+      <button
+        onClick={() => onToggle('playlist')}
+        className="p-1.5 rounded-lg transition-colors"
+        style={{ background: mode === 'playlist' ? 'rgba(245,109,0,0.12)' : 'transparent' }}
+        aria-label="Playlist view"
+      >
+        <PlaylistIcon active={mode === 'playlist'} />
       </button>
     </div>
   )

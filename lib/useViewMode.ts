@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 
-export type ViewMode = 'compact' | 'expanded'
+export type ViewMode = 'compact' | 'expanded' | 'playlist'
 
 const STORAGE_KEY = 'insound_view_mode'
 
@@ -11,7 +11,7 @@ export function useViewMode() {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'compact' || stored === 'expanded') {
+    if (stored === 'compact' || stored === 'expanded' || stored === 'playlist') {
       setMode(stored)
     }
   }, [])
