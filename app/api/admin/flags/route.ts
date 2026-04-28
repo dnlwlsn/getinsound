@@ -11,7 +11,7 @@ export async function GET() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  const { data: flags, error } = await supabase
+  let { data: flags, error } = await supabase
     .from('suspicious_activity_flags')
     .select(`
       id, flag_type, details, reviewed, reviewed_by, reviewed_at, created_at,
@@ -21,7 +21,15 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Flags fetch error (with join):', error)
+    const fallback = await supabase
+      .from('suspicious_activity_flags')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (fallback.error) {
+      return NextResponse.json({ error: fallback.error.message }, { status: 500 })
+    }
+    flags = (fallback.data || []).map((d: any) => ({ ...d, artists: null }))
   }
 
   return NextResponse.json({ flags: flags || [] })

@@ -15,10 +15,20 @@ export default async function FeedbackPage() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  const { data } = await supabase
+  let { data, error } = await supabase
     .from('user_feedback')
     .select('*, fan_profiles:user_id(username, avatar_url)')
     .order('created_at', { ascending: false })
 
-  return <FeedbackClient initialItems={data || []} />
+  if (error) {
+    console.error('Feedback fetch error (with join):', error)
+    const fallback = await supabase
+      .from('user_feedback')
+      .select('*')
+      .order('created_at', { ascending: false })
+    data = (fallback.data || []).map((d: any) => ({ ...d, fan_profiles: null }))
+    error = fallback.error
+  }
+
+  return <FeedbackClient initialItems={data || []} fetchError={error?.message || null} />
 }

@@ -35,7 +35,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 type Filter = 'active' | 'all'
 
-export function FeedbackClient({ initialItems }: { initialItems: FeedbackItem[] }) {
+export function FeedbackClient({ initialItems, fetchError }: { initialItems: FeedbackItem[]; fetchError?: string | null }) {
   const [items, setItems] = useState<FeedbackItem[]>(initialItems)
   const [loading] = useState(false)
   const [filter, setFilter] = useState<Filter>('active')
@@ -105,9 +105,16 @@ export function FeedbackClient({ initialItems }: { initialItems: FeedbackItem[] 
           ))}
         </div>
 
+        {fetchError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-5 py-3 mb-4">
+            <p className="text-sm font-bold text-red-400">Failed to load feedback</p>
+            <p className="text-xs text-red-400/70 mt-1 font-mono">{fetchError}</p>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-sm text-zinc-500">Loading...</p>
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && !fetchError ? (
           <div className="text-center py-16 text-zinc-500">
             <p className="text-sm">No feedback yet.</p>
           </div>

@@ -12,7 +12,7 @@ interface Flag {
   reviewed_at: string | null
   created_at: string
   user_id: string
-  artists: { name: string; slug: string }
+  artists: { name: string; slug: string } | null
 }
 
 const FLAG_LABELS: Record<string, string> = {

@@ -15,7 +15,7 @@ export default async function ReportsPage() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  const { data } = await supabase
+  let { data, error } = await supabase
     .from('profile_reports')
     .select(`
       id, reported_profile_type, category, details, status,
@@ -27,5 +27,17 @@ export default async function ReportsPage() {
     `)
     .order('created_at', { ascending: false })
 
-  return <ReportsClient initialReports={(data || []) as any} />
+  if (error) {
+    console.error('Reports fetch error:', error)
+    const fallback = await supabase
+      .from('profile_reports')
+      .select('*')
+      .order('created_at', { ascending: false })
+    data = (fallback.data || []).map((d: any) => ({
+      ...d, reporter: null, reported_artist: null, reported_fan: null,
+    }))
+    error = fallback.error
+  }
+
+  return <ReportsClient initialReports={(data || []) as any} fetchError={error?.message || null} />
 }

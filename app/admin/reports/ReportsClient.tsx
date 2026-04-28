@@ -39,7 +39,7 @@ const STATUS_STYLES: Record<string, string> = {
   dismissed: 'bg-zinc-500/20 text-zinc-400',
 }
 
-export function ReportsClient({ initialReports }: { initialReports: Report[] }) {
+export function ReportsClient({ initialReports, fetchError }: { initialReports: Report[]; fetchError?: string | null }) {
   const [reports, setReports] = useState<Report[]>(initialReports)
   const [loading] = useState(false)
   const [filter, setFilter] = useState<'open' | 'all'>('open')
@@ -113,9 +113,16 @@ export function ReportsClient({ initialReports }: { initialReports: Report[] }) 
           </div>
         </div>
 
+        {fetchError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-5 py-3 mb-4">
+            <p className="text-sm font-bold text-red-400">Failed to load reports</p>
+            <p className="text-xs text-red-400/70 mt-1 font-mono">{fetchError}</p>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-zinc-500 text-sm">Loading...</div>
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && !fetchError ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-zinc-600">
