@@ -22,6 +22,7 @@ export default async function AdminPage() {
     { href: '/admin/insound-selects', label: 'Insound Selects', description: 'Curate featured releases' },
     { href: '/admin/flags', label: 'Security Flags', description: 'Review suspicious activity flags' },
     { href: '/admin/reports', label: 'Profile Reports', description: 'Review user-submitted profile reports' },
+    { href: '/admin/feedback', label: 'User Feedback', description: 'Bug reports, feature requests, and general feedback' },
   ]
 
   return (

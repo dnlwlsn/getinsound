@@ -7,6 +7,7 @@ import { CurrencyProvider } from './providers/CurrencyProvider'
 import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistration'
 import { InstallBanner } from './components/pwa/InstallBanner'
 import { CookieBanner } from './components/ui/CookieBanner'
+import { FeedbackButton } from './components/ui/FeedbackButton'
 import { PwaSplash } from './components/pwa/PwaSplash'
 import { GenreOnboarding } from './components/GenreOnboarding'
 import './globals.css'
@@ -63,6 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <PlayerBar />
         <ServiceWorkerRegistration />
         <InstallBanner />
+        <FeedbackButton />
         <CookieBanner />
         <PwaSplash />
       </body>

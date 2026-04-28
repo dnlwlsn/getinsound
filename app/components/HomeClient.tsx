@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { generateGradientDataUri } from '@/lib/gradient'
 import { SocialProofStrip, type ActivityItem } from './ui/SocialProofStrip'
 import { NewsletterSignup } from './ui/NewsletterSignup'
 import { SOUNDS } from '@/lib/sounds'
+import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 
 interface Release {
   id: string
@@ -51,12 +52,51 @@ function PlayIcon({ size = 22 }: { size?: number }) {
   )
 }
 
+function usePlayRelease() {
+  const play = usePlayerStore(s => s.play)
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
+  const pause = usePlayerStore(s => s.pause)
+  const resume = usePlayerStore(s => s.resume)
+
+  return useCallback(async (e: React.MouseEvent, r: Release) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (currentTrack?.releaseId === r.id) {
+      isPlaying ? pause() : resume()
+      return
+    }
+
+    const res = await fetch(`/api/releases/tracks?releaseId=${r.id}`)
+    if (!res.ok) return
+    const tracks = await res.json()
+    if (!tracks.length) return
+
+    const queue: PlayerTrack[] = tracks.map((t: { id: string; title: string; position: number; duration_sec: number | null }) => ({
+      id: t.id,
+      title: t.title,
+      artistName: r.artist_name,
+      artistSlug: r.artist_slug,
+      releaseId: r.id,
+      releaseTitle: r.title,
+      coverUrl: r.cover_url,
+      position: t.position,
+      durationSec: t.duration_sec,
+      accentColour: r.accent_colour,
+      purchased: false,
+    }))
+    play(queue[0], queue)
+  }, [play, currentTrack, isPlaying, pause, resume])
+}
+
 function ReleaseGrid({ releases, formatPrice, convertPrice, currency }: {
   releases: Release[]
   formatPrice: (n: number) => string
   convertPrice: (amount: number, from: string, to: string) => number
   currency: string
 }) {
+  const playRelease = usePlayRelease()
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
       {releases.map(r => (
@@ -74,7 +114,7 @@ function ReleaseGrid({ releases, formatPrice, convertPrice, currency }: {
                 New
               </span>
             )}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => playRelease(e, r)}>
               <div className="bg-white/20 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center border border-white/30">
                 <PlayIcon size={18} />
               </div>
@@ -106,6 +146,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
   convertPrice: (amount: number, from: string, to: string) => number
   currency: string
 }) {
+  const playRelease = usePlayRelease()
   if (releases.length < 3) return null
 
   return (
@@ -134,7 +175,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
               <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{releases[0].artist_name}{releases[0].genre ? ` · ${releases[0].genre}` : ''}</p>
               <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(releases[0].price_pence / 100, 'GBP', currency))}</p>
             </div>
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => playRelease(e, releases[0])}>
               <div className="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl">
                 <PlayIcon size={22} />
               </div>
@@ -155,7 +196,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
                   <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{f.artist_name}</p>
                   <p className="text-orange-600 font-black text-xs mt-1.5">{formatPrice(convertPrice(f.price_pence / 100, 'GBP', currency))}</p>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => playRelease(e, f)}>
                   <div className="bg-white/20 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center border border-white/30">
                     <PlayIcon size={18} />
                   </div>
