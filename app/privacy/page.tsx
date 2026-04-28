@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           <h3>2.2 Fans</h3>
           <table><thead><tr><th>Data</th><th>Purpose</th></tr></thead><tbody>
             <tr><td>Email address (collected at purchase)</td><td>To deliver download links, purchase receipts, and optional marketing if you opt in</td></tr>
-            <tr><td>Purchase history (releases bought, amounts, dates)</td><td>To provide your library, re-download access, and generate artist sales reports</td></tr>
+            <tr><td>Purchase history (releases bought, amounts, dates)</td><td>To provide your collection, re-download access, and generate artist sales reports</td></tr>
             <tr><td>Pay-what-you-want amounts</td><td>To process the transaction at the price you chose</td></tr>
           </tbody></table>
 

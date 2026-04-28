@@ -79,24 +79,24 @@ export default function TermsPage() {
 
           <h3>5.2 Fee Structure</h3>
           <ul>
-            <li>Insound fee: 10% of the sale price, deducted as a Stripe application fee at the point of sale.</li>
-            <li>Stripe processing fees vary by card type, payment method, and region, and are passed through at cost. For standard UK cards, the current fee is 1.5% + 20p. The applicable fee is shown at checkout and in the Artist&rsquo;s dashboard.</li>
+            <li>Insound fee: 10% of the sale price, deducted as a Stripe application fee at the point of sale. The Artist receives 90% of the sale price.</li>
+            <li>Stripe processing fees (which vary by card type, payment method, and region) are absorbed by Insound out of its 10% platform fee. Artists are not charged processing fees.</li>
           </ul>
-          <p>For example, on a &pound;10 music sale paid with a standard UK card: &pound;1.00 goes to Insound, approximately &pound;0.35 goes to Stripe, and approximately &pound;8.65 goes to the Artist. Other cards, payment methods, currencies, or Stripe fees may result in different amounts.</p>
+          <p>For example, on a &pound;10 music sale: &pound;9.00 goes to the Artist (90%) and &pound;1.00 goes to Insound (10%). Stripe&rsquo;s processing fee (approximately &pound;0.35 for a standard UK card) is deducted from Insound&rsquo;s &pound;1.00, not from the Artist&rsquo;s share.</p>
 
           <h3>5.3 Platform Fee</h3>
-          <p>Insound&rsquo;s platform fee is 10% of the amount paid by the Fan, excluding any taxes, refunds, chargebacks, and Stripe processing fees. This is the standard business model, not an introductory or promotional rate.</p>
+          <p>Insound&rsquo;s platform fee is 10% of the amount paid by the Fan, excluding any taxes, refunds, and chargebacks. Stripe processing fees are absorbed by Insound out of this 10% and are not charged to the Artist. This is the standard business model, not an introductory or promotional rate.</p>
           <p>The Platform will not increase the 10% platform fee for existing registered Artists without at least 90 days&rsquo; written Notice. Any increase will apply only to sales made after the effective date.</p>
 
           <h3>5.4 Minimum Sale Price</h3>
-          <p>The minimum price for a Release is &pound;2. This ensures the Stripe processing fee does not consume a disproportionate share of small transactions.</p>
+          <p>The minimum price for a Release is &pound;3. This ensures the Stripe processing fee does not consume a disproportionate share of small transactions.</p>
 
           <h3>5.5 Pay What You Want</h3>
           <p>Artists may enable pay-what-you-want pricing on any Release. When enabled:</p>
           <ul>
-            <li>The Artist sets a minimum price (no lower than &pound;2).</li>
+            <li>The Artist sets a minimum price (no lower than &pound;3).</li>
             <li>Fans may pay any amount at or above the minimum.</li>
-            <li>Insound takes 10% of the actual amount paid, not the minimum. If the minimum is &pound;5 and a Fan pays &pound;20, Insound receives &pound;2, the Artist receives &pound;18 (minus Stripe&rsquo;s fee).</li>
+            <li>Insound takes 10% of the actual amount paid, not the minimum. If the minimum is &pound;5 and a Fan pays &pound;20, Insound receives &pound;2 (from which Stripe processing is deducted), and the Artist receives &pound;18.</li>
           </ul>
 
           <h3>5.6 Withdrawals</h3>
@@ -106,7 +106,7 @@ export default function TermsPage() {
           <p>All prices are currently listed and settled in GBP (&pound;). The Platform may add additional currencies in future.</p>
 
           <h2>6. Purchases and Digital Content</h2>
-          <p>Fans can purchase music without creating an account. A purchase with an email address creates a lightweight record associated with that email for download access. Fans may later create a full account to access their purchase history and library.</p>
+          <p>Fans can purchase music without creating an account. A purchase with an email address creates a lightweight record associated with that email for download access. Fans may later create a full account to access their purchase history and collection.</p>
           <p>Fan accounts are subject to the same prohibited-content rules (section 11) and general conduct expectations.</p>
 
           <h3>6.1 Digital Content Cancellation Rights</h3>
@@ -202,12 +202,12 @@ export default function TermsPage() {
             <li>Active pre-orders are cancelled and fully refunded to affected Fans.</li>
             <li>The Artist&rsquo;s profile, posts, and uploaded media are permanently removed.</li>
             <li>The Artist&rsquo;s Stripe connected account remains active until all pending payouts have settled, then it is disconnected.</li>
-            <li>The Artist&rsquo;s fan account and library are also deleted (see 14.3 below).</li>
+            <li>The Artist&rsquo;s fan account and collection are also deleted (see 14.3 below).</li>
           </ul>
           <h3>14.2 By the Fan</h3>
           <p>Fans may delete their account at any time via the Account Settings page at <strong>/settings/account</strong>. The same 24-hour cooldown and cancellation process applies. Upon deletion:</p>
           <ul>
-            <li>The Fan&rsquo;s profile, library, preferences, and all associated personal data are permanently removed.</li>
+            <li>The Fan&rsquo;s profile, collection, preferences, and all associated personal data are permanently removed.</li>
             <li>Purchase records are anonymised rather than hard-deleted: the Fan&rsquo;s user ID and email are removed from purchase rows, but financial amounts are retained for the Artist&rsquo;s accounting and aggregate analytics.</li>
             <li>Download links for all purchased music are sent by email and remain active for 48 hours after deletion. Fans are encouraged to download their purchases before requesting deletion.</li>
           </ul>

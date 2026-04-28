@@ -39,7 +39,7 @@ export default function FAQPage() {
                   How do I buy music?
                   <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
                 </summary>
-                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">Find a release, click Buy, pay via Stripe. Your music appears in your Library.</p>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">Find a release, click Buy, pay via Stripe. Your music appears in your Collection.</p>
               </details>
 
               <details className="group border border-white/[0.06] rounded-xl">
@@ -63,7 +63,7 @@ export default function FAQPage() {
                   Can I stream music?
                   <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
                 </summary>
-                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">You can preview tracks (30 seconds). After purchase, you can stream the full tracks from your Library.</p>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">You can preview tracks (30 seconds). After purchase, you can stream the full tracks from your Collection.</p>
               </details>
 
               <details className="group border border-white/[0.06] rounded-xl">
@@ -71,7 +71,15 @@ export default function FAQPage() {
                   What happens if I lose my downloads?
                   <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
                 </summary>
-                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">You can re-download from your Library within 7 days of purchase. After that, contact us.</p>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">You can re-download from your Collection within 7 days of purchase. After that, contact us.</p>
+              </details>
+
+              <details className="group border border-white/[0.06] rounded-xl">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-white select-none [&::-webkit-details-marker]:hidden list-none">
+                  Do I need an account to buy music?
+                  <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
+                </summary>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">No. You can buy music with just an email address &mdash; we&rsquo;ll send you a download link straight away. We&rsquo;d recommend creating a free account though: you&rsquo;ll get your own Collection where you can stream everything you&rsquo;ve bought, re-download files, follow artists, and get notified when they release new music.</p>
               </details>
 
               <details className="group border border-white/[0.06] rounded-xl">
@@ -93,7 +101,7 @@ export default function FAQPage() {
                   How much does Insound cost?
                   <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
                 </summary>
-                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">No monthly fee. Insound takes 10% of each sale + Stripe processing fees. You keep the rest.</p>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">No monthly fee. Insound takes 10% of each sale and absorbs all Stripe processing fees out of that cut. Artists keep 90%.</p>
               </details>
 
               <details className="group border border-white/[0.06] rounded-xl">
@@ -142,6 +150,54 @@ export default function FAQPage() {
                   <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
                 </summary>
                 <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">You do. Insound never claims ownership. You keep your masters, copyright, and publishing rights.</p>
+              </details>
+
+              <details className="group border border-white/[0.06] rounded-xl">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-white select-none [&::-webkit-details-marker]:hidden list-none">
+                  Can I sell my music on other platforms too?
+                  <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
+                </summary>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">Yes. We don&rsquo;t claim exclusivity. You can sell on your own website, other platforms, or anywhere else at the same time. Your music, your choice.</p>
+              </details>
+
+              <details className="group border border-white/[0.06] rounded-xl">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-white select-none [&::-webkit-details-marker]:hidden list-none">
+                  Can I put my music on Spotify and Insound?
+                  <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
+                </summary>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">Absolutely. Insound is for direct sales &mdash; it complements streaming, it doesn&rsquo;t replace it. Many artists use streaming for discovery and Insound for revenue.</p>
+              </details>
+
+              <details className="group border border-white/[0.06] rounded-xl">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-white select-none [&::-webkit-details-marker]:hidden list-none">
+                  Is the 10% rate permanent?
+                  <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
+                </summary>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">Yes. It&rsquo;s the business model, not a promotion. We absorb Stripe&rsquo;s processing fees out of our 10%. You keep 90% of every sale, permanently.</p>
+              </details>
+
+              <details className="group border border-white/[0.06] rounded-xl">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-white select-none [&::-webkit-details-marker]:hidden list-none">
+                  Does Insound hold my money?
+                  <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
+                </summary>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">Never. Payments go directly to your Stripe account the moment a sale completes. We take our 10% as an application fee at the point of sale. Your money is yours instantly.</p>
+              </details>
+
+              <details className="group border border-white/[0.06] rounded-xl">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-white select-none [&::-webkit-details-marker]:hidden list-none">
+                  What if I want to leave Insound?
+                  <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
+                </summary>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">You can remove your music and close your account at any time. Your Stripe earnings are already in your account. No lock-in, no penalty.</p>
+              </details>
+
+              <details className="group border border-white/[0.06] rounded-xl">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-white select-none [&::-webkit-details-marker]:hidden list-none">
+                  Can I use a distributor and still sell on Insound?
+                  <span className="ml-3 text-zinc-500 text-xs transition-transform group-open:rotate-45">&#43;</span>
+                </summary>
+                <p className="px-5 pb-5 text-[15px] text-zinc-400 leading-[1.75]">Yes, as long as you control the rights to sell your music. Using a non-exclusive distributor for streaming doesn&rsquo;t affect your eligibility on Insound.</p>
               </details>
             </div>
           </section>

@@ -68,14 +68,13 @@ export async function GET(request: Request) {
     })
   }
 
-  // Preview — public 'previews' bucket (still use signed URL for consistency)
+  // Preview — dedicated preview file if available
   if (track.preview_path) {
     const { data: signed, error: signErr } = await supabase.storage
       .from('previews')
       .createSignedUrl(track.preview_path, SIGNED_URL_EXPIRY)
 
     if (signErr || !signed) {
-      // Fallback to public URL
       const { data: publicUrl } = supabase.storage
         .from('previews')
         .getPublicUrl(track.preview_path)
@@ -83,14 +82,33 @@ export async function GET(request: Request) {
       return NextResponse.json({
         url: publicUrl.publicUrl,
         isPreview: true,
+        previewDuration: 30,
       })
     }
 
     return NextResponse.json({
       url: signed.signedUrl,
       isPreview: true,
+      previewDuration: 30,
     })
   }
 
-  return NextResponse.json({ error: 'No preview available' }, { status: 404 })
+  // No dedicated preview — serve the master with a 30s client-enforced limit
+  if (track.audio_path) {
+    const { data: signed, error: signErr } = await supabase.storage
+      .from('masters')
+      .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)
+
+    if (signErr || !signed) {
+      return NextResponse.json({ error: 'Failed to generate URL' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      url: signed.signedUrl,
+      isPreview: true,
+      previewDuration: 30,
+    })
+  }
+
+  return NextResponse.json({ error: 'No audio available' }, { status: 404 })
 }

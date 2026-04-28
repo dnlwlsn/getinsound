@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function BasketDrawer({ onClose }: Props) {
-  const { items, remove, clear, total, itemsTotal, postageTotal, hasMerch } = useBasketStore()
+  const { items, remove, updateCustomAmount, clear, total, itemsTotal, postageTotal, hasMerch } = useBasketStore()
   const { currency, formatPrice, convertPrice } = useCurrency()
   const [stage, setStage] = useState<Stage>('review')
   const [errorTitle, setErrorTitle] = useState('')
@@ -184,7 +184,7 @@ export function BasketDrawer({ onClose }: Props) {
       } catch (err) {
         if (i === maxAttempts - 1) {
           setErrorTitle('Still finalising...')
-          setErrorMsg("Your payment went through but the downloads aren't ready. Check your library in a moment.")
+          setErrorMsg("Your payment went through but the downloads aren't ready. Check your collection in a moment.")
           setStage('error')
           clear()
           return
@@ -193,7 +193,7 @@ export function BasketDrawer({ onClose }: Props) {
       await new Promise((r) => setTimeout(r, 1500))
     }
     setErrorTitle('Still finalising...')
-    setErrorMsg("Your payment went through but the downloads aren't ready. Check your library in a moment.")
+    setErrorMsg("Your payment went through but the downloads aren't ready. Check your collection in a moment.")
     setStage('error')
     clear()
   }
@@ -255,32 +255,45 @@ export function BasketDrawer({ onClose }: Props) {
                         const artistCurrency = item.currency || 'GBP'
 
                         if (item.type === 'release') {
-                          const displayPrice = formatPrice(convertPrice((item.customAmountPence ?? item.pricePence) / 100, artistCurrency, currency))
+                          const effectivePence = item.customAmountPence ?? item.pricePence
+                          const displayPrice = formatPrice(convertPrice(effectivePence / 100, artistCurrency, currency))
+                          const minPence = item.pwyw ? (item.pwywMinimumPence ?? item.pricePence) : item.pricePence
                           return (
-                            <div key={item.releaseId} className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-[#141414] transition-colors">
-                              <Link href={`/release?a=${item.artistSlug}&r=${item.releaseSlug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
-                                {item.coverUrl ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={item.coverUrl} alt={item.releaseTitle} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full" style={{ background: item.accentColour || '#F56D00' }} />
-                                )}
-                              </Link>
-                              <div className="flex-1 min-w-0">
-                                <Link href={`/release?a=${item.artistSlug}&r=${item.releaseSlug}`} className="font-semibold text-sm text-white truncate block hover:opacity-80 transition-opacity">
-                                  {item.releaseTitle}
+                            <div key={item.releaseId} className="py-2 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                              <div className="flex items-center gap-3">
+                                <Link href={`/release?a=${item.artistSlug}&r=${item.releaseSlug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                                  {item.coverUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={item.coverUrl} alt={item.releaseTitle} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full" style={{ background: item.accentColour || '#F56D00' }} />
+                                  )}
                                 </Link>
+                                <div className="flex-1 min-w-0">
+                                  <Link href={`/release?a=${item.artistSlug}&r=${item.releaseSlug}`} className="font-semibold text-sm text-white truncate block hover:opacity-80 transition-opacity">
+                                    {item.releaseTitle}
+                                  </Link>
+                                </div>
+                                <span className="text-[13px] font-semibold text-orange-500 shrink-0">{displayPrice}</span>
+                                <button
+                                  onClick={() => remove(item)}
+                                  className="shrink-0 p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
+                                  aria-label={`Remove ${item.releaseTitle}`}
+                                >
+                                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path d="M18 6L6 18M6 6l12 12" />
+                                  </svg>
+                                </button>
                               </div>
-                              <span className="text-[13px] font-semibold text-orange-500 shrink-0">{displayPrice}</span>
-                              <button
-                                onClick={() => remove(item)}
-                                className="shrink-0 p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
-                                aria-label={`Remove ${item.releaseTitle}`}
-                              >
-                                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                  <path d="M18 6L6 18M6 6l12 12" />
-                                </svg>
-                              </button>
+                              {item.pwyw && (
+                                <PwywInlineEditor
+                                  releaseId={item.releaseId}
+                                  currentPence={effectivePence}
+                                  minPence={minPence}
+                                  relCurrency={artistCurrency}
+                                  onUpdate={updateCustomAmount}
+                                />
+                              )}
                             </div>
                           )
                         }
@@ -369,7 +382,7 @@ export function BasketDrawer({ onClose }: Props) {
             {basketHadReleases && (
               <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Music</p>
-                <p className="text-sm text-zinc-300">Your music is ready to listen to and download from your library.</p>
+                <p className="text-sm text-zinc-300">Your music is ready to listen to and download from your collection.</p>
               </div>
             )}
 
@@ -393,7 +406,7 @@ export function BasketDrawer({ onClose }: Props) {
               onClick={handleClose}
               className="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
             >
-              Go to my library
+              Go to my collection
             </Link>
             <p className="text-center text-[11px] text-zinc-600 font-medium mt-3">A receipt has been sent by Stripe.</p>
           </div>
@@ -467,15 +480,12 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-zinc-500 font-medium">Insound fee (10%)</span>
+          <span className="text-[11px] text-zinc-500 font-medium">
+            Insound fee (10%)
+            <span className="text-zinc-600 ml-1">(incl. {formatPrice(convertPrice(fees.stripeFee / 100, baseCurrency, currency))} Stripe processing)</span>
+          </span>
           <span className="text-[11px] text-zinc-400 font-medium">
             {formatPrice(convertPrice(fees.insoundFee / 100, baseCurrency, currency))}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-zinc-500 font-medium">Stripe fee (20p + 1.5%)</span>
-          <span className="text-[11px] text-zinc-400 font-medium">
-            {formatPrice(convertPrice(fees.stripeFee / 100, baseCurrency, currency))}
           </span>
         </div>
       </div>
@@ -499,6 +509,73 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
           ? 'Music added to your collection after payment. Merch dispatched by the artist.'
           : 'Added to your collection and available for download after payment.'}
       </p>
+    </div>
+  )
+}
+
+/* ── PWYW inline editor for basket items ─────────────────────── */
+
+function PwywInlineEditor({ releaseId, currentPence, minPence, relCurrency, onUpdate }: {
+  releaseId: string
+  currentPence: number
+  minPence: number
+  relCurrency: string
+  onUpdate: (releaseId: string, amountPence: number) => void
+}) {
+  const { currency, formatPrice, convertPrice } = useCurrency()
+  const [value, setValue] = useState((currentPence / 100).toFixed(2))
+  const valuePence = Math.round(parseFloat(value || '0') * 100)
+  const isValid = valuePence >= minPence
+
+  const commit = () => {
+    if (isValid && valuePence !== currentPence) {
+      onUpdate(releaseId, valuePence)
+    } else if (!isValid) {
+      setValue((currentPence / 100).toFixed(2))
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-1.5 ml-[52px]">
+      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Pay</span>
+      <button
+        type="button"
+        onClick={() => {
+          const next = Math.max(minPence / 100, parseFloat(value || '0') - 1)
+          setValue(next.toFixed(2))
+          onUpdate(releaseId, Math.round(next * 100))
+        }}
+        className="w-5 h-5 rounded flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white text-xs font-black transition-colors"
+        aria-label="Decrease price"
+      >
+        −
+      </button>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={e => {
+          const v = e.target.value
+          if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) setValue(v)
+        }}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit() }}
+        className="w-14 text-center text-xs font-bold bg-zinc-800 border border-zinc-700 rounded px-1 py-0.5 text-orange-500 outline-none focus:border-orange-600 transition-colors"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          const next = parseFloat(value || '0') + 1
+          setValue(next.toFixed(2))
+          onUpdate(releaseId, Math.round(next * 100))
+        }}
+        className="w-5 h-5 rounded flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white text-xs font-black transition-colors"
+        aria-label="Increase price"
+      >
+        +
+      </button>
+      <span className="text-[10px] text-zinc-600 font-medium">{relCurrency}</span>
+      {!isValid && <span className="text-[10px] text-red-400">min {formatPrice(convertPrice(minPence / 100, relCurrency, currency))}</span>}
     </div>
   )
 }

@@ -41,7 +41,7 @@ export default function LibrarySignIn() {
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
             <p className="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-3">
-              Your Library
+              Your Collection
             </p>
             <h1 className="text-3xl font-black tracking-tighter mb-2">Sign in to continue</h1>
             <p className="text-zinc-500 text-sm font-medium">

@@ -12,7 +12,7 @@ function getAdminClient() {
 }
 
 export const metadata: Metadata = {
-  title: 'My Library | Insound',
+  title: 'My Collection | Insound',
   description:
     'Your Insound music library. Stream, download, and revisit everything you own.',
 }
@@ -183,55 +183,23 @@ export default async function LibraryPage() {
       }
     })
 
-  const [wishlistResult, favouritesResult] = await Promise.all([
-    supabase
-      .from('fan_wishlist')
-      .select(`
-        id, created_at, release_id,
-        releases (
-          id, slug, title, type, cover_url, price_pence, currency,
-          artists ( slug, name, accent_colour )
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('favourites')
-      .select(`
-        id, created_at, track_id, release_id,
-        tracks (
-          id, title, position, duration_sec, release_id,
-          releases ( id, slug, title, type, cover_url, price_pence, currency, artists ( slug, name, accent_colour ) )
-        ),
-        releases (
-          id, slug, title, type, cover_url, price_pence, currency,
-          artists ( slug, name, accent_colour )
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }),
-  ])
+  const { data: favouritesData } = await supabase
+    .from('favourites')
+    .select(`
+      id, created_at, track_id, release_id,
+      tracks (
+        id, title, position, duration_sec, release_id,
+        releases ( id, slug, title, type, cover_url, price_pence, currency, artists ( slug, name, accent_colour ) )
+      ),
+      releases (
+        id, slug, title, type, cover_url, price_pence, currency,
+        artists ( slug, name, accent_colour )
+      )
+    `)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
 
-  const wishlist = (wishlistResult.data ?? []).map((w: any) => {
-    const r = w.releases
-    const artist = Array.isArray(r.artists) ? r.artists[0] : r.artists
-    return {
-      wishlistId: w.id,
-      releaseId: r.id,
-      releaseSlug: r.slug,
-      title: r.title,
-      type: r.type,
-      coverUrl: r.cover_url,
-      pricePence: r.price_pence,
-      currency: r.currency ?? 'GBP',
-      artistName: artist?.name ?? 'Unknown',
-      artistSlug: artist?.slug ?? '',
-      accentColour: artist?.accent_colour ?? null,
-      savedAt: w.created_at,
-    }
-  })
-
-  const favourites = (favouritesResult.data ?? []).map((f: any) => {
+  const favourites = (favouritesData ?? []).map((f: any) => {
     if (f.track_id && f.tracks) {
       const track = Array.isArray(f.tracks) ? f.tracks[0] : f.tracks
       const release = track?.releases ? (Array.isArray(track.releases) ? track.releases[0] : track.releases) : null
@@ -273,5 +241,5 @@ export default async function LibraryPage() {
     }
   })
 
-  return <LibraryClient releases={releases} error={null} userId={user.id} wishlist={wishlist} favourites={favourites} merchOrders={merchOrders as any} />
+  return <LibraryClient releases={releases} error={null} userId={user.id} favourites={favourites} merchOrders={merchOrders as any} />
 }

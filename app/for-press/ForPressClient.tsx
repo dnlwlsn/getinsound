@@ -7,12 +7,12 @@ import { useCurrency } from '../providers/CurrencyProvider'
 const KEY_FACTS = [
   { label: 'Founded', value: '2026, UK' },
   { label: 'Model', value: 'Bootstrapped — no investors' },
-  { label: 'Platform fee', value: "10% flat — Stripe's standard processing fee shown at checkout" },
+  { label: 'Platform fee', value: '10% flat — artists keep 90%. We absorb all Stripe processing fees' },
   { label: 'Monthly fee', value: 'None' },
   { label: 'Payout threshold', value: 'None' },
   { label: 'Who can join', value: 'Independent & unsigned artists only' },
-  { label: 'Minimum sale', value: '£2.00' },
-  { label: 'Payment processing', value: "Stripe's standard processing fee — shown at checkout, no markup" },
+  { label: 'Minimum sale', value: '£3.00' },
+  { label: 'Payment processing', value: 'Stripe processing fees absorbed by Insound out of our 10% — no additional cost to artists' },
   { label: 'Masters', value: 'Artists retain 100%' },
   { label: 'Future features', value: 'Merch, pre-orders, download codes, collectives' },
 ]
@@ -29,7 +29,7 @@ export function ForPressClient() {
 
   const KEY_FACTS_DYNAMIC = KEY_FACTS.map(f =>
     f.label === 'Minimum sale'
-      ? { ...f, value: formatPrice(convertPrice(2, 'GBP', currency)) }
+      ? { ...f, value: formatPrice(convertPrice(3, 'GBP', currency)) }
       : f
   )
 
@@ -104,7 +104,7 @@ export function ForPressClient() {
               Insound was built because the model that Bandcamp proved — direct-to-fan, artist-first, pay-what-you-want — deserved a platform that wouldn&apos;t get sold out from under the artists who depend on it.
             </p>
             <p>
-              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We only take 10%. Stripe takes their standard processing fee, shown transparently at checkout. What the artist keeps is everything else — permanently.
+              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We take 10% and absorb all Stripe processing fees out of that cut. Artists keep exactly 90% — permanently.
             </p>
             <p>
               We only allow independent and unsigned artists. No labels. No aggregators. If you&apos;re signed to a label, Insound isn&apos;t for you — and we think that clarity matters.

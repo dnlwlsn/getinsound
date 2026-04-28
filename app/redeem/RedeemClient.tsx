@@ -172,7 +172,7 @@ export function RedeemClient() {
 
                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 mb-6">
                   <p className="text-zinc-400 text-xs leading-relaxed">
-                    Enter your email to claim this release. We&apos;ll add it to your library and send you a magic link to access it.
+                    Enter your email to claim this release. We&apos;ll add it to your collection and send you a magic link to access it.
                   </p>
                 </div>
 
@@ -223,7 +223,7 @@ export function RedeemClient() {
                 </div>
                 <h3 className="text-lg font-black text-white mb-2 font-display">You&apos;re all set!</h3>
                 <p className="text-sm text-zinc-400 leading-relaxed mb-1">
-                  The release has been added to your library.
+                  The release has been added to your collection.
                 </p>
                 <p className="text-sm text-zinc-400 leading-relaxed">
                   Check your inbox for a magic link to <span className="text-white font-semibold">{email.trim()}</span> to access it.

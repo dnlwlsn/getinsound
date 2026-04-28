@@ -25,21 +25,6 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
   '1y': 'Last Year',
 }
 
-export interface WishlistItem {
-  wishlistId: string
-  releaseId: string
-  releaseSlug: string
-  title: string
-  type: string
-  coverUrl: string | null
-  pricePence: number
-  currency: string
-  artistName: string
-  artistSlug: string
-  accentColour: string | null
-  savedAt: string
-}
-
 export interface MerchOrderItem {
   id: string
   merch_id: string
@@ -78,13 +63,12 @@ interface Props {
   releases: LibraryRelease[]
   error: string | null
   userId: string
-  wishlist?: WishlistItem[]
   favourites?: FavouriteItem[]
   merchOrders?: MerchOrderItem[]
 }
 
-export default function LibraryClient({ releases, error, userId, wishlist = [], favourites = [], merchOrders = [] }: Props) {
-  const [tab, setTab] = useState<'collection' | 'saved' | 'wishlist' | 'orders'>('collection')
+export default function LibraryClient({ releases, error, userId, favourites = [], merchOrders = [] }: Props) {
+  const [tab, setTab] = useState<'collection' | 'wishlist' | 'orders'>('collection')
   const [artistFilter, setArtistFilter] = useState<string>('all')
   const [dateRange, setDateRange] = useState<DateRange>('all')
   const [sort, setSort] = useState<SortOption>('newest')
@@ -197,7 +181,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
     return (
       <div className="min-h-screen font-display flex items-center justify-center">
         <div className="text-center max-w-md px-8">
-          <h2 className="text-lg font-bold text-zinc-300 mb-2">Something went wrong loading your library.</h2>
+          <h2 className="text-lg font-bold text-zinc-300 mb-2">Something went wrong loading your collection.</h2>
           <p className="text-zinc-500 text-sm mb-5">
             Try refreshing, or contact us if it keeps happening.
           </p>
@@ -212,7 +196,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
     )
   }
 
-  if (releases.length === 0 && favourites.length === 0 && wishlist.length === 0) {
+  if (releases.length === 0 && favourites.length === 0) {
     return (
       <div className="min-h-screen font-display">
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -239,7 +223,7 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
           <div>
             <p className="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-3">
-              Your Library
+              Your Collection
             </p>
             <h1 className="text-3xl sm:text-5xl font-black tracking-tighter mb-2">My Music</h1>
             <p className="text-zinc-400 font-medium text-sm sm:text-base">
@@ -275,20 +259,12 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
             Collection ({releases.length})
           </button>
           <button
-            onClick={() => setTab('saved')}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors border-b-2 -mb-px ${
-              tab === 'saved' ? 'border-orange-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            Saved ({favourites.length})
-          </button>
-          <button
             onClick={() => setTab('wishlist')}
             className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors border-b-2 -mb-px ${
               tab === 'wishlist' ? 'border-orange-600 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'
             }`}
           >
-            Wishlist ({wishlist.length})
+            Wishlist ({favourites.length})
           </button>
           {merchOrders.length > 0 && (
             <button
@@ -302,12 +278,8 @@ export default function LibraryClient({ releases, error, userId, wishlist = [], 
           )}
         </div>
 
-        {tab === 'saved' && (
-          <SavedTab items={favourites} />
-        )}
-
         {tab === 'wishlist' && (
-          <WishlistTab items={wishlist} />
+          <SavedTab items={favourites} />
         )}
 
         {tab === 'orders' && (
@@ -885,73 +857,7 @@ function FormatSelectorModal({
 
 /* ── Wishlist Tab ────────────────────────────────────────────── */
 
-function WishlistTab({ items }: { items: WishlistItem[] }) {
-  const [wishlist, setWishlist] = useState(items)
-
-  async function remove(releaseId: string) {
-    const res = await fetch('/api/wishlist', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ release_id: releaseId }),
-    })
-    if (res.ok) setWishlist(prev => prev.filter(w => w.releaseId !== releaseId))
-  }
-
-  if (wishlist.length === 0) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-zinc-400 font-medium mb-2">Your wishlist is empty.</p>
-        <p className="text-zinc-600 text-sm">Heart a release to save it for later.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-3">
-      {wishlist.map(w => {
-        const gradient = w.coverUrl ? null : generateGradient(w.artistSlug, w.releaseId)
-        return (
-          <div key={w.wishlistId} className="flex items-center gap-3 sm:gap-4 bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 sm:p-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex-shrink-0">
-              {w.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={w.coverUrl} alt={w.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full" style={gradient ? { background: gradient.css } : undefined} />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <Link href={`/${w.artistSlug}`} className="hover:underline">
-                <p className="text-sm font-bold text-white truncate">{w.title}</p>
-                <p className="text-xs text-zinc-500">{w.artistName}</p>
-              </Link>
-            </div>
-            <span className="text-xs sm:text-sm font-bold text-white flex-shrink-0">
-              {formatPriceUtil(w.pricePence / 100, w.currency)}
-            </span>
-            <Link
-              href={`/${w.artistSlug}`}
-              className="bg-orange-600 text-white text-xs font-bold px-3 sm:px-4 py-2 rounded-full hover:bg-orange-500 transition-colors flex-shrink-0"
-            >
-              Buy
-            </Link>
-            <button
-              onClick={() => remove(w.releaseId)}
-              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
-              aria-label="Remove from wishlist"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ── Saved (Favourites) Tab ─────────────────────────────────── */
+/* ── Wishlist (Favourites) Tab ─────────────────────────────── */
 
 function SavedTab({ items }: { items: FavouriteItem[] }) {
   const [saved, setSaved] = useState(items)
@@ -969,8 +875,8 @@ function SavedTab({ items }: { items: FavouriteItem[] }) {
   if (saved.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="text-zinc-400 font-medium mb-2">You haven&apos;t saved any tracks yet.</p>
-        <p className="text-zinc-600 text-sm">Tap the heart on any track to save it for later.</p>
+        <p className="text-zinc-400 font-medium mb-2">Your wishlist is empty.</p>
+        <p className="text-zinc-600 text-sm">Tap the heart on any track or release to add it here.</p>
       </div>
     )
   }

@@ -1,855 +1,286 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { calculateFees } from '@/app/lib/fees'
-import Image from 'next/image'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useCurrency } from '../providers/CurrencyProvider'
+import { generateGradientDataUri } from '@/lib/gradient'
 
-/* ── Typewriter items ────────────────────────────────────────── */
-const COST_ITEMS = [
-  'Recording studio time',
-  'Mixing & mastering',
-  'Equipment',
-  'Music video production',
-  'PR and playlist pitching',
-  'Session musicians',
-  'PRS/MCPS fees',
-  'Social media advertising',
-  'Publishing fees',
-  'Pay to play',
-]
+interface Release {
+  id: string
+  slug: string
+  title: string
+  type: string
+  cover_url: string | null
+  genre: string | null
+  price_pence: number
+  created_at: string
+  artist_id: string
+  artist_name: string
+  artist_slug: string
+  accent_colour: string | null
+  tags: string[]
+  isNew: boolean
+}
 
-/* ── Phone mockup tracks ─────────────────────────────────────── */
-const TRACKS: { name: string; type: string; year: string; price: number; color1: string; color2: string; glow: string }[] = []
+interface HomeClientProps {
+  releases: Release[]
+  isLoggedIn: boolean
+  followedArtistReleases: Release[]
+}
 
-export default function HomeClient() {
-  /* Calculator */
-  const [calcPrice, setCalcPrice]   = useState(10)
+const PAGE_SIZE = 20
 
-  /* Currency */
-  const { currency, formatPrice, convertPrice } = useCurrency()
+function releaseUrl(r: Release) {
+  return `/release?a=${r.artist_slug}&r=${r.slug}`
+}
 
-  /* Typewriter */
-  const [twText, setTwText]         = useState('')
-  const [twFading, setTwFading]     = useState(false)
-  const twRunning                   = useRef(false)
-  const twTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const costCardRef                 = useRef<HTMLDivElement>(null)
+function coverSrc(r: Release) {
+  return r.cover_url || generateGradientDataUri(r.artist_id, r.id)
+}
 
-  /* Phone mockup */
-  const [phoneTime, setPhoneTime]   = useState('9:41')
-  const [activeTrack, setActiveTrack] = useState(TRACKS[0]?.name ?? '')
-  const [banner, setBanner]         = useState({ color1: TRACKS[0]?.color1 ?? '#F56D00', color2: TRACKS[0]?.color2 ?? '#431407', glow: TRACKS[0]?.glow ?? '234,88,12' })
-  const [basket, setBasket]         = useState<string[]>([])
-
-  /* ── Scroll reveals ──────────────────────────────────────────── */
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target) } }),
-      { threshold: 0.12 }
-    )
-    document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
-    return () => obs.disconnect()
-  }, [])
-
-  /* ── Phone clock ─────────────────────────────────────────────── */
-  useEffect(() => {
-    function tick() {
-      const n = new Date()
-      setPhoneTime(`${n.getHours().toString().padStart(2, '0')}:${n.getMinutes().toString().padStart(2, '0')}`)
-    }
-    tick()
-    const id = setInterval(tick, 10000)
-    return () => clearInterval(id)
-  }, [])
-
-  /* ── Typewriter ──────────────────────────────────────────────── */
-  useEffect(() => {
-    const card = costCardRef.current
-    if (!card) return
-
-    const TYPE_MS = 55, HOLD_MS = 1400, FADE_MS = 360
-    let idx = 0
-
-    function wait(ms: number) {
-      return new Promise<void>(res => { twTimer.current = setTimeout(res, ms) })
-    }
-
-    async function typeIn(str: string) {
-      setTwText('')
-      for (let i = 0; i < str.length; i++) {
-        if (!twRunning.current) return
-        setTwText(str.slice(0, i + 1))
-        await wait(TYPE_MS)
-      }
-    }
-
-    async function loop() {
-      while (twRunning.current) {
-        const word = COST_ITEMS[idx % COST_ITEMS.length]
-        setTwFading(false)
-        await typeIn(word)
-        if (!twRunning.current) return
-        await wait(HOLD_MS)
-        if (!twRunning.current) return
-        setTwFading(true)
-        await wait(FADE_MS)
-        if (!twRunning.current) return
-        setTwText('')
-        idx++
-      }
-    }
-
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting && !twRunning.current) {
-          twRunning.current = true
-          loop()
-        } else if (!e.isIntersecting && twRunning.current) {
-          twRunning.current = false
-          if (twTimer.current) clearTimeout(twTimer.current)
-        }
-      })
-    }, { threshold: 0.25 })
-
-    obs.observe(card)
-    return () => {
-      twRunning.current = false
-      if (twTimer.current) clearTimeout(twTimer.current)
-      obs.disconnect()
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Calculator derived values ───────────────────────────────── */
-  const calcFill     = `${((calcPrice - 1) / 49 * 100).toFixed(1)}%`
-  const calcInArtist  = calculateFees(calcPrice).artistReceived
-  const calcStreams   = Math.round(calcInArtist / 0.003)
-  const calcStreamLbl = calcStreams >= 1000 ? `${Math.round(calcStreams / 1000).toLocaleString()},000+` : calcStreams.toLocaleString()
-  const calcBcPer    = formatPrice(calcPrice * 0.8)
-  const calcInPer    = formatPrice(calcInArtist)
-  const calcBcSales  = `~${Math.ceil(1000 / (calcPrice * 0.8))}`
-  const calcInSales  = Math.ceil(1000 / calcInArtist)
-
-  /* ── Device basket helpers ───────────────────────────────────── */
-  function toggleBasket(name: string) {
-    setBasket(prev =>
-      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
-    )
-  }
-
-  function selectTrack(track: typeof TRACKS[0]) {
-    setActiveTrack(track.name)
-    setBanner({ color1: track.color1, color2: track.color2, glow: track.glow })
-  }
-
-  /* ── JSX ─────────────────────────────────────────────────────── */
+function PlayIcon({ size = 22 }: { size?: number }) {
   return (
-    <main className="min-h-screen">
+    <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
 
-      {/* ── NAV ──────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-5 px-4" style={{ pointerEvents: 'none' }}>
-        <div id="navInner" className="flex items-center justify-between w-full max-w-4xl rounded-full px-5 py-3 ring-1 ring-white/[0.06] shadow-[0_8px_40px_rgba(0,0,0,0.5)]" style={{ pointerEvents: 'auto' }}>
-          <span className="font-display text-lg font-bold text-orange-500 tracking-tight">
-            insound<span className="text-white/25 hero-dot">.</span>
-          </span>
-          <div className="flex items-center gap-3">
-            <a href="#signup"
-              className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors shadow-lg shadow-orange-600/20">
-              Sign up free
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── HERO ─────────────────────────────────────────────────── */}
-      <header id="top" className="relative min-h-screen flex items-center justify-center px-6 pb-20 overflow-hidden" style={{ paddingTop: '8rem' }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full" style={{ background: 'radial-gradient(ellipse,rgba(245,109,0,0.1) 0%,transparent 70%)' }} />
-          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(ellipse,rgba(245,109,0,0.06) 0%,transparent 70%)' }} />
-        </div>
-
-        <div className="relative z-10 mx-auto text-center" style={{ maxWidth: '64rem' }}>
-          <div className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot" />
-            Now live
-          </div>
-
-          <h1 className="font-display font-bold mb-8" style={{ fontSize: 'clamp(3.5rem,6vw,5.5rem)', letterSpacing: '-0.04em', lineHeight: '0.88' }}>
-            Music that<br /><span className="text-orange-500">pays artists.</span>
-          </h1>
-
-          <p className="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-xl mx-auto mb-5 font-medium">
-            Upload your music. We only take <strong className="text-white font-bold">10%</strong>. No surprises. No monthly fee. No labels.
-          </p>
-          <p className="t-muted text-sm max-w-md mx-auto mb-12">
-            For independent and unsigned artists only. Start selling today — no monthly fee, no approval process.
-          </p>
-
-          <div id="signup" className="max-w-md mx-auto" style={{ scrollMarginTop: '6rem' }}>
-            <a href="/signup"
-              className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap">
-              Get started →
-            </a>
-            <p className="text-zinc-700 text-xs mt-4 font-medium">
-              No spam, ever &nbsp;·&nbsp; Unsubscribe anytime &nbsp;·&nbsp;{' '}
-              <Link href="/privacy" className="hover:text-zinc-500 transition-colors">Privacy Policy</Link>
-            </p>
-          </div>
-        </div>
-
-        <a href="#real-cost" className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-25 hover:opacity-50 transition-opacity cursor-pointer">
-          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="animate-bounce">
-            <path d="M19 9l-7 7-7-7" />
-          </svg>
-        </a>
-      </header>
-
-      {/* ── STATS ────────────────────────────────────────────────── */}
-      <section className="relative py-10 md:py-16">
-        <div className="line" />
-        <div className="max-w-4xl mx-auto px-6 md:px-14 py-8 md:py-14">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
-            <div className="reveal">
-              <p className="font-display text-4xl font-bold text-white tracking-tight">10%</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Our cut, that&apos;s it</p>
-            </div>
-            <div className="reveal reveal-delay-1">
-              <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">{formatPrice(0)}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Monthly fee, ever</p>
-            </div>
-            <div className="reveal reveal-delay-2">
-              <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">~87%</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">Goes to the artist</p>
-            </div>
-            <div className="reveal reveal-delay-3">
-              <p className="font-display text-4xl font-bold text-white tracking-tight">100%</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mt-2">You own your music</p>
-            </div>
-          </div>
-        </div>
-        <div className="line" />
-      </section>
-
-      {/* ── THE COST ─────────────────────────────────────────────── */}
-      <section id="real-cost" className="py-16 md:py-36" style={{ scrollMarginTop: '5rem' }}>
-        <div className="max-w-5xl mx-auto px-6 md:px-14">
-
-          <div className="text-center mb-12 reveal">
-            <span className="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">
-              The real cost of being independent
-            </span>
-            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">
-              You already pay<br />for a lot.
-            </h2>
-          </div>
-
-          <div ref={costCardRef} className="reveal punchline ring-1 ring-white/[0.05] rounded-3xl overflow-hidden">
-            <div className="px-8 py-14 md:py-20">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] t-faint mb-10 text-center">Before a single fan hears your music</p>
-              <div className="text-center">
-                <p className={`tw-line font-display text-2xl md:text-4xl font-bold text-white tracking-[-0.02em] leading-tight${twFading ? ' tw-fading' : ''}`} style={{ minHeight: '1.3em' }}>
-                  <span id="typewriterText">{twText}</span>
-                  <span className="tw-caret" aria-hidden="true">|</span>
-                </p>
-                <p className="font-display text-2xl md:text-4xl font-bold tracking-[-0.02em] leading-tight mt-3" style={{ color: '#F56D00' }}>
-                  Insound is free.
-                </p>
-              </div>
-            </div>
-            <div className="border-t px-8 py-5 flex justify-between items-center" style={{ borderColor: 'var(--line-color)' }}>
-              <span className="text-white font-bold">Typical annual total</span>
-              <span className="text-orange-500 font-bold">{formatPrice(convertPrice(2000, 'GBP', currency))} – {formatPrice(convertPrice(8000, 'GBP', currency))}+</span>
-            </div>
-            <div className="mx-0 bg-orange-600/8 border-t border-orange-600/15 px-8 py-6 flex justify-between items-center">
-              <div>
-                <p className="text-white font-bold">Publishing your music on Insound</p>
-                <p className="text-[11px] t-muted mt-1">We keep 10% per sale — for development, storage, and coffee. That&apos;s it.</p>
-              </div>
-              <span className="text-orange-400 font-display font-bold text-2xl tracking-tight ml-6 flex-shrink-0">{formatPrice(0)} to publish</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-      <div className="line" />
-
-      {/* ── THE MATH ─────────────────────────────────────────────── */}
-      <section id="the-math" className="py-28 md:py-36">
-        <div className="max-w-5xl mx-auto px-6 md:px-14">
-
-          <div className="text-center mb-16 reveal">
-            <span className="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">The honest truth</span>
-            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Here&apos;s what you keep.</h2>
-            <p className="text-zinc-500 text-lg max-w-lg mx-auto">A fan spends {formatPrice(convertPrice(10, 'GBP', currency))} on your music. How much reaches you?</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4 reveal">
-            <div className="col-good border rounded-3xl p-8 text-center relative" style={{ boxShadow: '0 8px 40px rgba(245,109,0,0.22),0 0 0 1px rgba(245,109,0,0.14)' }}>
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-orange-500">{formatPrice(convertPrice(8.65, 'GBP', currency))}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/80 mt-4">To the artist</p>
-            </div>
-            <div className="col-good border rounded-3xl p-8 text-center">
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">{formatPrice(convertPrice(1, 'GBP', currency))}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Insound (10%)</p>
-            </div>
-            <div className="col-good border rounded-3xl p-8 text-center">
-              <p className="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] text-white">{formatPrice(convertPrice(0.35, 'GBP', currency))}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mt-4">Stripe fee</p>
-            </div>
-          </div>
-
-          <p className="text-zinc-500 text-sm leading-relaxed max-w-2xl mx-auto text-center mt-6 mb-10 reveal">
-            We take a flat 10%. Stripe takes their standard processing fee , shown transparently at checkout. What you keep is everything else.
-          </p>
-
-          {/* Comparison cards */}
-          <div className="compare-cards reveal mt-4">
-
-            {/* Card 1 – Streaming */}
-            <article className="compare-card border rounded-3xl overflow-hidden">
-              <div className="px-6 pt-6 pb-2">
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] t-faint">Platform 01</p>
-                <p className="font-display text-xl font-bold text-white mt-1">Streaming</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Spotify, Apple Music, Tidal</p>
-              </div>
-              <div className="grid grid-cols-2 mt-4">
-                <div className="col-bad p-5 border-t border-r border-white/[0.04]">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-red-400/70 mb-4">Them</p>
-                  <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-red-400 text-xs leading-snug">{currency === 'GBP' ? '~£0.003' : `~${formatPrice(convertPrice(0.003, 'GBP', currency))}`} per stream</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">To earn {formatPrice(convertPrice(1000, 'GBP', currency))}</p><p className="font-bold text-red-400 text-xs leading-snug">333,000+ streams</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Pricing control</p><p className="font-bold text-red-400 text-xs leading-snug">None — platform decides</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Fan relationship</p><p className="font-bold text-red-400 text-xs leading-snug">Anonymous</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-red-400 text-xs leading-snug">Everyone</p></div>
-                  </div>
-                </div>
-                <div className="col-good p-5 border-t border-white/[0.04]">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-orange-400 mb-4">insound.</p>
-                  <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">~87% after all fees</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">To earn {formatPrice(convertPrice(1000, 'GBP', currency))}</p><p className="font-bold text-orange-400 text-xs leading-snug">~112 sales</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Pricing control</p><p className="font-bold text-orange-400 text-xs leading-snug">You set your price</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Fan relationship</p><p className="font-bold text-orange-400 text-xs leading-snug">Direct — you own it</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent artists only</p></div>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            {/* Card 2 – Bandcamp */}
-            <article className="compare-card border rounded-3xl overflow-hidden">
-              <div className="px-6 pt-6 pb-2">
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] t-faint">Platform 02</p>
-                <p className="font-display text-xl font-bold text-white mt-1">Bandcamp</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">The old indie standard</p>
-              </div>
-              <div className="grid grid-cols-2 mt-4">
-                <div className="col-bad p-5 border-t border-r border-white/[0.04]">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-red-400/70 mb-4">Them</p>
-                  <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-red-400 text-xs leading-snug">~80% after all fees</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Revenue threshold</p><p className="font-bold text-red-400 text-xs leading-snug">Higher rate only after $5k in sales</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Platform future</p><p className="font-bold text-red-400 text-xs leading-snug">Sold twice since 2022</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-red-400 text-xs leading-snug">Everyone, including labels</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Holds your money</p><p className="font-bold text-red-400 text-xs leading-snug">Yes</p></div>
-                  </div>
-                </div>
-                <div className="col-good p-5 border-t border-white/[0.04]">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-orange-400 mb-4">insound.</p>
-                  <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">~87% after all fees</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Revenue threshold</p><p className="font-bold text-orange-400 text-xs leading-snug">None — same rate from sale one</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Platform future</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent, no investors</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent &amp; unsigned only</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Holds your money</p><p className="font-bold text-orange-400 text-xs leading-snug">Never</p></div>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            {/* Card 3 – Closest competitors */}
-            <article className="compare-card border rounded-3xl overflow-hidden">
-              <div className="px-6 pt-6 pb-2">
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] t-faint">Platform 03</p>
-                <p className="font-display text-xl font-bold text-white mt-1">Closest competitors</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Other indie-focused platforms</p>
-              </div>
-              <div className="grid grid-cols-2 mt-4">
-                <div className="col-bad p-5 border-t border-r border-white/[0.04]">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-red-400/70 mb-4">Them</p>
-                  <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-red-400 text-xs leading-snug">~85% after platform + payment fees</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Payment setup</p><p className="font-bold text-red-400 text-xs leading-snug">Complex onboarding, limited guidance</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Platform stability</p><p className="font-bold text-red-400 text-xs leading-snug">Donation-funded or VC-backed</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Curation</p><p className="font-bold text-red-400 text-xs leading-snug">Open to everyone — no quality bar</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-red-400 text-xs leading-snug">Mixed — labels, hobbyists, anyone</p></div>
-                  </div>
-                </div>
-                <div className="col-good p-5 border-t border-white/[0.04]">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-orange-400 mb-4">insound.</p>
-                  <div className="space-y-4">
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Artist cut</p><p className="font-bold text-orange-400 text-xs leading-snug">~87% — every fee shown at checkout</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Payment setup</p><p className="font-bold text-orange-400 text-xs leading-snug">Stripe Connect, guided setup</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Platform stability</p><p className="font-bold text-orange-400 text-xs leading-snug">Independently built, sustainable model</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Curation</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent artists only — curated</p></div>
-                    <div><p className="text-[10px] text-zinc-600 mb-1">Who it&apos;s for</p><p className="font-bold text-orange-400 text-xs leading-snug">Independent &amp; unsigned only</p></div>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-          </div>
-          <div className="compare-snap-dots md:hidden" aria-hidden="true"><span /><span /><span /></div>
-
-          <div className="mt-20 md:mt-28 text-center reveal">
-            <h3 className="font-display text-4xl md:text-6xl font-bold tracking-[-0.03em] leading-[0.95]">
-              No upfront cost.<br />No monthly fee.<br /><span className="text-orange-500">No risk.</span>
-            </h3>
-            <p className="t-muted text-base md:text-lg mt-6 max-w-xl mx-auto leading-relaxed">Free to join. Free to upload. You only pay when a fan pays you.</p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── CALCULATOR ───────────────────────────────────────────── */}
-      <section className="pb-28">
-        <div className="max-w-5xl mx-auto px-6 md:px-14">
-          <div className="reveal punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:p-10">
-
-            <div className="text-center mb-8">
-              <span className="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-4">Run your numbers</span>
-              <h3 className="font-display text-2xl md:text-3xl font-bold tracking-[-0.02em]">What would you actually earn?</h3>
-            </div>
-
-            <div className="mb-10">
-              <div className="flex justify-between items-end mb-4">
-                <p className="text-sm font-semibold t-muted">Price per release</p>
-                <p className="font-display text-4xl font-bold text-orange-500 tracking-tight">{formatPrice(calcPrice)}</p>
-              </div>
-              <input type="range" min={1} max={50} value={calcPrice}
-                onChange={e => setCalcPrice(parseInt(e.target.value, 10))}
-                className="calc-slider w-full"
-                style={{ '--fill': calcFill } as React.CSSProperties} />
-              <div className="flex justify-between text-[10px] t-faint mt-2 font-medium">
-                <span>{formatPrice(1)} minimum</span><span>{formatPrice(50)}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              <div className="rounded-2xl p-4 text-center bg-red-500/5 ring-1 ring-red-500/10">
-                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-red-400/60 mb-3">Streaming</p>
-                <p className="font-display text-xl font-bold text-red-400">{calcStreamLbl}</p>
-                <p className="text-[10px] t-faint mt-1 leading-snug">streams to match<br />one sale</p>
-              </div>
-              <div className="rounded-2xl p-4 text-center ring-1" style={{ background: 'rgba(255,255,255,0.02)', '--tw-ring-color': 'rgba(255,255,255,0.06)' } as React.CSSProperties}>
-                <p className="text-[9px] font-bold uppercase tracking-[0.15em] t-faint mb-3">Bandcamp</p>
-                <p className="font-display text-xl font-bold t-subtle">{calcBcPer}</p>
-                <p className="text-[10px] t-faint mt-1 leading-snug">per sale<br />(after fees)</p>
-              </div>
-              <div className="rounded-2xl p-4 text-center bg-orange-600/5 ring-1 ring-orange-600/10">
-                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-orange-400/60 mb-3">Insound</p>
-                <p className="font-display text-xl font-bold text-orange-400">{calcInPer}</p>
-                <p className="text-[10px] t-faint mt-1 leading-snug">per sale,<br />after all fees</p>
-              </div>
-            </div>
-
-            <div className="border-t pt-6 text-center" style={{ borderColor: 'var(--line-color)' }}>
-              <p className="t-muted text-sm mb-4">To earn <strong className="text-white font-bold">{formatPrice(convertPrice(1000, 'GBP', currency))}</strong> at this price:</p>
-              <div className="flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
-                <div className="text-center">
-                  <p className="font-display text-2xl font-bold text-red-400">333,000+</p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest t-faint mt-1">streams</p>
-                </div>
-                <p className="font-display text-lg t-faint font-bold">vs</p>
-                <div className="text-center">
-                  <p className="font-display text-2xl font-bold t-subtle">{calcBcSales}</p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest t-faint mt-1">Bandcamp sales</p>
-                </div>
-                <p className="font-display text-lg t-faint font-bold">vs</p>
-                <div className="text-center">
-                  <p className="font-display text-2xl font-bold text-orange-500">{calcInSales}</p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest t-faint mt-1">Insound sales</p>
-                </div>
+function ReleaseGrid({ releases, formatPrice, convertPrice, currency }: {
+  releases: Release[]
+  formatPrice: (n: number) => string
+  convertPrice: (amount: number, from: string, to: string) => number
+  currency: string
+}) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+      {releases.map(r => (
+        <Link key={r.id} href={releaseUrl(r)} className="group">
+          <div className="aspect-square rounded-2xl overflow-hidden mb-3 ring-1 ring-white/[0.06] relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverSrc(r)}
+              alt={`${r.title} by ${r.artist_name}`}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+            {r.isNew && (
+              <span className="absolute top-2 left-2 bg-orange-600 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                New
+              </span>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-white/20 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center border border-white/30">
+                <PlayIcon size={18} />
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
-      <div className="line" />
-      <section id="how-it-works" className="py-28 md:py-36 relative">
-        <div className="max-w-4xl mx-auto px-6 md:px-14">
-
-          <div className="text-center mb-16 reveal">
-            <span className="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">How it works</span>
-            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em]">Up and running<br />in minutes.</h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="reveal card ring-1 ring-white/[0.05] rounded-3xl p-8">
-              <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
-                <svg width="18" height="18" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-              </div>
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 1</p>
-              <h3 className="font-display text-xl font-bold tracking-tight mb-3">Upload your music</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">WAV, FLAC, AIFF or MP3. Your artist page goes live instantly — share the link anywhere.</p>
-            </div>
-            <div className="reveal reveal-delay-1 card ring-1 ring-white/[0.05] rounded-3xl p-8">
-              <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
-                <span className="text-orange-500 font-bold text-base leading-none">£</span>
-              </div>
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 2</p>
-              <h3 className="font-display text-xl font-bold tracking-tight mb-3">Set your price</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">You decide what your music is worth. Minimum {formatPrice(convertPrice(2, 'GBP', currency))}. No ceiling. We take a flat 10%. Stripe&apos;s processing fee  is shown transparently at checkout.</p>
-            </div>
-            <div className="reveal reveal-delay-2 card ring-1 ring-white/[0.05] rounded-3xl p-8">
-              <div className="w-10 h-10 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center mb-6">
-                <svg width="18" height="18" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>
-              </div>
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 3</p>
-              <h3 className="font-display text-xl font-bold tracking-tight mb-3">Get paid</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">We take a flat 10%. Stripe takes their standard processing fee , shown at checkout. What you keep is everything else — paid the moment the sale completes. No thresholds, no delays.</p>
-            </div>
-          </div>
-
-          <div className="reveal mt-6 card ring-1 ring-white/[0.05] rounded-3xl p-8 flex flex-col sm:flex-row items-start gap-6">
-            <div className="w-10 h-10 flex-shrink-0 bg-orange-600/15 ring-1 ring-orange-600/15 rounded-2xl flex items-center justify-center">
-              <svg width="18" height="18" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-            </div>
-            <div>
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500/70 mb-3">Step 4</p>
-              <h3 className="font-display text-xl font-bold tracking-tight mb-3">Get discovered</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed max-w-xl">Your artist page is public from the moment you upload. Fans browse Insound, find your music, and buy direct — no algorithm deciding who gets heard. You build the audience. You own the relationship.</p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── TRUST ────────────────────────────────────────────────── */}
-      <section className="pb-16">
-        <div className="max-w-5xl mx-auto px-6 md:px-14">
-          <div className="reveal punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:p-12">
-            <h3 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92] mb-5">Built different.</h3>
-            <p className="t-muted text-base leading-relaxed mb-5">Bandcamp was sold to Epic Games in 2022. Then sold again to Songtradr in 2023, who laid off most of the team within weeks. By Q1 2026, active Bandcamp stores had declined 50% quarter-over-quarter. The platform artists trusted most became a cautionary tale in under three years.</p>
-            <p className="text-white font-medium leading-relaxed mb-5">We&apos;re building Insound independently. No investors. No exit strategy. No cap table that could ever change the deal. Just a platform that works for artists, permanently.</p>
-            <p className="t-muted text-base leading-relaxed mb-5">Sign up now and your rate is locked from your first sale. We only take 10%. Stripe&apos;s processing fee  is shown transparently at checkout. What you keep is everything else. No thresholds, no waiting, no asterisks.</p>
-            <p className="text-orange-400 font-medium leading-relaxed">Be one of the first 50 artists on Insound. Founding Artists pay 7.5% — a 25% reduction on our standard fee — for their first 12 months of sales.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ──────────────────────────────────────────────────── */}
-      <section className="py-28 md:py-36">
-        <div className="max-w-5xl mx-auto px-6 md:px-14">
-
-          <div className="text-center mb-16 reveal">
-            <span className="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">FAQ</span>
-            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">Good questions.</h2>
-          </div>
-
-          <div className="faq-layout flex items-center" style={{ flexDirection: 'row', gap: '4rem', flexWrap: 'wrap' }}>
-
-            {/* Phone mockup */}
-            <div className="faq-phone" style={{ flexShrink: 0, width: '270px', display: 'flex', justifyContent: 'center' }}>
-              <div style={{ position: 'relative', width: '270px' }}>
-                {/* Glow */}
-                <div className="device-glow" style={{ position: 'absolute', inset: '-60px', background: 'radial-gradient(ellipse,rgba(245,109,0,0.18) 0%,transparent 65%)', pointerEvents: 'none', zIndex: 0 }} />
-
-                {/* Floating sale toast */}
-                <div className="floating-card" style={{ position: 'absolute', left: '-155px', top: '80px', zIndex: 6, width: '150px', background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(16px)', border: '1px solid rgba(245,109,0,0.25)', borderRadius: '16px', padding: '11px 12px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)', animation: 'floatA 4.5s ease-in-out infinite' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '7px', background: 'rgba(245,109,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="10" height="10" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                    </div>
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', fontFamily: 'system-ui' }}>Sale received</span>
-                  </div>
-                  <span style={{ fontSize: '18px', fontWeight: 800, color: '#f97316', letterSpacing: '-0.02em', fontFamily: "'Space Grotesk',system-ui" }}>{formatPrice(convertPrice(7.20, 'GBP', currency))}</span>
-                  <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)', fontFamily: 'system-ui', display: 'block', marginTop: '2px' }}>Midnight Drive</span>
-                </div>
-
-                {/* Floating earnings card */}
-                <div className="floating-card" style={{ position: 'absolute', left: '-140px', bottom: '100px', zIndex: 6, width: '135px', background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '11px 12px', boxShadow: '0 16px 40px rgba(0,0,0,0.5)', animation: 'floatB 5.5s ease-in-out infinite' }}>
-                  <p style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', marginBottom: '4px', fontFamily: 'system-ui' }}>This month</p>
-                  <p style={{ fontSize: '22px', fontWeight: 800, color: 'white', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '5px', fontFamily: "'Space Grotesk',system-ui" }}>{formatPrice(convertPrice(247.50, 'GBP', currency))}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    <svg width="9" height="9" fill="none" stroke="#22c55e" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15" /></svg>
-                    <span style={{ fontSize: '9px', color: '#22c55e', fontWeight: 600, fontFamily: 'system-ui' }}>23 sales</span>
-                  </div>
-                </div>
-
-                {/* Phone shell */}
-                <div className="phone-device" style={{ position: 'relative', zIndex: 1, width: '270px', height: '568px', borderRadius: '44px' }}>
-                  <div style={{ position: 'absolute', inset: 0, borderRadius: '44px', overflow: 'hidden', background: '#09090b' }}>
-
-                    {/* Dynamic island */}
-                    <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', width: '88px', height: '26px', background: '#000', borderRadius: '20px', zIndex: 10 }} />
-
-                    {/* Status bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 22px 0', fontSize: '11px', color: 'rgba(255,255,255,0.75)', fontWeight: 600, fontFamily: 'system-ui,sans-serif' }}>
-                      <span>{phoneTime}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <svg width="14" height="10" viewBox="0 0 24 16" fill="none">
-                          <path d="M1 7.5C4.5 3 8.5 1 12 1s7.5 2 11 6.5" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round" />
-                          <path d="M4.5 11C7 8 9.5 6.5 12 6.5s5 1.5 7.5 4.5" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round" />
-                          <circle cx="12" cy="15" r="1.5" fill="rgba(255,255,255,0.6)" />
-                        </svg>
-                        <div style={{ width: '22px', height: '11px', border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: '3px', position: 'relative', display: 'flex', alignItems: 'center', padding: '1px 1.5px' }}>
-                          <div style={{ width: '13px', height: '6px', background: 'rgba(255,255,255,0.7)', borderRadius: '1.5px' }} />
-                          <div style={{ position: 'absolute', right: '-4px', top: '50%', transform: 'translateY(-50%)', width: '3px', height: '5px', background: 'rgba(255,255,255,0.35)', borderRadius: '0 2px 2px 0' }} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* App bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 18px 10px' }}>
-                      <span style={{ fontFamily: "'Space Grotesk',system-ui,sans-serif", fontSize: '16px', fontWeight: 700, color: '#f97316', letterSpacing: '-0.02em' }}>insound<span style={{ color: '#f97316' }}>.</span></span>
-                      <div style={{ position: 'relative', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="13" height="13" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 01-8 0" /></svg>
-                        {basket.length > 0 && (
-                          <div style={{ position: 'absolute', top: '-3px', right: '-3px', width: '16px', height: '16px', borderRadius: '50%', background: '#F56D00', color: '#000', fontSize: '8px', fontWeight: 800, fontFamily: 'system-ui', lineHeight: '16px', textAlign: 'center' }}>
-                            {basket.length}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Banner */}
-                    <div style={{ margin: '0 12px', borderRadius: '18px', overflow: 'hidden', position: 'relative', height: '136px' }}>
-                      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${banner.color1} 0%,${banner.color2} 60%,#050505 100%)`, transition: 'background 0.5s ease' }} />
-                      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 25% 60%,rgba(${banner.glow},0.28) 0%,transparent 55%)`, transition: 'background 0.5s ease' }} />
-                      <div style={{ position: 'absolute', bottom: '42px', left: '14px', right: '14px', height: '28px', display: 'flex', alignItems: 'center', gap: '2px', opacity: 0.22 }}>
-                        {[8,15,22,10,26,17,7,21,28,12,20,9,24,14,19,28,11,16,23,8].map((h, i) => (
-                          <div key={i} style={{ width: '2px', height: `${h}px`, background: banner.color1, borderRadius: '1px' }} />
-                        ))}
-                      </div>
-                      <div style={{ position: 'absolute', bottom: '13px', left: '14px' }}>
-                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'system-ui,sans-serif', marginBottom: '4px' }}>Artist page</p>
-                        <p style={{ fontSize: '20px', fontWeight: 700, color: 'white', lineHeight: 1, letterSpacing: '-0.02em', fontFamily: "'Space Grotesk',system-ui,sans-serif" }}>YOUTH</p>
-                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'system-ui,sans-serif' }}>Indie · 6 releases</p>
-                      </div>
-                    </div>
-
-                    {/* Track list */}
-                    <div style={{ padding: '12px 14px 0', fontFamily: 'system-ui,sans-serif' }}>
-                      <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.18)', marginBottom: '8px', padding: '0 2px' }}>Releases</p>
-                      {TRACKS.map((track, i) => {
-                        const inBasket = basket.includes(track.name)
-                        return (
-                          <div key={track.name}
-                            className={`device-track${activeTrack === track.name ? ' active' : ''}`}
-                            onClick={() => selectTrack(track)}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 2px', borderBottom: i < TRACKS.length - 1 ? '1px solid rgba(255,255,255,0.05)' : undefined, cursor: 'pointer', borderRadius: '8px', transition: 'background 0.15s ease' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', pointerEvents: 'none' }}>
-                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: `linear-gradient(135deg,${track.color1},${track.color2})`, flexShrink: 0 }} />
-                              <div>
-                                <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.88)', lineHeight: 1.2 }}>{track.name}</p>
-                                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.28)', marginTop: '1px' }}>{track.type} · {track.year}</p>
-                              </div>
-                            </div>
-                            <div className={`device-price${inBasket ? ' in-basket' : ''}`}
-                              onClick={e => { e.stopPropagation(); toggleBasket(track.name) }}
-                              style={{ background: inBasket ? 'transparent' : (i === 0 ? track.color1 : 'rgba(255,255,255,0.07)'), color: inBasket ? '#22c55e' : (i === 0 ? '#000' : 'rgba(255,255,255,0.6)'), fontSize: '10px', fontWeight: 700, padding: '5px 11px', borderRadius: '20px', flexShrink: 0, cursor: 'pointer', transition: 'transform 0.15s ease' }}>
-                              {inBasket ? '✓' : formatPrice(convertPrice(track.price, 'GBP', currency))}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {/* Bottom nav */}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '62px', background: 'rgba(5,5,5,0.97)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 24px 10px' }}>
-                      <svg width="20" height="20" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-                      <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-                      <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" /></svg>
-                      <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                    </div>
-                  </div>
-                  {/* Side buttons */}
-                  <div style={{ position: 'absolute', top: '108px', right: '-3px', width: '3px', height: '62px', background: 'rgba(255,255,255,0.08)', borderRadius: '0 2px 2px 0' }} />
-                  <div style={{ position: 'absolute', top: '90px', left: '-3px', width: '3px', height: '36px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px 0 0 2px' }} />
-                  <div style={{ position: 'absolute', top: '136px', left: '-3px', width: '3px', height: '36px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px 0 0 2px' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* FAQ list */}
-            <div className="faq-list flex-1 space-y-0 reveal">
-              {[
-                { q: 'Is Insound live?', a: "Yes. You can sign up, upload your music, and start selling today. We're actively building new features — check the roadmap below." },
-                { q: 'Is the 10% rate permanent?', a: "Yes. Our standard 10% is the whole business model — not a launch promotion. Founding Artists (the first 50) pay 7.5% for their first 12 months of sales. Stripe separately charges their standard processing fee, shown transparently at checkout." },
-                { q: 'How do I get paid?', a: `Your earnings go directly to your Stripe account the moment a sale completes — we never hold them. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. Withdrawals to your bank follow Stripe's standard payout schedule, typically 2–7 days. No minimum thresholds, no delays on our end.` },
-                { q: 'Does Insound hold my money?', a: "Never. We use Stripe Connect direct charges — when a fan buys your music, the payment is created directly in your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes. We are never in the middle." },
-                { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
-                { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
-                { q: 'Is there a subscription fee?', a: "No. It's free to publish. We only make money when you make money — 10% per sale, nothing else." },
-                { q: 'Are there any hidden fees?', a: `None. We take a flat 10%. Stripe charges their standard processing fee  — shown transparently at checkout, passed through at cost. On a ${formatPrice(convertPrice(10, 'GBP', currency))} sale: ${formatPrice(convertPrice(8.65, 'GBP', currency))} to you, ${formatPrice(convertPrice(1, 'GBP', currency))} to Insound, ${formatPrice(convertPrice(0.35, 'GBP', currency))} to Stripe. What you see is what happens.` },
-              ].map((item, i, arr) => (
-                <div key={i} className={`${i < arr.length - 1 ? 'border-b' : ''} py-6`} style={{ borderColor: 'var(--line-color)' }}>
-                  <p className="font-display font-bold text-lg text-white mb-2">{item.q}</p>
-                  <p className="t-muted text-sm leading-relaxed">{item.a}</p>
-                </div>
+          <p className="font-display font-bold text-sm text-white truncate">{r.title}</p>
+          <p className="text-xs text-zinc-500 truncate mt-0.5">{r.artist_name}</p>
+          {r.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {r.tags.slice(0, 2).map(tag => (
+                <span key={tag} className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-600 bg-zinc-800/60 rounded-full">
+                  {tag}
+                </span>
               ))}
             </div>
+          )}
+          <span className="inline-block mt-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 rounded-full">
+            {formatPrice(convertPrice(r.price_pence / 100, 'GBP', currency))}
+          </span>
+        </Link>
+      ))}
+    </div>
+  )
+}
 
+function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
+  releases: Release[]
+  formatPrice: (n: number) => string
+  convertPrice: (amount: number, from: string, to: string) => number
+  currency: string
+}) {
+  if (releases.length < 3) return null
+
+  return (
+    <section className="border-b border-zinc-900 bg-zinc-950">
+      <div className="max-w-7xl mx-auto px-5 md:px-10 py-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Just Added</h2>
+          </div>
+          <Link href="/explore" className="text-[10px] font-black text-zinc-600 hover:text-orange-500 uppercase tracking-widest transition-colors">
+            See all
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Link
+            href={releaseUrl(releases[0])}
+            className="sm:col-span-1 group relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto sm:h-56 bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverSrc(releases[0])} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="" loading="lazy" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+            <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{releases[0].type}</div>
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <p className="font-black text-lg leading-tight">{releases[0].title}</p>
+              <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{releases[0].artist_name}{releases[0].genre ? ` · ${releases[0].genre}` : ''}</p>
+              <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(releases[0].price_pence / 100, 'GBP', currency))}</p>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl">
+                <PlayIcon size={22} />
+              </div>
+            </div>
+          </Link>
+          <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+            {releases.slice(1, 5).map(f => (
+              <Link
+                key={f.id}
+                href={releaseUrl(f)}
+                className="group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={coverSrc(f)} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <p className="font-black text-sm leading-tight">{f.title}</p>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{f.artist_name}</p>
+                  <p className="text-orange-600 font-black text-xs mt-1.5">{formatPrice(convertPrice(f.price_pence / 100, 'GBP', currency))}</p>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-white/20 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center border border-white/30">
+                    <PlayIcon size={18} />
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+export default function HomeClient({ releases, isLoggedIn, followedArtistReleases }: HomeClientProps) {
+  const { currency, formatPrice, convertPrice } = useCurrency()
+  const [currentGenre, setCurrentGenre] = useState('All')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  const genres = useMemo(() => {
+    const set = new Set<string>()
+    releases.forEach(r => { if (r.genre) set.add(r.genre) })
+    return ['All', ...Array.from(set).sort()]
+  }, [releases])
+
+  const filtered = useMemo(() => {
+    if (currentGenre === 'All') return releases
+    return releases.filter(r => r.genre === currentGenre)
+  }, [releases, currentGenre])
+
+  const visibleItems = filtered.slice(0, visibleCount)
+  const remaining = filtered.length - visibleCount
+
+  const featured = useMemo(() => releases.slice(0, 5), [releases])
+
+  return (
+    <div className="pb-24 font-display">
+
+      {/* Sign-up banner for signed-out users */}
+      {!isLoggedIn && (
+        <section className="border-b border-zinc-900 bg-zinc-950">
+          <div className="max-w-7xl mx-auto px-5 md:px-10 py-8 md:py-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-tight">
+                Music that <span className="text-orange-500">pays artists.</span>
+              </h1>
+              <p className="text-zinc-400 text-sm md:text-base mt-2 max-w-lg">
+                Buy direct from independent artists. Artists keep 90% — we absorb all processing fees. Just music.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <Link href="/for-artists" className="text-zinc-500 hover:text-white text-[11px] font-bold uppercase tracking-widest transition-colors">
+                I&apos;m an artist
+              </Link>
+              <Link href="/signup"
+                className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-6 py-3 rounded-full transition-colors shadow-lg shadow-orange-600/20">
+                Sign up free
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* New from artists you follow (signed-in only) */}
+      {isLoggedIn && followedArtistReleases.length > 0 && (
+        <section className="border-b border-zinc-900">
+          <div className="max-w-7xl mx-auto px-5 md:px-10 py-10">
+            <div className="flex items-center gap-2.5 mb-6">
+              <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">New from artists you follow</h2>
+            </div>
+            <ReleaseGrid
+              releases={followedArtistReleases.slice(0, 10)}
+              formatPrice={formatPrice}
+              convertPrice={convertPrice}
+              currency={currency}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Featured hero */}
+      <FeaturedHero releases={featured} formatPrice={formatPrice} convertPrice={convertPrice} currency={currency} />
+
+      {/* Genre filter + all releases grid */}
+      <section className="max-w-7xl mx-auto px-5 md:px-10 py-10">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">
+            {currentGenre === 'All' ? 'All Releases' : currentGenre}
+          </h2>
+          <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">
+            {filtered.length} release{filtered.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {/* Genre pills */}
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+          {genres.map(genre => (
+            <button
+              key={genre}
+              onClick={() => { setCurrentGenre(genre); setVisibleCount(PAGE_SIZE) }}
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                currentGenre === genre
+                  ? 'bg-orange-600 text-black'
+                  : 'bg-zinc-900 text-zinc-500 hover:text-white ring-1 ring-white/[0.06]'
+              }`}
+            >
+              {genre}
+            </button>
+          ))}
+        </div>
+
+        <ReleaseGrid releases={visibleItems} formatPrice={formatPrice} convertPrice={convertPrice} currency={currency} />
+
+        {remaining > 0 && (
+          <div className="text-center mt-10">
+            <button
+              onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+              className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold uppercase tracking-widest px-8 py-3 rounded-full ring-1 ring-white/[0.06] transition-colors"
+            >
+              Load more ({remaining})
+            </button>
+          </div>
+        )}
+
+        {filtered.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-zinc-600 text-sm">No releases in this genre yet.</p>
+          </div>
+        )}
       </section>
-      <div className="line" />
-
-      {/* ── ROADMAP ───────────────────────────────────────────────── */}
-      <section className="py-28 md:py-36">
-        <div className="max-w-5xl mx-auto px-6 md:px-14">
-
-          <div className="text-center mb-16 reveal">
-            <span className="inline-flex items-center gap-2 bg-orange-600/8 ring-1 ring-orange-600/15 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-6">The roadmap</span>
-            <h2 className="font-display text-4xl md:text-5xl font-bold tracking-[-0.03em] leading-[0.92]">What we&apos;re building.</h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4 reveal">
-
-            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8 md:col-span-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-6">Completed</p>
-              <ul className="roadmap-list done">
-                {[
-                  'Artist music upload (WAV, FLAC, AIFF, MP3).',
-                  'Stripe Connect direct payments.',
-                  'Artist pages with sharing and track downloads.',
-                  'Founding artist badges for early adopters.',
-                  'Persistent music player.',
-                  'Artist dashboard and analytics.',
-                  'Pay what you want pricing.',
-                  'Unified signup — one account, upgrade to sell.',
-                  'Founding Artist programme — first 50 artists pay 7.5% for 12 months.',
-                  'Pre-orders with automatic unlock.',
-                  'Multi-currency and locale detection.',
-                  'Genre mood board for fans.',
-                  'Generative artwork and artist accent colours.',
-                  'Pages for artists, fans, and press.',
-                  'Fan libraries with streaming and download.',
-                  'Search — find artists and releases.',
-                  'Insound Selects — human-curated discovery.',
-                  'Frictionless fan accounts — buy without signing up.',
-                  'First sale milestone celebrations.',
-                  'In-app notifications.',
-                  'Album and EP-first pricing guidance.',
-                ].map((item, i) => (
-                  <li key={i}>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-6">In progress</p>
-              <ul className="roadmap-list active">
-                {[
-                  'Founding Artist and Founding Fan badges.',
-                  'Play tracking and detailed analytics.',
-                  'Download code redemption.',
-                  'Artist posts to supporters.',
-                ].map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6">Coming soon</p>
-              <ul className="roadmap-list">
-                {[
-                  'Artist-fulfilled merch with tracked shipping.',
-                  'Download codes for gigs and vinyl.',
-                  'Private and unlisted releases.',
-                  'Account deletion and data portability.',
-                  'Security hardening.',
-                ].map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6">On the roadmap</p>
-              <ul className="roadmap-list">
-                {[
-                  'Progressive Web App (PWA).',
-                  'Taste-based discovery (once we have the data).',
-                  'Public fan profiles.',
-                  'Embedded player for artist websites.',
-                  'Admin broadcast portal.',
-                ].map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="punchline ring-1 ring-white/[0.05] rounded-3xl p-8">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6">If there&apos;s demand</p>
-              <ul className="roadmap-list">
-                <li>
-                  <span className="font-bold block mb-1">Insound for Collectives.</span>
-                  <span className="t-muted block">Shared pages and split wallets for bands, duos, and artist collectives. Same 10% model. Community-owned, artist-run. Not for labels — never for labels.</span>
-                </li>
-              </ul>
-            </div>
-
-          </div>
-        </div>
-      </section>
-      <div className="line" />
-
-      {/* ── BOTTOM CTA ───────────────────────────────────────────── */}
-      <section className="py-28 md:py-36">
-        <div className="max-w-2xl mx-auto px-6 text-center">
-
-          <div className="reveal">
-            <div className="inline-flex items-center gap-2 bg-orange-600/10 ring-1 ring-orange-600/20 text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full mb-10">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 pulse-dot" />
-              Now live
-            </div>
-            <h2 className="font-display text-4xl md:text-6xl font-bold tracking-[-0.04em] leading-[0.9] mb-6">Your music.<br />Your money.</h2>
-            <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-sm mx-auto">
-              We only take 10%. No surprises. Stripe&apos;s processing fee is shown transparently at checkout. From your first sale. No thresholds. No asterisks.
-            </p>
-          </div>
-
-          <div className="reveal reveal-delay-1">
-            <a href="/signup"
-              className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap mb-4">
-              Get started →
-            </a>
-
-            <p className="text-zinc-700 text-xs font-medium">
-              Free to join &nbsp;·&nbsp; No credit card required &nbsp;·&nbsp;{' '}
-              <Link href="/privacy" className="hover:text-zinc-500 transition-colors">Privacy Policy</Link>
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── FOOTER ───────────────────────────────────────────────── */}
-      <footer className="border-t border-zinc-900/80 py-16">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col items-center gap-6">
-          <Image src="/insound_logo_orange.svg" alt="insound." width={80} height={32} className="h-8 w-auto" />
-          <div className="flex flex-wrap justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] t-faint">
-            <Link href="/for-artists" className="hover:text-orange-500 transition-colors">Artists</Link>
-            <Link href="/for-fans" className="hover:text-orange-500 transition-colors">Fans</Link>
-            <Link href="/for-press" className="hover:text-orange-500 transition-colors">Press</Link>
-            <Link href="/privacy" className="hover:text-orange-500 transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-orange-500 transition-colors">Terms</Link>
-            <Link href="/ai-policy" className="hover:text-orange-500 transition-colors">AI Policy</Link>
-            <Link href="/faq" className="hover:text-orange-500 transition-colors">FAQ</Link>
-          </div>
-          <p className="text-zinc-700 text-[11px] font-medium">© 2026 Insound</p>
-        </div>
-      </footer>
-
-    </main>
+    </div>
   )
 }

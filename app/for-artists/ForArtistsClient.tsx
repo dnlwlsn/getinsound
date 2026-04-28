@@ -10,14 +10,14 @@ import { useCurrency } from '../providers/CurrencyProvider'
 const STATS = [
   { value: '10%', label: 'Our cut, that\u2019s it' },
   { value: '£0', label: 'Monthly fee' },
-  { value: '£2', label: 'Minimum sale price' },
+  { value: '£3', label: 'Minimum sale price' },
   { value: '100%', label: 'You own your masters' },
 ]
 
 const STEPS = [
   { num: '01', title: 'Upload', desc: 'WAV, FLAC, AIFF or MP3. Page live instantly.' },
-  { num: '02', title: 'Set your price', desc: '£2 minimum, no ceiling. Pay what you want available on every release.' },
-  { num: '03', title: 'Get paid', desc: 'We only take 10%. Stripe processing (1.5% + 20p) shown at checkout. Everything else is yours, direct to your Stripe account.' },
+  { num: '02', title: 'Set your price', desc: '£3 minimum, pay what you want available on every release.' },
+  { num: '03', title: 'Get paid', desc: 'You keep 90% of every sale. We take 10% and absorb all Stripe processing fees — direct to your Stripe account.' },
   { num: '04', title: 'Own everything', desc: 'Your masters, forever.' },
 ]
 
@@ -26,7 +26,7 @@ const WHY_NOW = [
   'Spotify: ~£0.003 per stream. 333,000+ to earn £1,000.',
   'Insound bootstrapped. No investors. No pressure to raise cut.',
   'We only make money when you make money — 10%, nothing else.',
-  'Stripe: 1.5% + 20p. Shown at checkout. No markup.',
+  'Processing fees? We absorb them. Your 90% is your 90%.',
 ]
 
 const COMPETITOR_CARDS = [
@@ -35,7 +35,7 @@ const COMPETITOR_CARDS = [
     name: 'Streaming vs Insound',
     subtitle: 'How streaming stacks up',
     rows: [
-      { label: 'Artist cut', them: '~0.003 per stream', us: '~87% after all fees' },
+      { label: 'Artist cut', them: '~0.003 per stream', us: '90% — processing fees on us' },
       { label: 'To earn 1,000', them: '333,000+ streams', us: '~112 sales at 10' },
       { label: 'Pricing control', them: 'None', us: 'You set the price' },
       { label: 'Fan relationship', them: 'Anonymous', us: 'Direct — you own it' },
@@ -47,7 +47,7 @@ const COMPETITOR_CARDS = [
     name: 'Bandcamp vs Insound',
     subtitle: 'The platform we learned from',
     rows: [
-      { label: 'Artist cut', them: '~80% after all fees', us: '~87% after all fees' },
+      { label: 'Artist cut', them: '~80% after all fees', us: '90% — processing fees on us' },
       { label: 'Revenue threshold', them: 'Higher rate after $5k', us: 'None — same rate from sale one' },
       { label: 'Platform future', them: 'Sold twice since 2022', us: 'Independent, no investors' },
       { label: "Who it's for", them: 'Everyone including labels', us: 'Independent & unsigned only' },
@@ -69,10 +69,10 @@ const COMPETITOR_CARDS = [
 ]
 
 const FAQ = [
-  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. Stripe separately charges their standard processing fee, shown transparently at checkout. Both fees are permanent." },
-  { q: 'Does Insound hold my money?', a: 'Never. We use Stripe Connect direct charges — when a fan buys your music, the payment goes directly to your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes.' },
+  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. We absorb Stripe's processing fees out of our 10%, so you always keep exactly 90%." },
+  { q: 'Does Insound hold my money?', a: 'Never. We use Stripe Connect — when a fan buys your music, the payment goes directly to your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes.' },
   { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
-  { q: 'Are there any hidden fees?', a: "No. We take a flat 10%. Stripe charges their standard processing fee. Both shown at checkout — nothing hidden." },
+  { q: 'Are there any hidden fees?', a: "No. You keep 90%. We take 10% and absorb all processing fees out of our cut. What you see is what you get." },
   { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
   { q: 'Is there a subscription fee?', a: 'No. It costs nothing to sign up, nothing to upload, and nothing per month. We only make money when you make a sale.' },
   { q: 'What happens if I want to leave?', a: 'You can remove your music at any time. Your Stripe earnings are already in your account — we never hold them. No lock-in, no penalty.' },
@@ -87,16 +87,16 @@ export function ForArtistsClient() {
   const { currency, formatPrice, convertPrice } = useCurrency()
 
   const STATS = [
-    { value: '10%', label: 'Our cut, that’s it' },
+    { value: '90%', label: 'You keep' },
     { value: formatPrice(0), label: 'Monthly fee' },
-    { value: formatPrice(convertPrice(2, 'GBP', currency)), label: 'Minimum sale price' },
+    { value: formatPrice(convertPrice(3, 'GBP', currency)), label: 'Minimum sale price' },
     { value: '100%', label: 'You own your masters' },
   ]
 
   const STEPS_DYNAMIC = [
     { num: '01', title: 'Upload', desc: 'WAV, FLAC, AIFF or MP3. Page live instantly.' },
-    { num: '02', title: 'Set your price', desc: `${formatPrice(convertPrice(2, 'GBP', currency))} minimum, no ceiling. Pay what you want available on every release.` },
-    { num: '03', title: 'Get paid', desc: `We only take 10%. Stripe’s standard processing fee shown at checkout. Everything else is yours, direct to your Stripe account.` },
+    { num: '02', title: 'Set your price', desc: `${formatPrice(convertPrice(3, 'GBP', currency))} minimum, pay what you want available on every release.` },
+    { num: '03', title: 'Get paid', desc: `You keep 90% of every sale. We take 10% and absorb all Stripe processing fees — direct to your Stripe account.` },
     { num: '04', title: 'Own everything', desc: 'Your masters, forever.' },
   ]
 
@@ -105,7 +105,7 @@ export function ForArtistsClient() {
     `Spotify: ~${formatPrice(convertPrice(0.003, 'GBP', currency))} per stream. 333,000+ to earn ${formatPrice(convertPrice(1000, 'GBP', currency))}.`,
     'Insound bootstrapped. No investors. No pressure to raise cut.',
     'We only make money when you make money — 10%, nothing else.',
-    'Stripe’s standard processing fee. Shown at checkout. No markup.',
+    'Processing fees? We absorb them. Your 90% is your 90%.',
   ]
 
   return (
@@ -203,7 +203,7 @@ export function ForArtistsClient() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="bg-orange-600/[0.06] ring-1 ring-orange-600/[0.12] rounded-3xl p-10 md:p-14">
             <p className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-snug">
-              &ldquo;10% is permanent. Not a launch offer.<br />Every fee, transparent.&rdquo;
+              &ldquo;You keep 90%. We absorb the rest.<br />Permanently.&rdquo;
             </p>
           </div>
         </div>
@@ -227,9 +227,9 @@ export function ForArtistsClient() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { type: 'Single', tracks: '1 track', range: `${formatPrice(convertPrice(2, 'GBP', currency))}–${formatPrice(convertPrice(3, 'GBP', currency))}`, desc: 'Great for teasers and lead singles.' },
-              { type: 'EP', tracks: '3–6 tracks', range: `${formatPrice(convertPrice(3, 'GBP', currency))}–${formatPrice(convertPrice(6, 'GBP', currency))}`, desc: 'A focused collection. Strong for first releases.' },
-              { type: 'Album', tracks: '7+ tracks', range: `${formatPrice(convertPrice(5, 'GBP', currency))}–${formatPrice(convertPrice(10, 'GBP', currency))}`, desc: 'Your best opportunity to earn. Fans pay once, get everything.', highlight: true },
+              { type: 'Single', tracks: '1 track', range: `${formatPrice(convertPrice(3, 'GBP', currency))}–${formatPrice(convertPrice(5, 'GBP', currency))}`, desc: 'Great for teasers and lead singles.' },
+              { type: 'EP', tracks: '3–6 tracks', range: `${formatPrice(convertPrice(5, 'GBP', currency))}–${formatPrice(convertPrice(8, 'GBP', currency))}`, desc: 'A focused collection. Strong for first releases.' },
+              { type: 'Album', tracks: '7+ tracks', range: `${formatPrice(convertPrice(8, 'GBP', currency))}–${formatPrice(convertPrice(15, 'GBP', currency))}`, desc: 'Your best opportunity to earn. Fans pay once, get everything.', highlight: true },
             ].map(item => (
               <div key={item.type} className={`rounded-3xl p-8 ${item.highlight ? 'bg-orange-600/[0.08] ring-1 ring-orange-600/20' : 'bg-white/[0.02] ring-1 ring-white/[0.06]'}`}>
                 <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-1 ${item.highlight ? 'text-orange-400' : 'text-zinc-500'}`}>{item.type}</p>
@@ -240,7 +240,7 @@ export function ForArtistsClient() {
             ))}
           </div>
           <p className="text-center text-zinc-600 text-xs mt-6">
-            You set the price. These are typical ranges — there&apos;s no ceiling.
+            These are typical ranges. You set the price.
           </p>
         </div>
       </section>
@@ -341,7 +341,7 @@ export function ForArtistsClient() {
             Your music.<br />Your money.
           </h2>
           <p className="text-zinc-400 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
-            Sign up and start selling. We only take 10%. Every fee shown upfront.
+            Sign up and start selling. You keep 90% — we absorb all processing fees.
           </p>
           <Link href="/signup?intent=artist"
             className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-8 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25">
