@@ -281,7 +281,7 @@ export function BasketDrawer({ onClose }: Props) {
                           const displayPrice = formatPrice(convertPrice(effectivePence / 100, artistCurrency, currency))
                           const minPence = item.pwyw ? (item.pwywMinimumPence ?? item.pricePence) : item.pricePence
                           return (
-                            <div key={item.releaseId} className="py-2 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                            <div key={item.releaseId} className="py-2 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
                               <div className="flex items-center gap-3">
                                 <Link href={`/release?a=${item.artistSlug}&r=${item.releaseSlug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                                   {item.coverUrl ? (
@@ -326,7 +326,7 @@ export function BasketDrawer({ onClose }: Props) {
                           ? formatPrice(convertPrice(item.postagePence / 100, artistCurrency, currency))
                           : null
                         return (
-                          <div key={`${item.merchId}-${item.variant}`} className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                          <div key={`${item.merchId}-${item.variant}`} className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
                             <Link href={`/${item.artistSlug}/merch/${item.merchId}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                               {item.photoUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element

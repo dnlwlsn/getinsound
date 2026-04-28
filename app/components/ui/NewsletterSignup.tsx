@@ -35,14 +35,14 @@ export function NewsletterSignup({ isLoggedIn, userEmail }: Props) {
       const data = await res.json()
       if (!res.ok) {
         setStatus('error')
-        setErrorMsg(data.error || 'Something went wrong')
+        setErrorMsg(data.error || 'We couldn’t subscribe you — try again in a moment')
         return
       }
       setStatus('success')
       sessionStorage.setItem('newsletter-subscribed', '1')
     } catch {
       setStatus('error')
-      setErrorMsg('Something went wrong')
+      setErrorMsg('We couldn’t subscribe you — check your connection and try again')
     }
   }
 

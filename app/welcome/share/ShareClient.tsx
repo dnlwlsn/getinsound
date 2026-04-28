@@ -29,14 +29,9 @@ export function ShareClient({ referralCode }: Props) {
     <div className="min-h-screen flex items-center justify-center p-6 bg-insound-bg">
       <div className="w-full max-w-md">
         <div
-          className="rounded-3xl p-8 relative overflow-hidden"
-          style={{
-            background: '#141414',
-            border: '1px solid rgba(245, 109, 0, 0.3)',
-            boxShadow: '0 0 80px rgba(245, 109, 0, 0.08)',
-          }}
+          className="rounded-3xl p-8 relative overflow-hidden bg-zinc-900 border border-orange-600/30 shadow-[0_0_80px_rgba(245,109,0,0.08)]"
         >
-          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #F56D00, transparent)' }} />
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-orange-600 to-transparent" />
 
           <p className="text-orange-600 font-black text-2xl tracking-tighter font-display mb-8">insound.</p>
 

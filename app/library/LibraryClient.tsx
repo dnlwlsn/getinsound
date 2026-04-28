@@ -181,7 +181,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
     return (
       <div className="min-h-screen font-display flex items-center justify-center">
         <div className="text-center max-w-md px-8">
-          <h2 className="text-lg font-bold text-zinc-300 mb-2">Something went wrong loading your collection.</h2>
+          <h2 className="text-lg font-bold text-zinc-300 mb-2">We couldn&apos;t load your collection.</h2>
           <p className="text-zinc-500 text-sm mb-5">
             Try refreshing, or contact us if it keeps happening.
           </p>

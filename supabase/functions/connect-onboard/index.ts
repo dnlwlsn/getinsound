@@ -45,21 +45,46 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const returnUrl: string = body.return_url || 'https://getinsound.com/discography';
 
-    const { data: account, error: accountErr } = await admin
-      .from('artist_accounts')
-      .select('stripe_account_id, stripe_onboarded, email, country')
-      .eq('id', user.id)
-      .maybeSingle();
+    const [{ data: account, error: accountErr }, { data: artist }] = await Promise.all([
+      admin
+        .from('artist_accounts')
+        .select('stripe_account_id, stripe_onboarded, email, country')
+        .eq('id', user.id)
+        .maybeSingle(),
+      admin
+        .from('artists')
+        .select('name, slug')
+        .eq('id', user.id)
+        .maybeSingle(),
+    ]);
     if (accountErr || !account) return json({ error: 'Artist account not found' }, 404);
 
     let stripeAccountId = account.stripe_account_id;
 
     // Create the Express account on first call.
     if (!stripeAccountId) {
+      const nameParts = (artist?.name || '').trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      const profileUrl = artist?.slug
+        ? `https://getinsound.com/${artist.slug}`
+        : 'https://getinsound.com';
+
       const created = await stripe.accounts.create({
         type: 'express',
         country: account.country || 'GB',
         email: account.email,
+        business_type: 'individual',
+        individual: {
+          email: account.email,
+          ...(firstName && { first_name: firstName }),
+          ...(lastName && { last_name: lastName }),
+        },
+        business_profile: {
+          url: profileUrl,
+          product_description: 'Independent music artist selling digital releases on Insound',
+          mcc: '5818',
+        },
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },

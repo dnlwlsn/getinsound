@@ -18,6 +18,7 @@ import type { SocialLinks } from '@/lib/verification'
 import { CARRIERS } from '@/lib/carriers'
 import dynamic from 'next/dynamic'
 const AnalyticsCharts = dynamic(() => import('./AnalyticsCharts').then(m => m.AnalyticsCharts), { ssr: false })
+const StripeEmbeddedOnboarding = dynamic(() => import('./StripeEmbeddedOnboarding').then(m => m.StripeEmbeddedOnboarding), { ssr: false })
 
 // ── Types ──────────────────────────────────────────────────────
 type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; banner_url: string | null; accent_colour: string | null; social_links: SocialLinks | null }
@@ -138,7 +139,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
 
   // Edit release modal
   const [editingRelease, setEditingRelease] = useState<Release | null>(null)
-  const [stripeOnboarding, setStripeOnboarding] = useState(false)
+
 
   const hasPublishedContent = rels.some(r => r.published) || !!artist.bio
   const isAllZero = stats.totalEarningsPence === 0 && stats.totalSales === 0 && stats.totalPreviewPlays === 0 && stats.totalFullPlays === 0 && stats.uniqueFans === 0
@@ -710,21 +711,45 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                 </div>
               </div>
             </div>
-            <a href="/discography" className="bg-orange-600 text-black font-bold px-7 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20 text-sm uppercase tracking-wider flex items-center gap-2 shrink-0">
-              + Upload Track
-            </a>
+            {account.stripe_onboarded ? (
+              <Link href="/discography" className="bg-orange-600 text-black font-bold px-7 py-3.5 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20 text-sm uppercase tracking-wider flex items-center gap-2 shrink-0">
+                + Upload Track
+              </Link>
+            ) : (
+              <span className="bg-zinc-700 text-zinc-500 cursor-not-allowed font-bold px-7 py-3.5 rounded-xl text-sm uppercase tracking-wider flex items-center gap-2 shrink-0" title="Set up payouts first">
+                + Upload Track
+              </span>
+            )}
           </header>
 
+          {/* ── Stripe Setup Banner ────────────────────── */}
+          {!account.stripe_onboarded && (
+            <div className="bg-gradient-to-br from-orange-600/10 via-zinc-900 to-zinc-900 border border-orange-600/20 rounded-2xl p-8 mb-10">
+              <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
+                {rels.some(r => r.published) ? 'Set up payouts to start earning' : 'Set up payouts'}
+              </h2>
+              <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
+                {rels.some(r => r.published)
+                  ? 'You have published releases but can\'t receive payments yet. Complete your payout setup so fans can buy your music.'
+                  : 'Connect your bank account so you can get paid when fans buy your music. This takes about 2 minutes.'}
+              </p>
+              <StripeEmbeddedOnboarding
+                stripeAccountId={account.stripe_account_id}
+                onComplete={() => window.location.reload()}
+              />
+            </div>
+          )}
+
           {/* ── Welcome Banner (all zero) ──────────────── */}
-          {isAllZero && (
+          {isAllZero && account.stripe_onboarded && (
             <div className="bg-gradient-to-br from-orange-600/10 via-zinc-900 to-zinc-900 border border-orange-600/20 rounded-2xl p-8 mb-10">
               <h2 className="font-display text-2xl font-bold tracking-tight mb-2">Welcome to Insound</h2>
               <p className="text-zinc-400 text-sm leading-relaxed mb-5 max-w-lg">
                 Your artist page is live. Upload your first release to start selling - your stats will appear here once fans find you.
               </p>
-              <a href="/discography" className="inline-flex items-center gap-2 bg-orange-600 text-black font-bold text-sm px-5 py-3 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">
+              <Link href="/discography" className="inline-flex items-center gap-2 bg-orange-600 text-black font-bold text-sm px-5 py-3 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">
                 + Upload your first release
-              </a>
+              </Link>
             </div>
           )}
 
@@ -1150,7 +1175,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               <p className="text-sm text-zinc-400">
                 {account.stripe_onboarded
                   ? `Connected as ${account.stripe_account_id}`
-                  : 'Stripe onboarding incomplete'}
+                  : 'Complete payout setup above to start selling'}
               </p>
             </div>
             {account.stripe_onboarded && stripeDashUrl && (
@@ -1158,38 +1183,6 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                 className="mt-4 inline-block text-sm text-orange-500 hover:text-orange-400 font-bold transition-colors">
                 Open Stripe Express Dashboard &rarr;
               </a>
-            )}
-            {!account.stripe_onboarded && (
-              <button
-                onClick={async () => {
-                  setStripeOnboarding(true)
-                  try {
-                    const { data: { session } } = await supabase.auth.getSession()
-                    const res = await fetch(
-                      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-onboard`,
-                      {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          Authorization: `Bearer ${session?.access_token}`,
-                        },
-                        body: JSON.stringify({ return_url: `${window.location.origin}/dashboard` }),
-                      }
-                    )
-                    const data = await res.json()
-                    if (data.onboarded) {
-                      window.location.reload()
-                    } else if (data.url) {
-                      window.location.href = data.url
-                    }
-                  } catch (err) { console.error('Operation failed:', err) }
-                  setStripeOnboarding(false)
-                }}
-                disabled={stripeOnboarding}
-                className="mt-4 inline-block bg-orange-600 text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors disabled:opacity-50"
-              >
-                {stripeOnboarding ? 'Connecting...' : 'Complete Stripe Setup'}
-              </button>
             )}
           </Section>
 

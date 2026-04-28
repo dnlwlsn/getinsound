@@ -454,7 +454,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                 const isLoading = loadingTracks.has(r.id)
                 return (
                   <div key={r.id} className="rounded-xl">
-                    <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                    <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
                       {isMultiTrack && (
                         <button
                           onClick={() => toggleExpanded(r.id)}
@@ -541,7 +541,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                           {tracks?.map(track => (
                             <div
                               key={track.id}
-                              className="flex items-center gap-3 h-10 px-3 rounded-lg hover:bg-[#181818] transition-colors"
+                              className="flex items-center gap-3 h-10 px-3 rounded-lg hover:bg-zinc-900 transition-colors"
                             >
                               <span className="text-[11px] text-zinc-600 font-bold w-5 text-right shrink-0">
                                 {track.position}

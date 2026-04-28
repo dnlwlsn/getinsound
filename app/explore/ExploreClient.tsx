@@ -359,7 +359,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
         {!loading && filtered.length > 0 && viewMode === 'compact' && (
           <div className="flex flex-col gap-1">
             {visibleItems.map(r => (
-              <Link key={r.id} href={releaseUrl(r)} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+              <Link key={r.id} href={releaseUrl(r)} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
                 <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={coverSrc(r)} className="w-full h-full object-cover" loading="lazy" alt={r.title} />
