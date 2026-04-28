@@ -3,6 +3,7 @@ npm-debug.log*
 .DS_Store
 supabase/.temp/
 supabase/.branches/
+supabase/migrations/
 
 # Next.js
 .next/
