@@ -27,7 +27,12 @@ export function StripeEmbeddedOnboarding({
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
+      if (!token) {
+        setError('Not signed in. Please refresh and try again.')
+        return
+      }
 
+      // Ensure Stripe account exists
       if (!stripeAccountId) {
         const onboardRes = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-onboard`,
@@ -40,6 +45,11 @@ export function StripeEmbeddedOnboarding({
             body: JSON.stringify({ return_url: `${window.location.origin}/dashboard` }),
           }
         )
+        if (!onboardRes.ok) {
+          const err = await onboardRes.json().catch(() => ({}))
+          setError(err.error || `connect-onboard failed (${onboardRes.status})`)
+          return
+        }
         const onboardData = await onboardRes.json()
         if (onboardData.onboarded) {
           onComplete()
@@ -47,24 +57,31 @@ export function StripeEmbeddedOnboarding({
         }
       }
 
+      // Get account session for embedded component
+      const sessionRes = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      if (!sessionRes.ok) {
+        const err = await sessionRes.json().catch(() => ({}))
+        setError(err.error || `connect-session failed (${sessionRes.status})`)
+        return
+      }
+      const { client_secret } = await sessionRes.json()
+      if (!client_secret) {
+        setError('No client secret returned from Stripe.')
+        return
+      }
+
       const instance = loadConnectAndInitialize({
         publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-        fetchClientSecret: async () => {
-          const { data: { session: freshSession } } = await supabase.auth.getSession()
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-session`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${freshSession?.access_token}`,
-              },
-            }
-          )
-          const data = await res.json()
-          if (data.error) throw new Error(data.error)
-          return data.client_secret
-        },
+        fetchClientSecret: async () => client_secret,
         appearance: {
           overlays: 'dialog',
           variables: {
@@ -83,7 +100,7 @@ export function StripeEmbeddedOnboarding({
       setStarted(true)
     } catch (err) {
       console.error('Stripe embedded onboarding error:', err)
-      setError('Failed to start onboarding. Please try again.')
+      setError(err instanceof Error ? err.message : 'Failed to start onboarding. Please try again.')
     } finally {
       setLoading(false)
     }

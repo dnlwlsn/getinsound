@@ -39,6 +39,7 @@ export function FeedbackClient({ initialItems, fetchError }: { initialItems: Fee
   const [items, setItems] = useState<FeedbackItem[]>(initialItems)
   const [loading] = useState(false)
   const [filter, setFilter] = useState<Filter>('active')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
   const [acting, setActing] = useState(false)
@@ -59,9 +60,11 @@ export function FeedbackClient({ initialItems, fetchError }: { initialItems: Fee
     setActing(false)
   }
 
-  const filtered = items.filter(item =>
-    filter === 'active' ? item.status === 'new' || item.status === 'noted' : true
-  )
+  const filtered = items.filter(item => {
+    if (filter === 'active' && item.status !== 'new' && item.status !== 'noted') return false
+    if (categoryFilter !== 'all' && item.category !== categoryFilter) return false
+    return true
+  })
 
   const counts = {
     new: items.filter(i => i.status === 'new').length,
@@ -91,7 +94,7 @@ export function FeedbackClient({ initialItems, fetchError }: { initialItems: Fee
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(['active', 'all'] as const).map(f => (
             <button
               key={f}
@@ -101,6 +104,18 @@ export function FeedbackClient({ initialItems, fetchError }: { initialItems: Fee
               }`}
             >
               {f === 'active' ? 'Active' : 'All'} ({f === 'active' ? counts.new + counts.noted : counts.total})
+            </button>
+          ))}
+          <span className="w-px bg-zinc-800 mx-1" />
+          {(['all', 'bug', 'feature_request', 'general'] as const).map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                categoryFilter === cat ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {cat === 'all' ? 'All types' : CATEGORY_LABELS[cat]}
             </button>
           ))}
         </div>

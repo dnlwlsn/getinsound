@@ -42,7 +42,9 @@ const STATUS_STYLES: Record<string, string> = {
 export function ReportsClient({ initialReports, fetchError }: { initialReports: Report[]; fetchError?: string | null }) {
   const [reports, setReports] = useState<Report[]>(initialReports)
   const [loading] = useState(false)
-  const [filter, setFilter] = useState<'open' | 'all'>('open')
+  const [statusFilter, setStatusFilter] = useState<'open' | 'all'>('open')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'artist' | 'fan'>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [actionNotes, setActionNotes] = useState('')
   const [acting, setActing] = useState(false)
@@ -73,8 +75,14 @@ export function ReportsClient({ initialReports, fetchError }: { initialReports: 
     return null
   }
 
-  const filtered = filter === 'all' ? reports : reports.filter(r => r.status === 'open')
+  const filtered = reports.filter(r => {
+    if (statusFilter === 'open' && r.status !== 'open') return false
+    if (categoryFilter !== 'all' && r.category !== categoryFilter) return false
+    if (typeFilter !== 'all' && r.reported_profile_type !== typeFilter) return false
+    return true
+  })
   const openCount = reports.filter(r => r.status === 'open').length
+  const activeCategories = [...new Set(reports.map(r => r.category))]
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -95,22 +103,56 @@ export function ReportsClient({ initialReports, fetchError }: { initialReports: 
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => setFilter('open')}
+              onClick={() => setStatusFilter('open')}
               className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
-                filter === 'open' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
+                statusFilter === 'open' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
               }`}
             >
               Open
             </button>
             <button
-              onClick={() => setFilter('all')}
+              onClick={() => setStatusFilter('all')}
               className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
-                filter === 'all' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
+                statusFilter === 'all' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
               }`}
             >
               All
             </button>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          {(['all', 'artist', 'fan'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                typeFilter === t ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {t === 'all' ? 'All types' : t === 'artist' ? 'Artist' : 'Fan'}
+            </button>
+          ))}
+          <span className="w-px bg-zinc-800 mx-1" />
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+              categoryFilter === 'all' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            All categories
+          </button>
+          {activeCategories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                categoryFilter === cat ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {CATEGORY_LABELS[cat] || cat}
+            </button>
+          ))}
         </div>
 
         {fetchError && (
