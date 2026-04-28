@@ -1,5 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
 import HomeClient from './components/HomeClient'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Insound - Independent music, fairly traded',
+  description: 'Discover and buy music directly from independent artists. Artists keep 90% of every sale. No subscriptions, no algorithms - just great music.',
+  openGraph: {
+    title: 'Insound - Independent music, fairly traded',
+    description: 'Discover and buy music directly from independent artists. Artists keep 90% of every sale.',
+    url: 'https://getinsound.com',
+    siteName: 'Insound',
+    type: 'website',
+  },
+}
 
 export default async function Page() {
   const supabase = await createClient()

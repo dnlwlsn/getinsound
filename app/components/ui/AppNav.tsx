@@ -109,13 +109,14 @@ export function AppNav() {
 
   if (!userId) {
     return (
-      <nav className="sticky top-0 z-50 w-full">
-        <div className="mx-auto max-w-6xl mt-4 rounded-full px-6 py-3 flex items-center justify-between ring-1 ring-white/[0.06]"
+      <nav className="sticky top-0 z-50 w-full pt-4 px-4" style={{ background: 'transparent' }}>
+        <div className="mx-auto max-w-7xl rounded-full px-6 py-3 flex items-center justify-between ring-1 ring-white/[0.06]"
           style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
           <Link href="/" className="font-display text-lg font-bold text-orange-500 tracking-tight">
             insound<span className="text-white/25">.</span>
           </Link>
           <div className="flex items-center gap-2">
+            <BasketButton />
             <Link href="/auth"
               className="text-zinc-400 hover:text-white text-[11px] font-bold uppercase tracking-widest px-4 py-2.5 transition-colors">
               Sign In

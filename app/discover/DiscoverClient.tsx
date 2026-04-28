@@ -7,6 +7,7 @@ import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { Badge } from '@/app/components/ui/Badge'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
+import { usePreviewPlay } from '@/lib/usePreviewPlay'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -60,7 +61,14 @@ const PAGE_SIZE = 12
 
 /* ── SVG Icons ───────────────────────────────────────────────── */
 
-function PlayIcon({ size = 22 }: { size?: number }) {
+function PlayIcon({ size = 22, playing = false }: { size?: number; playing?: boolean }) {
+  if (playing) {
+    return (
+      <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24">
+        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+      </svg>
+    )
+  }
   return (
     <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
       <path d="M8 5v14l11-7z" />
@@ -121,6 +129,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
   const { mode: viewMode, set: setViewMode } = useViewMode()
   const [currentGenre, setCurrentGenre] = useState('All')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const { playRelease, isReleaseActive, isPlaying: isPlayerPlaying } = usePreviewPlay()
   const [expandedReleases, setExpandedReleases] = useState<Set<string>>(new Set())
   const [trackCache, setTrackCache] = useState<Record<string, TrackItem[]>>({})
   const [loadingTracks, setLoadingTracks] = useState<Set<string>>(new Set())
@@ -153,6 +162,21 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
       }
     }
   }, [trackCache, loadingTracks])
+
+  const handlePlay = useCallback((e: React.MouseEvent, r: Release) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const artist = getArtist(r.artists as Artist | Artist[])
+    playRelease({
+      id: r.id,
+      title: r.title,
+      cover_url: r.cover_url,
+      artist_id: artist.id,
+      artist_name: artist.name,
+      artist_slug: artist.slug,
+      accent_colour: artist.accent_colour,
+    })
+  }, [playRelease])
 
   const genres = useMemo(() => getAllSounds(newReleases), [newReleases])
 
@@ -212,7 +236,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                 className="w-full h-full object-cover opacity-20 blur-2xl scale-110"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#09090b]/60 via-[#09090b]/80 to-[#09090b]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-insound-bg/60 via-insound-bg/80 to-insound-bg" />
           </div>
 
           <div className="relative max-w-7xl mx-auto px-5 md:px-10 py-16 md:py-24">
@@ -376,11 +400,15 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                         <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                           {r.type}
                         </span>
-                        <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={(e) => handlePlay(e, r)}
+                          className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          aria-label={`Play ${r.title}`}
+                        >
                           <div className="bg-orange-600 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl">
-                            <PlayIcon size={18} />
+                            <PlayIcon size={18} playing={isReleaseActive(r.id) && isPlayerPlaying} />
                           </div>
-                        </div>
+                        </button>
                       </div>
                     </Link>
                     <div className="flex items-center justify-between">
@@ -482,14 +510,21 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                         {price(r.price_pence)}
                       </span>
                       <FavouriteButton releaseId={r.id} size={16} />
-                      <Link
-                        href={`/${artist.slug}/${r.slug}`}
+                      <button
+                        onClick={(e) => handlePlay(e, r)}
                         className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
+                        aria-label={`Play ${r.title}`}
                       >
-                        <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </Link>
+                        {isReleaseActive(r.id) && isPlayerPlaying ? (
+                          <svg width="14" height="14" fill="#000" viewBox="0 0 24 24">
+                            <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        )}
+                      </button>
                     </div>
 
                     {isMultiTrack && (

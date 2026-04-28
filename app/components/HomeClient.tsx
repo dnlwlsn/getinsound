@@ -109,7 +109,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
-            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Just Added</h2>
+            <span className="text-sm font-black uppercase tracking-widest text-zinc-400">Just Added</span>
           </div>
           <Link href="/explore" className="text-[10px] font-black text-zinc-600 hover:text-orange-500 uppercase tracking-widest transition-colors">
             See all
@@ -191,24 +191,13 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
       {/* Sign-up banner for signed-out users */}
       {!isLoggedIn && (
         <section className="border-b border-zinc-900 bg-zinc-950">
-          <div className="max-w-7xl mx-auto px-5 md:px-10 py-8 md:py-12 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-tight">
-                Music that <span className="text-orange-500">pays artists.</span>
-              </h1>
-              <p className="text-zinc-400 text-sm md:text-base mt-2 max-w-lg">
-                Buy direct from independent artists. Artists keep 90% — we absorb all processing fees. Just music.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <Link href="/for-artists" className="text-zinc-500 hover:text-white text-[11px] font-bold uppercase tracking-widest transition-colors">
-                I&apos;m an artist
-              </Link>
-              <Link href="/signup"
-                className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-6 py-3 rounded-full transition-colors shadow-lg shadow-orange-600/20">
-                Sign up free
-              </Link>
-            </div>
+          <div className="max-w-7xl mx-auto px-5 md:px-10 py-8 md:py-12">
+            <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-tight">
+              Music that <span className="text-orange-500">pays artists.</span>
+            </h1>
+            <p className="text-zinc-400 text-sm md:text-base mt-2 max-w-lg">
+              A music publishing and selling platform for new, unsigned, and independent artists.
+            </p>
           </div>
         </section>
       )}

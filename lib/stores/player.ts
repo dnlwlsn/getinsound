@@ -51,6 +51,7 @@ interface PlayerState {
   setAudioUrl: (url: string, isPreview: boolean, previewDuration?: number | null) => void
   setIsPlaying: (playing: boolean) => void
   toggleExpanded: () => void
+  stop: () => void
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
@@ -130,6 +131,18 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setAudioUrl: (url, isPreview, previewDuration) => set({ audioUrl: url, isPreview, previewDuration: previewDuration ?? null }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   toggleExpanded: () => set(s => ({ isExpanded: !s.isExpanded })),
+  stop: () => set({
+    currentTrack: null,
+    queue: [],
+    queueIndex: -1,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    audioUrl: null,
+    isPreview: false,
+    previewDuration: null,
+    isExpanded: false,
+  }),
 }))
 
 // Hydrate from IndexedDB on first load

@@ -38,33 +38,8 @@ export function WallPostCard({ post }: { post: WallPostType }) {
           </Link>
           <p className="text-[10px] text-zinc-600">{timeAgo(post.created_at)}</p>
         </div>
-        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-white/[0.04] text-zinc-500">
-          {post.post_type === 'voice_note' ? 'Voice Note' : post.post_type}
-        </span>
       </div>
       <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-      {post.media_url && (
-        <div className="mt-3 rounded-xl overflow-hidden">
-          {post.post_type === 'photo' ? (
-            <Image src={post.media_url} alt="Post media" width={600} height={400}
-              className="w-full h-auto object-cover max-h-80" />
-          ) : (
-            <div className="bg-white/[0.03] rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: `${postAccent}22` }}>
-                <svg width="16" height="16" fill={postAccent} viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-zinc-400 truncate">
-                  {post.post_type === 'demo' ? 'Demo' : 'Voice Note'}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }

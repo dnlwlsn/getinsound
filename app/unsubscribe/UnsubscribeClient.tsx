@@ -35,12 +35,9 @@ export function UnsubscribeClient() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#09090b' }}>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-insound-bg">
       <div className="max-w-md w-full text-center">
-        <p
-          className="text-2xl font-black mb-8"
-          style={{ color: '#F56D00', letterSpacing: '-0.5px' }}
-        >
+        <p className="text-2xl font-black mb-8 text-orange-600 tracking-tight">
           insound.
         </p>
 
@@ -58,11 +55,7 @@ export function UnsubscribeClient() {
             </p>
             <button
               onClick={handleResubscribe}
-              className="text-sm font-bold px-6 py-3 rounded-full border transition-colors"
-              style={{
-                color: '#F56D00',
-                borderColor: 'rgba(245,109,0,0.3)',
-              }}
+              className="text-sm font-bold px-6 py-3 rounded-full border border-orange-600/30 text-orange-600 transition-colors hover:border-orange-600/60"
             >
               Re-subscribe
             </button>
@@ -83,10 +76,10 @@ export function UnsubscribeClient() {
         {status === 'error' && (
           <>
             <h1 className="text-white text-lg font-bold mb-3">
-              Something went wrong.
+              We couldn&apos;t update your preferences.
             </h1>
             <p className="text-zinc-500 text-sm">
-              We couldn&apos;t update your preferences. Please try again later.
+              Check your connection and try again, or contact us if it keeps happening.
             </p>
           </>
         )}

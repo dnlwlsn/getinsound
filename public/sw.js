@@ -38,7 +38,9 @@ registerRoute(
 // ── Artist profiles (navigation to /slug) ───────────────────
 registerRoute(
   ({ request, url }) =>
-    request.mode === 'navigate' && /^\/[a-z0-9][a-z0-9-]*$/.test(url.pathname),
+    request.mode === 'navigate' &&
+    !url.pathname.startsWith('/auth') &&
+    /^\/[a-z0-9][a-z0-9-]*$/.test(url.pathname),
   new StaleWhileRevalidate({
     cacheName: 'artist-profiles',
     plugins: [
@@ -51,7 +53,8 @@ registerRoute(
 registerRoute(
   ({ url }) =>
     url.pathname.startsWith('/api/') &&
-    !url.pathname.startsWith('/api/library'),
+    !url.pathname.startsWith('/api/library') &&
+    !url.pathname.startsWith('/api/auth'),
   new NetworkFirst({
     cacheName: 'api-general',
     networkTimeoutSeconds: 3,
@@ -117,6 +120,22 @@ self.addEventListener('notificationclick', (event) => {
       })
   )
 })
+
+// ── Launch queue (PWA cold-start deep links) ───────────────
+if ('launchQueue' in self) {
+  self.launchQueue.setConsumer((launchParams) => {
+    if (launchParams.targetURL) {
+      self.clients.matchAll({ type: 'window' }).then((clients) => {
+        if (clients.length > 0) {
+          clients[0].navigate(launchParams.targetURL)
+          clients[0].focus()
+        } else {
+          self.clients.openWindow(launchParams.targetURL)
+        }
+      })
+    }
+  })
+}
 
 // ── Lifecycle ───────────────────────────────────────────────
 self.addEventListener('install', () => self.skipWaiting())

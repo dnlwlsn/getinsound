@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
           await logWebhookError(admin, event.type, event.id, `Merch Stripe fee estimated (lookup failed)`, { session_id: session.id, estimated_fee: stripeFeePence });
         }
 
-        const artistReceived = amountPaid - platformPence - stripeFeePence;
+        const artistReceived = amountPaid - platformPence;
 
         // Progressive fan creation (reuse existing pattern)
         let userId = fanId;
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
         // If stock was already 0, refund
         if (stockErr || updated === false) {
           if (piId) {
-            try { await stripe.refunds.create({ payment_intent: piId }); } catch (e) {
+            try { await stripe.refunds.create({ payment_intent: piId, refund_application_fee: true }); } catch (e) {
               console.error('Refund failed:', (e as Error).message);
             }
           }
@@ -527,7 +527,7 @@ Deno.serve(async (req) => {
               const refundAmount = item.amount_pence + (item.postage_pence || 0);
               if (piId && refundAmount > 0) {
                 try {
-                  await stripe.refunds.create({ payment_intent: piId, amount: refundAmount });
+                  await stripe.refunds.create({ payment_intent: piId, amount: refundAmount, refund_application_fee: true });
                 } catch (e) {
                   console.error('Basket merch refund failed:', (e as Error).message);
                   await logWebhookError(admin, event.type, event.id, `Basket merch refund failed: ${(e as Error).message}`, { merch_id: item.merch_id, refundAmount });
@@ -1064,6 +1064,12 @@ Deno.serve(async (req) => {
           .eq('stripe_pi_id', paymentIntent)
           .maybeSingle()
 
+        // Mark the purchase as disputed
+        await admin
+          .from('purchases')
+          .update({ status: 'disputed' })
+          .eq('stripe_pi_id', paymentIntent)
+
         if (purchase?.artist_id) {
           const artistId = purchase.artist_id
           const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -1072,7 +1078,7 @@ Deno.serve(async (req) => {
             .from('purchases')
             .select('id', { count: 'exact', head: true })
             .eq('artist_id', artistId)
-            .eq('status', 'refunded')
+            .eq('status', 'disputed')
             .gte('created_at', thirtyDaysAgo)
 
           const { count: totalCount } = await admin
@@ -1081,7 +1087,7 @@ Deno.serve(async (req) => {
             .eq('artist_id', artistId)
             .gte('created_at', thirtyDaysAgo)
 
-          const chargebacks = (disputeCount || 0) + 1
+          const chargebacks = disputeCount || 1
           const total = totalCount || 1
           const rate = chargebacks / total
 
@@ -1156,7 +1162,24 @@ Deno.serve(async (req) => {
         return new Response('ok', { status: 200 });
       }
 
+      // Refund the application fee so artists aren't double-penalised
+      try {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntent, {
+          expand: ['latest_charge.application_fee'],
+        });
+        const latestCharge = pi.latest_charge as Stripe.Charge | null;
+        const appFee = (latestCharge as any)?.application_fee as { id: string } | null;
+        if (appFee?.id) {
+          await stripe.applicationFees.createRefund(appFee.id);
+        }
+      } catch (e) {
+        console.error('Application fee refund failed:', (e as Error).message);
+        await logWebhookError(admin, event.type, event.id, `Application fee refund failed: ${(e as Error).message}`, { paymentIntent });
+      }
+
       // Update purchases with this payment intent
+      const isFullRefund = charge.amount_refunded >= charge.amount;
+
       const { data: refundedPurchases, error: purchaseLookupErr } = await admin
         .from('purchases')
         .select('id, artist_id, release_id, buyer_email')
@@ -1164,7 +1187,7 @@ Deno.serve(async (req) => {
 
       if (purchaseLookupErr) {
         await logWebhookError(admin, event.type, event.id, `Purchase lookup failed: ${purchaseLookupErr.message}`, { paymentIntent });
-      } else if (refundedPurchases && refundedPurchases.length > 0) {
+      } else if (refundedPurchases && refundedPurchases.length > 0 && isFullRefund) {
         const { error: purchaseUpdateErr } = await admin
           .from('purchases')
           .update({ status: 'refunded' })
@@ -1185,7 +1208,7 @@ Deno.serve(async (req) => {
 
       if (orderLookupErr) {
         await logWebhookError(admin, event.type, event.id, `Order lookup failed: ${orderLookupErr.message}`, { paymentIntent });
-      } else if (refundedOrders && refundedOrders.length > 0) {
+      } else if (refundedOrders && refundedOrders.length > 0 && isFullRefund) {
         const { error: orderUpdateErr } = await admin
           .from('orders')
           .update({ status: 'refunded' })

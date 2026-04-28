@@ -6,7 +6,7 @@ export default function ArtistProfileLoading() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-8 -mt-16 relative">
         {/* Avatar */}
-        <div className="w-28 h-28 rounded-full bg-zinc-800 border-4 border-[#09090b] animate-pulse mb-4" />
+        <div className="w-28 h-28 rounded-full bg-zinc-800 border-4 border-insound-bg animate-pulse mb-4" />
 
         {/* Name + bio */}
         <div className="w-48 h-8 bg-zinc-900 rounded animate-pulse mb-3" />

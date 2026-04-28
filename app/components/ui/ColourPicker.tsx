@@ -52,7 +52,7 @@ export function ColourPicker({ value, onChange, className = '' }: Props) {
             className={`relative w-10 h-10 rounded-full transition-all duration-150
               hover:scale-110 active:scale-95
               ${selected === hex
-                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#09090b] scale-110'
+                ? 'ring-2 ring-white ring-offset-2 ring-offset-insound-bg scale-110'
                 : 'ring-1 ring-white/[0.1]'}`}
             style={{ backgroundColor: hex }}
           >

@@ -61,7 +61,7 @@ export function CookieBanner() {
     >
       <p className="text-[13px] leading-relaxed text-zinc-400">
         We use cookies to remember your preferences and improve your experience.{' '}
-        <a href="/privacy" className="text-white underline underline-offset-2 hover:text-[#F56D00]">
+        <a href="/privacy" className="text-white underline underline-offset-2 hover:text-orange-600">
           Privacy policy
         </a>
       </p>
@@ -74,7 +74,7 @@ export function CookieBanner() {
               Strictly necessary cookies
             </span>
             <span className="relative inline-block h-5 w-9 cursor-not-allowed">
-              <span className="block h-5 w-9 rounded-full bg-[#F56D00]/60" />
+              <span className="block h-5 w-9 rounded-full bg-orange-600/60" />
               <span className="absolute left-[18px] top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" />
             </span>
           </label>
@@ -90,7 +90,7 @@ export function CookieBanner() {
               aria-checked={functionalOn}
               onClick={() => setFunctionalOn(!functionalOn)}
               className={`relative inline-block h-5 w-9 rounded-full transition-colors ${
-                functionalOn ? 'bg-[#F56D00]' : 'bg-zinc-700'
+                functionalOn ? 'bg-orange-600' : 'bg-zinc-700'
               }`}
             >
               <span
@@ -108,8 +108,8 @@ export function CookieBanner() {
           <>
             <button
               onClick={accept}
-              className="inline-flex items-center justify-center rounded-full bg-[#F56D00] px-5 py-2
-                text-[10px] font-black uppercase tracking-widest text-[#09090b]
+              className="inline-flex items-center justify-center rounded-full bg-orange-600 px-5 py-2
+                text-[10px] font-black uppercase tracking-widest text-insound-bg
                 hover:brightness-110 active:scale-[0.98] transition-all duration-150"
             >
               Accept
@@ -128,8 +128,8 @@ export function CookieBanner() {
         ) : (
           <button
             onClick={save}
-            className="inline-flex items-center justify-center rounded-full bg-[#F56D00] px-5 py-2
-              text-[10px] font-black uppercase tracking-widest text-[#09090b]
+            className="inline-flex items-center justify-center rounded-full bg-orange-600 px-5 py-2
+              text-[10px] font-black uppercase tracking-widest text-insound-bg
               hover:brightness-110 active:scale-[0.98] transition-all duration-150"
           >
             Save preferences

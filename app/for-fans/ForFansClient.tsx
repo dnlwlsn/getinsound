@@ -9,7 +9,7 @@ const WHY_HERE = [
   { title: 'No algorithms', desc: 'Your money goes to the artist you choose.' },
   { title: 'No subscription', desc: 'Pay for music you actually want.' },
   { title: 'Pay what you want', desc: 'Pay more if you love it.' },
-  { title: 'Transparent fees', desc: "Every fee shown at checkout, always." },
+  { title: 'No hidden fees', desc: "Artists keep 90%. We absorb all processing fees." },
   { title: 'Permanent model', desc: 'No shareholders to answer to.' },
 ]
 
@@ -55,8 +55,8 @@ export function ForFansClient() {
           {/* Insound */}
           <div className="bg-orange-600/[0.06] ring-1 ring-orange-600/[0.12] rounded-3xl p-8">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-4">Buy on Insound</p>
-            <p className="font-display text-3xl font-bold tracking-tight text-orange-400 mb-2">~87%</p>
-            <p className="text-sm text-zinc-300 leading-relaxed">to artist after all fees. Your {formatPrice(convertPrice(10, 'GBP', currency))} = {formatPrice(convertPrice(8.65, 'GBP', currency))} to the artist.<br />We take a flat 10%. Stripe&apos;s standard processing fee. That&apos;s it.</p>
+            <p className="font-display text-3xl font-bold tracking-tight text-orange-400 mb-2">90%</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">to the artist, always. Your {formatPrice(convertPrice(10, 'GBP', currency))} = {formatPrice(convertPrice(9, 'GBP', currency))} to the artist.<br />We take 10% and absorb all processing fees out of our cut.</p>
           </div>
         </div>
       </section>
@@ -74,18 +74,15 @@ export function ForFansClient() {
               Where your money goes.
             </h2>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="rounded-2xl p-5 text-center ring-1 bg-orange-600/[0.08] ring-orange-600/[0.15]">
-              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-orange-500">{formatPrice(convertPrice(8.65, 'GBP', currency))}</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">To the artist</p>
+              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-orange-500">{formatPrice(convertPrice(9, 'GBP', currency))}</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">To the artist (90%)</p>
             </div>
             <div className="rounded-2xl p-5 text-center ring-1 bg-white/[0.02] ring-white/[0.06]">
               <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">{formatPrice(convertPrice(1, 'GBP', currency))}</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Insound (10%)</p>
-            </div>
-            <div className="rounded-2xl p-5 text-center ring-1 bg-white/[0.02] ring-white/[0.06]">
-              <p className="font-display text-2xl md:text-3xl font-bold tracking-tight text-white">35p</p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mt-1">Stripe processing</p>
+              <p className="text-[9px] text-zinc-600 mt-0.5">incl. Stripe processing</p>
             </div>
           </div>
         </div>
@@ -121,7 +118,7 @@ export function ForFansClient() {
       <section className="py-24 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <p className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-snug">
-            Discover on Spotify. But when you find something you love — <span className="text-orange-500">buy it here.</span>
+            Discover on Spotify. But when you find something you love - <span className="text-orange-500">buy it here.</span>
           </p>
           <p className="text-zinc-400 text-base mt-4 leading-relaxed">
             The artist will feel the difference. We promise.

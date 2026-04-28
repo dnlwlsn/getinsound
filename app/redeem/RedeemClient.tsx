@@ -49,7 +49,7 @@ export function RedeemClient() {
         setPhase('release')
       }
     } catch {
-      setErrorMsg('Something went wrong. Please try again.')
+      setErrorMsg('We couldn\'t verify that code - check your connection and try again.')
       setPhase('error')
     }
     setLoading(false)
@@ -78,7 +78,7 @@ export function RedeemClient() {
         setPhase('done')
       }
     } catch {
-      setErrorMsg('Something went wrong. Please try again.')
+      setErrorMsg('Redemption failed - check your connection and try again.')
       setPhase('error')
     }
   }
@@ -217,7 +217,7 @@ export function RedeemClient() {
             {phase === 'done' && (
               <div className="text-center py-4">
                 <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
-                  <svg width="24" height="24" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>

@@ -62,14 +62,17 @@ function generateGradientDataUri(artistId: string, releaseId: string) {
 
 /* ── Types ────────────────────────────────────────────────────── */
 interface Track { id: string; title: string; position: number; duration_sec: number }
-interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null; tracks: Track[] }
+interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null; description: string | null; tracks: Track[] }
 interface Artist { id: string; slug: string; name: string; bio: string; avatar_url: string; accent_colour: string | null }
+interface DiscographyItem { id: string; slug: string; title: string; type: string; cover_url: string | null; artistSlug: string }
+interface Supporter { name: string; paidAt: string }
+interface Recommendation { id: string; slug: string; title: string; cover_url: string | null; price_pence: number; currency: string; artistName: string; artistSlug: string }
 
 type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'preorder-confirmed' | 'error'
 
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
-export default function ReleaseClient({ artist, release }: { artist: Artist; release: Release }) {
+export default function ReleaseClient({ artist, release, discography, supporters, recommendations }: { artist: Artist; release: Release; discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[] }) {
   // Set accent colour CSS variable
   useEffect(() => {
     document.documentElement.style.setProperty('--artist-accent', artist.accent_colour || '#F56D00')
@@ -220,6 +223,9 @@ export default function ReleaseClient({ artist, release }: { artist: Artist; rel
         coverSrc={coverSrc}
         accent={accent}
         openCheckout={openCheckout}
+        discography={discography}
+        supporters={supporters}
+        recommendations={recommendations}
       />
 
       {/* Toast */}
@@ -332,7 +338,7 @@ export default function ReleaseClient({ artist, release }: { artist: Artist; rel
             {stage === 'preorder-confirmed' && (
               <div className="p-12 text-center mt-20">
                 <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
-                  <svg width="24" height="24" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
@@ -361,9 +367,10 @@ export default function ReleaseClient({ artist, release }: { artist: Artist; rel
 
 /* ── Release page content ────────────────────────────────────── */
 
-function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, accent, openCheckout }: {
+function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, accent, openCheckout, discography, supporters, recommendations }: {
   artist: Artist; release: Release; tracks: Track[]; typeLabel: string; coverSrc: string; accent: string
   openCheckout: (customAmountPence?: number) => void
+  discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[]
 }) {
   const play = usePlayerStore(s => s.play)
   const currentTrack = usePlayerStore(s => s.currentTrack)
@@ -437,6 +444,8 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
                   pricePence: release.price_pence,
                   currency: release.currency || 'GBP',
                   accentColour: artist.accent_colour,
+                  pwyw: release.pwyw_enabled,
+                  pwywMinimumPence: release.pwyw_minimum_pence ?? undefined,
                 }}
                 size={16}
                 variant="pill"
@@ -489,7 +498,81 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
             })}
           </ol>
         </div>
+
+        {/* Credits */}
+        {release.description && (
+          <div className="mt-8 border-t border-zinc-800 pt-6">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Credits</p>
+            <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line">{release.description}</p>
+          </div>
+        )}
+
+        {/* Supported by */}
+        {supporters.length > 0 && (
+          <div className="mt-8 border-t border-zinc-800 pt-6">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">Supported by</p>
+            <div className="flex flex-wrap gap-2">
+              {supporters.map((s, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 bg-zinc-900 ring-1 ring-white/[0.06] rounded-full px-3 py-1.5">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black uppercase" style={{ background: accent, color: '#000' }}>
+                    {s.name.charAt(0)}
+                  </span>
+                  <span className="text-xs text-zinc-400 font-medium">{s.name}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Discography */}
+        {discography.length > 0 && (
+          <div className="mt-8 border-t border-zinc-800 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">More by {artist.name}</p>
+              <Link href={`/${artist.slug}`} className="text-[10px] font-black uppercase tracking-widest hover:opacity-70 transition-opacity" style={{ color: accent }}>View all</Link>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {discography.map(d => (
+                <Link key={d.id} href={`/release?a=${d.artistSlug}&r=${d.slug}`} className="group">
+                  <div className="aspect-square rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-1.5">
+                    {d.cover_url ? (
+                      <img src={d.cover_url} alt={d.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full" style={{ background: accent, opacity: 0.3 }} />
+                    )}
+                  </div>
+                  <p className="text-xs font-bold text-zinc-300 truncate">{d.title}</p>
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-wider">{d.type}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </article>
+
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <section className="border-t border-zinc-800 mt-4">
+          <div className="max-w-4xl mx-auto px-6 md:px-12 py-10">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">You may also like</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {recommendations.map(r => (
+                <Link key={r.id} href={`/release?a=${r.artistSlug}&r=${r.slug}`} className="group">
+                  <div className="aspect-square rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-2">
+                    {r.cover_url ? (
+                      <img src={r.cover_url} alt={r.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-800" />
+                    )}
+                  </div>
+                  <p className="text-sm font-bold text-zinc-300 truncate">{r.title}</p>
+                  <p className="text-xs text-zinc-500 truncate">{r.artistName}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   )
 }

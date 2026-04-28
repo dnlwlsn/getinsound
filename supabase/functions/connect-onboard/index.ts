@@ -64,6 +64,9 @@ Deno.serve(async (req) => {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
+        settings: {
+          payouts: { debit_negative_balances: true },
+        },
         metadata: { insound_artist_id: user.id },
       });
       stripeAccountId = created.id;

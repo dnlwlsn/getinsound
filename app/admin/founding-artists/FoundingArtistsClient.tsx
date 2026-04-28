@@ -29,9 +29,13 @@ function pence(n: number) {
   return `£${(n / 100).toFixed(2)}`
 }
 
-export function FoundingArtistsClient({ programme, artists, totalDiscountPence }: Props) {
+export function FoundingArtistsClient({ programme, artists: initialArtists, totalDiscountPence }: Props) {
   const [paused, setPaused] = useState(programme.paused)
   const [toggling, setToggling] = useState(false)
+  const [artists, setArtists] = useState(initialArtists)
+  const [artistName, setArtistName] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
 
   async function togglePause() {
     setToggling(true)
@@ -47,10 +51,42 @@ export function FoundingArtistsClient({ programme, artists, totalDiscountPence }
     setToggling(false)
   }
 
+  async function addFoundingArtist() {
+    if (!artistName.trim()) return
+    setSubmitting(true)
+    setMessage('')
+    const res = await fetch('/api/admin/founding-artists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artist_name: artistName.trim() }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setMessage(`Added ${data.name} as a Founding Artist`)
+      setArtistName('')
+      window.location.reload()
+    } else {
+      setMessage(data.error || 'Failed to add')
+    }
+    setSubmitting(false)
+  }
+
+  async function removeFoundingArtist(artistId: string, name: string) {
+    const res = await fetch('/api/admin/founding-artists', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artist_id: artistId }),
+    })
+    if (res.ok) {
+      setArtists(prev => prev.filter(a => a.id !== artistId))
+      setMessage(`Removed ${name} from the Founding Artist programme`)
+    }
+  }
+
   const spotsRemaining = programme.total_spots - programme.filled_count
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 p-8">
+    <div className="min-h-screen bg-insound-bg text-zinc-100 p-8">
       <div className="max-w-5xl mx-auto space-y-10">
         <div>
           <a href="/admin" className="text-2xl font-display font-bold text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</a>
@@ -92,6 +128,33 @@ export function FoundingArtistsClient({ programme, artists, totalDiscountPence }
           </div>
         </div>
 
+        {/* Add Founding Artist */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Add Founding Artist</h2>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="Artist name or slug"
+              value={artistName}
+              onChange={e => setArtistName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') addFoundingArtist() }}
+              className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-orange-600 transition-colors"
+            />
+            <button
+              onClick={addFoundingArtist}
+              disabled={submitting || !artistName.trim()}
+              className="bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-black font-bold text-sm px-6 py-2.5 rounded-lg transition-colors"
+            >
+              {submitting ? 'Adding...' : 'Add'}
+            </button>
+          </div>
+          {message && (
+            <p className={`text-sm mt-3 font-medium ${message.startsWith('Removed') || message.startsWith('Added') ? 'text-green-400' : 'text-red-400'}`}>
+              {message}
+            </p>
+          )}
+        </section>
+
         {/* Artists table */}
         <section>
           <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Artists ({artists.length})</h2>
@@ -108,6 +171,7 @@ export function FoundingArtistsClient({ programme, artists, totalDiscountPence }
                     <th className="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Days Left</th>
                     <th className="text-right py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Sales</th>
                     <th className="text-right py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Est. Discount</th>
+                    <th className="py-3 px-4" />
                   </tr>
                 </thead>
                 <tbody>
@@ -131,6 +195,14 @@ export function FoundingArtistsClient({ programme, artists, totalDiscountPence }
                       </td>
                       <td className="py-3 px-4 text-right font-mono">{pence(a.totalSalesPence)}</td>
                       <td className="py-3 px-4 text-right font-mono text-orange-400">{pence(a.estimatedDiscountPence)}</td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => removeFoundingArtist(a.id, a.name)}
+                          className="text-[11px] font-bold text-zinc-600 hover:text-red-400 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

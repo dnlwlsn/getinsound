@@ -40,8 +40,9 @@ export function calculateStripeFee(
     ? round2(amount * CONVERSION_FEE_RATE)
     : 0
   const insoundFee = round2(amount * INSOUND_RATE)
-  const totalFees = round2(stripeFee + internationalFee + conversionFee + insoundFee)
-  const artistReceived = round2(amount - totalFees)
+  // Stripe fees come out of Insound's cut (destination charges), not the artist's share
+  const artistReceived = round2(amount - insoundFee)
+  const totalFees = round2(insoundFee)
 
   return { stripeFee, internationalFee, conversionFee, insoundFee, artistReceived, totalFees }
 }
@@ -70,7 +71,7 @@ export function calculateFeesPence(amountPence: number) {
   return {
     insoundFee: insoundPence,
     stripeFee: stripePence,
-    artistReceived: amountPence - insoundPence - stripePence,
+    artistReceived: amountPence - insoundPence,
   }
 }
 
@@ -108,7 +109,7 @@ export function calculateMerchFees(
     : 0
   const stripeFee = round2(baseStripeFee + internationalFee + conversionFee)
 
-  const artistReceives = round2(totalCharged - insoundFee - stripeFee)
+  const artistReceives = round2(totalCharged - insoundFee)
 
   return { insoundFee, stripeFee, artistReceives, totalCharged }
 }
@@ -129,6 +130,6 @@ export function calculateMerchFeesPence(
     insoundFee: Math.round(result.insoundFee * 100),
     stripeFee: Math.round(result.stripeFee * 100),
     artistReceives: Math.round(result.artistReceives * 100),
-    totalCharged: Math.round(result.totalCharged * 100),
+    totalCharged: itemPricePence + postagePence,
   }
 }

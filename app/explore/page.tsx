@@ -5,11 +5,11 @@ import ExploreClient from './ExploreClient'
 export const metadata: Metadata = {
   title: 'Explore | insound.',
   description:
-    'Explore music from independent artists. Buy direct, pay fair — we only take 10%. Every fee shown transparently at checkout.',
+    'Explore music from independent artists. Buy direct, pay fair - we only take 10% and artists keep 90%.',
   openGraph: {
     title: 'Explore | insound.',
     description:
-      'Explore music from independent artists. Buy direct, pay fair — we only take 10%. Every fee shown transparently at checkout.',
+      'Explore music from independent artists. Buy direct, pay fair - we only take 10% and artists keep 90%.',
     type: 'website',
   },
 }

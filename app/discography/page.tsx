@@ -18,6 +18,12 @@ export default async function DiscographyPage() {
 
   if (!artist) redirect('/auth')
 
+  const { data: account } = await supabase
+    .from('artist_accounts')
+    .select('stripe_onboarded')
+    .eq('id', user.id)
+    .maybeSingle()
+
   const { data: releases } = await supabase
     .from('releases')
     .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, created_at, tracks(id, title, position, duration_sec, audio_path, preview_path)')
@@ -27,6 +33,7 @@ export default async function DiscographyPage() {
   return (
     <DiscographyClient
       artist={artist}
+      stripeOnboarded={account?.stripe_onboarded ?? false}
       releases={(releases || []).map(r => ({
         ...r,
         tracks: [...(r.tracks || [])].sort((a, b) => a.position - b.position),

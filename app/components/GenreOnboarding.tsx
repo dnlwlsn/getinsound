@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { GenreMoodBoard, type Genre } from './ui/GenreMoodBoard'
 
@@ -11,6 +12,7 @@ import { GenreMoodBoard, type Genre } from './ui/GenreMoodBoard'
  */
 export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: string }) {
   const [show, setShow] = useState(false)
+  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -50,31 +52,56 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
     check()
   }, [supabase])
 
+  const [error, setError] = useState<string | null>(null)
+
   async function handleComplete(genres: Genre[]) {
-    const res = await fetch('/api/fan-preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ genres }),
-    })
-    if (res.ok) {
-      setShow(false)
-      window.location.href = redirectTo
+    setError(null)
+    try {
+      const res = await fetch('/api/fan-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ genres }),
+      })
+      if (res.ok) {
+        setShow(false)
+        router.push(redirectTo)
+      } else {
+        setError('We couldn\'t save your preferences - please try again.')
+      }
+    } catch {
+      setError('We couldn\'t save your preferences - please try again.')
     }
   }
 
   async function handleSkip() {
-    const res = await fetch('/api/fan-preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ skip: true }),
-    })
-    if (res.ok) {
-      setShow(false)
-      window.location.href = redirectTo
+    setError(null)
+    try {
+      const res = await fetch('/api/fan-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skip: true }),
+      })
+      if (res.ok) {
+        setShow(false)
+        router.push(redirectTo)
+      } else {
+        setError('We couldn\'t save your preferences - please try again.')
+      }
+    } catch {
+      setError('We couldn\'t save your preferences - please try again.')
     }
   }
 
   if (!show) return null
 
-  return <GenreMoodBoard onComplete={handleComplete} onSkip={handleSkip} />
+  return (
+    <>
+      <GenreMoodBoard onComplete={handleComplete} onSkip={handleSkip} />
+      {error && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-lg">
+          {error}
+        </div>
+      )}
+    </>
+  )
 }

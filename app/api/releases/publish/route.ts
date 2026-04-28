@@ -21,6 +21,18 @@ export async function POST(req: NextRequest) {
 
   if (!release) return NextResponse.json({ error: relErr?.message ?? 'Release not found' }, { status: 404 })
 
+  if (published) {
+    const { data: account } = await supabase
+      .from('artist_accounts')
+      .select('stripe_onboarded')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!account?.stripe_onboarded) {
+      return NextResponse.json({ error: 'Connect your Stripe account before publishing. Go to Dashboard → Stripe Connect to get started.' }, { status: 403 })
+    }
+  }
+
   const { error: updateErr } = await supabase
     .from('releases')
     .update({ published })

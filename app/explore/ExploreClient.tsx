@@ -7,6 +7,7 @@ import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { generateGradientDataUri } from '@/lib/gradient'
+import { usePreviewPlay } from '@/lib/usePreviewPlay'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -42,7 +43,14 @@ function SearchIcon({ className }: { className?: string }) {
     </svg>
   )
 }
-function PlayIcon({ size = 22 }: { size?: number }) {
+function PlayIcon({ size = 22, playing = false }: { size?: number; playing?: boolean }) {
+  if (playing) {
+    return (
+      <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24">
+        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+      </svg>
+    )
+  }
   return (
     <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
       <path d="M8 5v14l11-7z" />
@@ -51,7 +59,7 @@ function PlayIcon({ size = 22 }: { size?: number }) {
 }
 function CheckIcon({ size = 40 }: { size?: number }) {
   return (
-    <svg width={size} height={size} fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
+    <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
       <polyline points="20 6 9 17 4 12" />
     </svg>
   )
@@ -76,7 +84,7 @@ function priceGbp(r: ExploreRelease) {
 export default function ExploreClient({ releases }: ExploreClientProps) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const [currentGenre, setCurrentGenre] = useState('All')
-  const [currentReleaseType, setCurrentReleaseType] = useState<'albums' | 'all'>('albums')
+  const [currentReleaseType, setCurrentReleaseType] = useState<'albums' | 'all'>('all')
   const [currentSort, setCurrentSort] = useState('newest')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [loading, setLoading] = useState(true)
@@ -132,6 +140,22 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
     setVisibleCount(PAGE_SIZE)
   }, [])
 
+  const { playRelease, isReleaseActive, isPlaying } = usePreviewPlay()
+
+  const handlePlay = useCallback((e: React.MouseEvent, r: ExploreRelease) => {
+    e.preventDefault()
+    e.stopPropagation()
+    playRelease({
+      id: r.id,
+      title: r.title,
+      cover_url: r.cover_url,
+      artist_id: r.artist_id,
+      artist_name: r.artist_name,
+      artist_slug: r.artist_slug,
+      accent_colour: r.accent_colour,
+    })
+  }, [playRelease])
+
   const headingText = currentGenre === 'All' ? 'All Releases' : currentGenre
 
   /* ── Render ───────────────────────────────────────────────── */
@@ -149,30 +173,60 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
               </div>
               <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest hidden sm:block">Latest from the community</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Large featured */}
-              <Link
-                href={releaseUrl(featured[0])}
-                className="sm:col-span-1 group relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto sm:h-56 bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverSrc(featured[0])} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="Album artwork" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{featured[0].type}</div>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <p className="font-black text-lg leading-tight">{featured[0].title}</p>
-                  <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{featured[0].artist_name}{featured[0].genre ? ` · ${featured[0].genre}` : ''}</p>
-                  <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(priceGbp(featured[0]), 'GBP', currency))}</p>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="bg-orange-600 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl">
-                    <PlayIcon size={22} />
+            {featured.length >= 3 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Large featured */}
+                <Link
+                  href={releaseUrl(featured[0])}
+                  className="sm:col-span-1 group relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto sm:h-56 bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={coverSrc(featured[0])} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="Album artwork" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                  <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{featured[0].type}</div>
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <p className="font-black text-lg leading-tight">{featured[0].title}</p>
+                    <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{featured[0].artist_name}{featured[0].genre ? ` · ${featured[0].genre}` : ''}</p>
+                    <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(priceGbp(featured[0]), 'GBP', currency))}</p>
                   </div>
+                  <button
+                    onClick={(e) => handlePlay(e, featured[0])}
+                    className="absolute inset-0 m-auto w-14 h-14 bg-orange-600 rounded-full flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Play ${featured[0].title}`}
+                  >
+                    <PlayIcon size={22} playing={isReleaseActive(featured[0].id) && isPlaying} />
+                  </button>
+                </Link>
+                {/* Smaller featured */}
+                <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+                  {featured.slice(1).map(f => (
+                    <Link
+                      key={f.id}
+                      href={releaseUrl(f)}
+                      className="group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={coverSrc(f)} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="Album artwork" loading="lazy" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <p className="font-black text-sm leading-tight">{f.title}</p>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{f.artist_name}</p>
+                        <p className="text-orange-600 font-black text-xs mt-1.5">{formatPrice(convertPrice(priceGbp(f), 'GBP', currency))}</p>
+                      </div>
+                      <button
+                        onClick={(e) => handlePlay(e, f)}
+                        className="absolute inset-0 m-auto w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label={`Play ${f.title}`}
+                      >
+                        <PlayIcon size={18} playing={isReleaseActive(f.id) && isPlaying} />
+                      </button>
+                    </Link>
+                  ))}
                 </div>
-              </Link>
-              {/* Smaller featured */}
-              <div className="sm:col-span-2 grid grid-cols-2 gap-4">
-                {featured.slice(1).map(f => (
+              </div>
+            ) : (
+              <div className={`grid gap-4 ${featured.length === 1 ? 'grid-cols-1 max-w-md' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                {featured.map(f => (
                   <Link
                     key={f.id}
                     href={releaseUrl(f)}
@@ -180,21 +234,24 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={coverSrc(f)} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="Album artwork" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <p className="font-black text-sm leading-tight">{f.title}</p>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{f.artist_name}</p>
-                      <p className="text-orange-600 font-black text-xs mt-1.5">{formatPrice(convertPrice(priceGbp(f), 'GBP', currency))}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{f.type}</div>
+                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                      <p className="font-black text-lg leading-tight">{f.title}</p>
+                      <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{f.artist_name}{f.genre ? ` · ${f.genre}` : ''}</p>
+                      <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(priceGbp(f), 'GBP', currency))}</p>
                     </div>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-white/20 backdrop-blur-sm w-12 h-12 rounded-full flex items-center justify-center border border-white/30">
-                        <PlayIcon size={18} />
-                      </div>
-                    </div>
+                    <button
+                      onClick={(e) => handlePlay(e, f)}
+                      className="absolute inset-0 m-auto w-14 h-14 bg-orange-600 rounded-full flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Play ${f.title}`}
+                    >
+                      <PlayIcon size={22} playing={isReleaseActive(f.id) && isPlaying} />
+                    </button>
                   </Link>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         </section>
       )}
@@ -224,8 +281,8 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
               onChange={e => { setCurrentReleaseType(e.target.value as 'albums' | 'all'); setVisibleCount(PAGE_SIZE) }}
               className="bg-zinc-900 border border-zinc-800 rounded-full py-2 px-4 text-xs font-bold text-zinc-400 outline-none focus:border-orange-600 transition-colors cursor-pointer"
             >
-              <option value="albums">Albums &amp; EPs</option>
               <option value="all">All releases</option>
+              <option value="albums">Albums &amp; EPs</option>
             </select>
             <select
               value={currentSort}
@@ -274,11 +331,14 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
                     {r.isNew && (
                       <span className="absolute top-2 left-2 bg-orange-600 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider z-10">New</span>
                     )}
-                    <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="bg-orange-600 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl">
-                        <PlayIcon size={18} />
-                      </div>
-                    </div>
+                    <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    <button
+                      onClick={(e) => handlePlay(e, r)}
+                      className="absolute inset-0 m-auto w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Play ${r.title}`}
+                    >
+                      <PlayIcon size={18} playing={isReleaseActive(r.id) && isPlaying} />
+                    </button>
                   </div>
                 </Link>
                 <Link href={releaseUrl(r)}>
@@ -312,11 +372,21 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
                 )}
                 <span className="flex-1" />
                 <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">{formatPrice(convertPrice(priceGbp(r), 'GBP', currency))}</span>
-                <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors">
-                  <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
+                <button
+                  onClick={(e) => handlePlay(e, r)}
+                  className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
+                  aria-label={`Play ${r.title}`}
+                >
+                  {isReleaseActive(r.id) && isPlaying ? (
+                    <svg width="14" height="14" fill="#000" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
               </Link>
             ))}
           </div>
@@ -370,7 +440,7 @@ export default function ExploreClient({ releases }: ExploreClientProps) {
             <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Now Live</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">Start selling today.</h2>
-          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Upload your music, set your price, and get paid directly. We only take 10% &mdash; no monthly fee, no approval process.</p>
+          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Upload your music, set your price, and get paid directly. You keep 90% &mdash; we absorb all processing fees. No monthly fee, no approval process.</p>
           <a href="/signup?intent=artist"
             className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-7 py-4 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20 mb-5">
             Get started &rarr;

@@ -30,7 +30,7 @@ export default function LibrarySignIn() {
         setSent(true)
       }
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError('We couldn\'t send your sign-in link - check your connection and try again.')
     }
     setBusy(false)
   }
@@ -82,7 +82,7 @@ export default function LibrarySignIn() {
             ) : (
               <div className="text-center py-4">
                 <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
-                  <svg width="24" height="24" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>

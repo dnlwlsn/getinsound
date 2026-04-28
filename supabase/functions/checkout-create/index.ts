@@ -12,20 +12,28 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 });
 
 const SITE_URL = Deno.env.get('SITE_URL') || 'https://getinsound.com';
-const corsHeaders = {
-  'Access-Control-Allow-Origin': SITE_URL,
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+const ALLOWED_ORIGINS = [SITE_URL, 'http://localhost:3000'];
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : SITE_URL;
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -104,7 +112,7 @@ Deno.serve(async (req) => {
         unitAmount = Math.min(customAmount, maxAmount);
       }
     }
-    if (!unitAmount || unitAmount < 200) {
+    if (!unitAmount || unitAmount < 300) {
       return json({ error: 'Invalid price' }, 400);
     }
 
@@ -124,6 +132,9 @@ Deno.serve(async (req) => {
 
     const applicationFee = Math.round((unitAmount * feeBps) / 10000);
 
+    // Always charge in the artist's currency to avoid FX undercharging
+    const chargeCurrency = (release.currency || 'GBP').toLowerCase();
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',
@@ -132,7 +143,7 @@ Deno.serve(async (req) => {
         {
           quantity: 1,
           price_data: {
-            currency: (fanCurrency || release.currency || 'GBP').toLowerCase(),
+            currency: chargeCurrency,
             unit_amount: unitAmount,
             product_data: {
               name: release.title,

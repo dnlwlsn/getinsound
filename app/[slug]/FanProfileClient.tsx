@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { ReportModal } from '@/app/components/ui/ReportModal'
 import Link from 'next/link'
 import Image from 'next/image'
 import { resolveAccent } from '@/lib/accent'
@@ -29,6 +30,7 @@ export function FanProfileClient({ fan, purchases, pinned, badges, wallPosts, st
 
   const [editing, setEditing] = useState(false)
   const [localPinned, setLocalPinned] = useState<FanPinned[]>(pinned)
+  const [showReport, setShowReport] = useState(false)
 
   const togglePin = useCallback(async (releaseId: string) => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -121,6 +123,30 @@ export function FanProfileClient({ fan, purchases, pinned, badges, wallPosts, st
           <BadgeShowcase badges={badges} accent={accent} />
         </div>
       </div>
+
+      {!isOwner && (
+        <div className="max-w-6xl mx-auto px-6 pb-8 flex justify-end">
+          <button
+            onClick={() => setShowReport(true)}
+            className="flex items-center gap-2 text-zinc-600 hover:text-red-400 text-xs font-bold transition-colors"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+            Report profile
+          </button>
+        </div>
+      )}
+
+      {showReport && (
+        <ReportModal
+          profileType="fan"
+          fanId={fan.id}
+          profileName={fan.username}
+          onClose={() => setShowReport(false)}
+        />
+      )}
 
       <footer className="border-t border-zinc-900/80 py-16">
         <div className="max-w-4xl mx-auto px-6 flex flex-col items-center gap-6">

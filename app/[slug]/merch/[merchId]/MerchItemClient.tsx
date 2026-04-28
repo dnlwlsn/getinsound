@@ -149,7 +149,7 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
 
   if (checkoutClientSecret) {
     return (
-      <main className="flex-1 min-h-screen bg-[#09090b]">
+      <main className="flex-1 min-h-screen bg-insound-bg">
         <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)' }}>
           <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter font-display">insound.</Link>
         </nav>
@@ -161,7 +161,7 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
   }
 
   return (
-    <main className="flex-1 min-h-screen bg-[#09090b]" style={{ '--artist-accent': accent } as React.CSSProperties}>
+    <main className="flex-1 min-h-screen bg-insound-bg" style={{ '--artist-accent': accent } as React.CSSProperties}>
       <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)' }}>
         <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter font-display">insound.</Link>
         <Link href={`/${artist.slug}`} className="text-sm font-bold text-zinc-400 hover:text-white transition-colors">

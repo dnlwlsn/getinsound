@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'FAQ | Insound',
-  description: 'Frequently asked questions about Insound — buying music, selling as an artist, payments, downloads, and more.',
+  description: 'Frequently asked questions about Insound - buying music, selling as an artist, payments, downloads, and more.',
 }
 
 export default function FAQPage() {

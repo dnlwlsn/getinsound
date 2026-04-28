@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Terms of Service | Insound',
-  description: 'Insound Terms of Service — the rules, rights, and responsibilities for Artists and Fans.',
+  description: 'Insound Terms of Service - the rules, rights, and responsibilities for Artists and Fans.',
 }
 
 export default function TermsPage() {
@@ -16,7 +16,7 @@ export default function TermsPage() {
         <div className="space-y-6 text-[15px] text-zinc-400 leading-[1.75] [&_h2]:text-[1.25rem] [&_h2]:font-black [&_h2]:text-white [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-2 [&_a]:text-orange-600 [&_a:hover]:text-orange-400 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1.5">
 
           {/* ── Identity ──────────────────────────────────────── */}
-          <p>These terms govern the use of Insound at <a href="https://getinsound.com">getinsound.com</a>. The service is operated by Insound Music Ltd, a company registered in England and Wales (Company Number: 17179694). Contact: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a>.</p>
+          <p>These terms govern the use of Insound at <a href="https://getinsound.com">getinsound.com</a>. The service is operated by Insound Music Ltd, a company registered in England and Wales (Company Number: 17179694), with registered office at 1 Sandhill Close, Beds, MK45 2JD. Contact: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a>.</p>
           <p>Plain English where possible. If something is unclear, email <a href="mailto:dan@getinsound.com">dan@getinsound.com</a> and Insound will explain it.</p>
 
           {/* ── Marketplace Role ───────────────────────────────── */}
@@ -36,7 +36,7 @@ export default function TermsPage() {
 
           <h2>2. Acceptance of Terms</h2>
           <p>By creating an Artist account the Artist confirms that they have read, understood, and agree to these Terms of Service, the <Link href="/privacy">Privacy Policy</Link>, and the <Link href="/ai-policy">AI Content Policy</Link>.</p>
-          <p>By purchasing music or creating a Fan account the Fan agrees to these terms as they apply to Fans.</p>
+          <p>By purchasing music or creating a Fan account the Fan agrees to these terms as they apply to Fans. Fans must be at least 16 years old to create an account or make a purchase. If a Fan is under 18, they confirm that a parent or legal guardian has consented to their use of the Platform and agrees to these terms on their behalf.</p>
           <p>The Platform may update these terms. If the Platform makes material changes, it will notify registered users by email at least 14 days before the changes take effect. Continued use after that date constitutes acceptance.</p>
 
           <h2>3. Artist Eligibility</h2>
@@ -105,19 +105,37 @@ export default function TermsPage() {
           <h3>5.7 Currency</h3>
           <p>All prices are currently listed and settled in GBP (&pound;). The Platform may add additional currencies in future.</p>
 
-          <h2>6. Purchases and Digital Content</h2>
-          <p>Fans can purchase music without creating an account. A purchase with an email address creates a lightweight record associated with that email for download access. Fans may later create a full account to access their purchase history and collection.</p>
-          <p>Fan accounts are subject to the same prohibited-content rules (section 11) and general conduct expectations.</p>
+          <h2>6. Taxes</h2>
+          <p>Prices displayed on the Platform may include VAT or other applicable taxes where required by law. The Platform will clearly indicate at checkout whether a price includes or excludes VAT.</p>
+          <p>Artists are responsible for their own income tax, VAT, sales tax, and other tax obligations arising from their sales on the Platform, except where Insound is legally required to collect, report, or account for tax as a platform or marketplace operator.</p>
+          <p>The Platform may collect tax information from Artists (such as VAT registration status) and may withhold, report, or remit amounts where required by law. Artists must keep their tax information accurate and up to date.</p>
 
-          <h3>6.1 Digital Content Cancellation Rights</h3>
+          <h2>7. Purchases and Digital Content</h2>
+          <p>Fans can purchase music without creating an account. A purchase with an email address creates a lightweight record associated with that email for download access. Fans may later create a full account to access their purchase history and collection.</p>
+          <p>Fan accounts are subject to the same prohibited-content rules (section 12) and general conduct expectations (section 8).</p>
+
+          <h3>7.1 Digital Content Cancellation Rights</h3>
           <p>Digital music is supplied as digital content. If the Fan requests immediate access, the Fan must expressly agree that the download may begin during the 14-day cancellation period and acknowledge that the right to cancel will be lost once the download starts.</p>
           <p>This does not affect the Fan&rsquo;s statutory rights if the download is faulty, corrupted, not as described, or not supplied.</p>
 
-          <h2>7. Refunds, Disputes, and Chargebacks</h2>
+          <h2>8. Fan Conduct</h2>
+          <p>Fans agree not to:</p>
+          <ul>
+            <li>Use the Platform for fraudulent purposes, including payment fraud, fake accounts, or chargebacks made in bad faith.</li>
+            <li>Scrape, crawl, or use automated tools to extract data or Content from the Platform without written permission.</li>
+            <li>Redistribute, resell, or publicly share purchased Content, download codes, or access credentials.</li>
+            <li>Attempt to circumvent access controls, payment systems, or download restrictions.</li>
+            <li>Harass, abuse, or send unsolicited messages to Artists or other users through the Platform.</li>
+            <li>Create multiple accounts to exploit promotions, download codes, or free tiers.</li>
+            <li>Use the Platform in any way that violates applicable UK law.</li>
+          </ul>
+          <p>The Platform may suspend or terminate a Fan account that breaches these rules, with Notice where reasonably practicable.</p>
+
+          <h2>9. Refunds, Disputes, and Chargebacks</h2>
           <p>Digital music purchases are generally non-refundable once the download has been accessed, in accordance with the Consumer Contracts Regulations 2013. Refunds will be issued where:</p>
           <ul>
             <li>The download is materially defective (corrupted files, wrong content delivered).</li>
-            <li>A pre-order is cancelled or delayed beyond the terms in section 9.</li>
+            <li>A pre-order is cancelled or delayed beyond the terms in section 11.</li>
             <li>A duplicate charge occurred.</li>
           </ul>
           <p>Refund requests: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a>.</p>
@@ -132,7 +150,7 @@ export default function TermsPage() {
           <p>Stripe processing fees may not be returned by Stripe on refunds. Where a pre-order is cancelled by the Artist, Stripe&rsquo;s non-refundable processing fee is absorbed by the Platform. Neither the Artist nor the Fan bears this cost.</p>
           <p>The Platform may suspend sales, downloads, or payouts for an Artist account where repeated disputes, fraud, or chargebacks create legal, payment, or platform risk.</p>
 
-          <h2>8. Merch</h2>
+          <h2>10. Merch</h2>
           <p>Artists may list physical merchandise on their Insound page. Merch is fulfilled entirely by the Artist. Insound facilitates payment collection only.</p>
           <ul>
             <li>The Artist is responsible for product quality, accurate descriptions, packaging, shipping, tracking, and delivery timescales.</li>
@@ -141,12 +159,12 @@ export default function TermsPage() {
             <li>Insound is not liable for lost, damaged, or delayed shipments, or for disputes between Artists and Fans about Merch quality or fulfilment.</li>
           </ul>
 
-          <h3>8.1 Merch Returns</h3>
+          <h3>10.1 Merch Returns</h3>
           <p>For merchandise, the Artist must provide accurate product descriptions, shipping times, delivery charges, return instructions, and a valid contact method.</p>
           <p>For most online merchandise purchases, Fans may cancel within 14 days after delivery and then have 14 days to return the goods. Exceptions may apply, including personalised or custom-made items, sealed items not suitable for return for health or hygiene reasons once unsealed, and other exceptions permitted by law.</p>
           <p>Return postage costs are the responsibility of the Fan unless the item is faulty or not as described.</p>
 
-          <h2>9. Pre-orders</h2>
+          <h2>11. Pre-orders</h2>
           <p>Artists may list Releases as pre-orders. When a Fan pre-orders:</p>
           <ul>
             <li>Payment is taken at the time of purchase.</li>
@@ -155,16 +173,7 @@ export default function TermsPage() {
             <li>If the Release is cancelled entirely, all pre-order purchasers will be refunded automatically.</li>
           </ul>
 
-          <h2>10. Download Codes</h2>
-          <p>Artists may purchase download codes to distribute at gigs, with Merch, or through other channels. Terms:</p>
-          <ul>
-            <li>Each code grants the holder a one-time download of the associated Release.</li>
-            <li>Codes have a maximum use limit set by the Artist (default: 1 redemption per code).</li>
-            <li>Codes expire 12 months from the date of issue unless the Artist sets a shorter expiry.</li>
-            <li>Expired or fully redeemed codes cannot be reactivated. No refunds are issued for unused codes.</li>
-          </ul>
-
-          <h2>11. Prohibited Content</h2>
+          <h2>12. Prohibited Content</h2>
           <p>The following may not be uploaded or sold on the Platform:</p>
           <ul>
             <li>Content that infringes the copyright, trademark, or other intellectual property rights of any third party.</li>
@@ -173,11 +182,55 @@ export default function TermsPage() {
             <li>Content that promotes violence, hatred, or discrimination against individuals or groups.</li>
             <li>Sexually explicit content involving minors.</li>
             <li>Fraudulent, misleading Content, or Content that impersonates another artist.</li>
-            <li>Content that violates any applicable UK law.</li>
+            <li>Content that violates any applicable UK law, including content that constitutes a criminal offence under the Online Safety Act 2023.</li>
           </ul>
           <p>The Platform uses human review for final decisions on content reports wherever reasonably practicable. The Platform may use automated tools to help detect, prioritise, or prevent spam, fraud, malware, illegal content, or policy violations.</p>
 
-          <h2>12. Private and Unlisted Releases</h2>
+          <h2>13. Content Reporting and Copyright</h2>
+          <h3>13.1 Reporting Content</h3>
+          <p>Anyone may report Content that they believe violates these terms, infringes intellectual property rights, or is illegal. Reports can be submitted to <a href="mailto:dan@getinsound.com">dan@getinsound.com</a> and should include:</p>
+          <ul>
+            <li>A description of the Content and a link to it on the Platform.</li>
+            <li>An explanation of why the Content is believed to violate these terms or the law.</li>
+            <li>The reporter&rsquo;s contact information.</li>
+          </ul>
+          <p>The Platform will acknowledge reports promptly and aim to review and act on them within 7 days. The Platform may remove or restrict access to Content during review where there is a risk of serious harm or clear illegality.</p>
+
+          <h3>13.2 Copyright Infringement Notices</h3>
+          <p>If a rights holder believes their copyright has been infringed, they should submit a notice to <a href="mailto:dan@getinsound.com">dan@getinsound.com</a> that includes:</p>
+          <ul>
+            <li>Identification of the copyrighted work claimed to have been infringed.</li>
+            <li>Identification of the infringing Content on the Platform, including a link.</li>
+            <li>A statement that the rights holder has a good-faith belief that the use is not authorised.</li>
+            <li>The rights holder&rsquo;s name, contact details, and a statement that the information provided is accurate.</li>
+          </ul>
+          <p>Upon receiving a valid notice, the Platform will remove or disable access to the Content and notify the Artist. The Artist may submit a counter-notice if they believe the removal was made in error.</p>
+
+          <h3>13.3 Counter-Notices</h3>
+          <p>If an Artist believes their Content was removed in error, they may submit a counter-notice to <a href="mailto:dan@getinsound.com">dan@getinsound.com</a> explaining why the Content does not infringe and providing evidence of their rights. The Platform will forward the counter-notice to the original reporter, who then has 14 days to pursue legal action. If no action is taken, the Platform may restore the Content.</p>
+
+          <h3>13.4 Repeat Infringers</h3>
+          <p>The Platform maintains a repeat-infringer policy. Artists who receive multiple valid infringement notices may have their account suspended or terminated. The number and severity of infringements will be considered on a case-by-case basis.</p>
+
+          <h2>14. Appeals</h2>
+          <p>If an Artist&rsquo;s Content is removed or their account is suspended or terminated under these terms, the Artist may appeal by emailing <a href="mailto:dan@getinsound.com">dan@getinsound.com</a> within 30 days of the action. The appeal should include:</p>
+          <ul>
+            <li>The Artist&rsquo;s account details and the action being appealed.</li>
+            <li>An explanation of why the Artist believes the action was wrong or disproportionate.</li>
+            <li>Any supporting evidence.</li>
+          </ul>
+          <p>The Platform will review the appeal and respond within 14 days. Appeals are reviewed by a person who was not involved in the original decision wherever reasonably practicable. The Platform&rsquo;s decision on appeal is final, but does not affect any legal rights the Artist may have.</p>
+
+          <h2>15. Download Codes</h2>
+          <p>Artists may purchase download codes to distribute at gigs, with Merch, or through other channels. Terms:</p>
+          <ul>
+            <li>Each code grants the holder a one-time download of the associated Release.</li>
+            <li>Codes have a maximum use limit set by the Artist (default: 1 redemption per code).</li>
+            <li>Codes expire 12 months from the date of issue unless the Artist sets a shorter expiry.</li>
+            <li>Expired or fully redeemed codes cannot be reactivated. No refunds are issued for unused codes.</li>
+          </ul>
+
+          <h2>16. Private and Unlisted Releases</h2>
           <p>Artists may publish Releases as private or unlisted. These are accessible only via a direct link shared by the Artist. Private Releases:</p>
           <ul>
             <li>Do not appear in search results, browse pages, or public Artist profiles.</li>
@@ -185,11 +238,11 @@ export default function TermsPage() {
             <li>May be purchased by anyone with the direct link.</li>
           </ul>
 
-          <h2>13. Collectives</h2>
+          <h2>17. Collectives</h2>
           <p>Collectives are not currently available. If the Platform launches collectives, additional terms may apply and Artists will be asked to accept them before using the feature.</p>
 
-          <h2>14. Account Termination</h2>
-          <h3>14.1 By the Artist</h3>
+          <h2>18. Account Termination</h2>
+          <h3>18.1 By the Artist</h3>
           <p>The Artist may delete their account at any time via the Account Settings page at <strong>/dashboard/settings</strong>. Upon requesting deletion:</p>
           <ul>
             <li>A 24-hour cooldown period begins. The Artist may cancel the request at any time before the deadline via the Account Settings page or the cancellation link sent by email.</li>
@@ -202,16 +255,16 @@ export default function TermsPage() {
             <li>Active pre-orders are cancelled and fully refunded to affected Fans.</li>
             <li>The Artist&rsquo;s profile, posts, and uploaded media are permanently removed.</li>
             <li>The Artist&rsquo;s Stripe connected account remains active until all pending payouts have settled, then it is disconnected.</li>
-            <li>The Artist&rsquo;s fan account and collection are also deleted (see 14.3 below).</li>
+            <li>The Artist&rsquo;s fan account and collection are also deleted (see 18.3 below).</li>
           </ul>
-          <h3>14.2 By the Fan</h3>
+          <h3>18.2 By the Fan</h3>
           <p>Fans may delete their account at any time via the Account Settings page at <strong>/settings/account</strong>. The same 24-hour cooldown and cancellation process applies. Upon deletion:</p>
           <ul>
             <li>The Fan&rsquo;s profile, collection, preferences, and all associated personal data are permanently removed.</li>
             <li>Purchase records are anonymised rather than hard-deleted: the Fan&rsquo;s user ID and email are removed from purchase rows, but financial amounts are retained for the Artist&rsquo;s accounting and aggregate analytics.</li>
             <li>Download links for all purchased music are sent by email and remain active for 48 hours after deletion. Fans are encouraged to download their purchases before requesting deletion.</li>
           </ul>
-          <h3>14.3 By Insound</h3>
+          <h3>18.3 By Insound</h3>
           <p>The Platform may suspend or terminate an account if:</p>
           <ul>
             <li>The Artist materially breaches these terms (e.g. uploading infringing Content, misrepresenting independence status).</li>
@@ -219,7 +272,7 @@ export default function TermsPage() {
             <li>Continued operation of the account would expose Insound to legal liability.</li>
           </ul>
           <p>Except in cases of serious legal risk, the Platform will provide at least 14 days&rsquo; Notice before termination, with an explanation and an opportunity to respond.</p>
-          <h3>14.4 Data Handling on Deletion</h3>
+          <h3>18.4 Data Handling on Deletion</h3>
           <p>When an account is deleted, the Platform removes all personal data except where retention is required for:</p>
           <ul>
             <li>legal or regulatory compliance (e.g. financial records required under HMRC rules);</li>
@@ -228,10 +281,10 @@ export default function TermsPage() {
           </ul>
           <p>Anonymised purchase records contain no information that can identify the deleted user. The Fan&rsquo;s user ID is set to null and the email address is replaced with a non-functional placeholder.</p>
 
-          <h3>14.5 Data Portability</h3>
+          <h3>18.5 Data Portability</h3>
           <p>Upon request, the Platform will provide a machine-readable export of the Artist&rsquo;s profile data, sales and earnings history, and fan/supporter list (subject to applicable data protection law). The Platform will fulfil data export requests within 30 days.</p>
 
-          <h2>15. Liability</h2>
+          <h2>19. Liability</h2>
           <p>Insound is provided &ldquo;as is&rdquo;. To the fullest extent permitted by law:</p>
           <ul>
             <li>The Platform does not guarantee uninterrupted access.</li>
@@ -246,18 +299,18 @@ export default function TermsPage() {
             <li>breaches of data protection law.</li>
           </ul>
 
-          <h2>16. Dispute Resolution</h2>
+          <h2>20. Dispute Resolution</h2>
           <p>If any user has a dispute with Insound, they should contact <a href="mailto:dan@getinsound.com">dan@getinsound.com</a>. The Platform will attempt to resolve it informally within 30 days.</p>
           <p>If informal resolution fails, disputes may be referred to mediation before proceeding to court.</p>
 
-          <h2>17. Governing Law</h2>
+          <h2>21. Governing Law</h2>
           <p>These terms are governed by the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales, except where consumer protection law grants the Fan the right to bring proceedings in their local jurisdiction.</p>
 
-          <h2>18. Data Protection</h2>
+          <h2>22. Data Protection</h2>
           <p>The Platform processes personal data in accordance with UK GDPR and the Data Protection Act 2018. Full details are in the <Link href="/privacy">Privacy Policy</Link>.</p>
 
-          <h2>19. Contact</h2>
-          <p>Insound Music Ltd<br />Company Number: 17179694<br />Registered in England and Wales<br />Email: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a></p>
+          <h2>23. Contact</h2>
+          <p>Insound Music Ltd<br />Company Number: 17179694<br />Registered in England and Wales<br />Registered office: 1 Sandhill Close, Beds, MK45 2JD<br />Email: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a></p>
         </div>
       </div>
 

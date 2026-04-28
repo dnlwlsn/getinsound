@@ -180,8 +180,8 @@ export default async function DashboardPage() {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-8">
         <div className="text-center">
-          <h1 className="text-xl font-bold mb-2">Something went wrong</h1>
-          <p className="text-zinc-400">Please try refreshing the page.</p>
+          <h1 className="text-xl font-bold mb-2">We couldn&apos;t load your dashboard right now.</h1>
+          <p className="text-zinc-400">Try refreshing the page, or contact us if it keeps happening.</p>
         </div>
       </div>
     )

@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
   if (!name || !description || !price || !currency || postage == null || stock == null) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
-  if (typeof price !== 'number' || price < 200 || price > 10000000) {
-    return NextResponse.json({ error: 'Price must be between 200 and 10000000 (smallest currency unit)' }, { status: 400 })
+  if (typeof price !== 'number' || price < 300 || price > 10000000) {
+    return NextResponse.json({ error: 'Price must be between 300 and 10000000 (smallest currency unit)' }, { status: 400 })
   }
   if (typeof postage !== 'number' || postage < 0 || postage > 10000000) {
     return NextResponse.json({ error: 'Postage must be between 0 and 10000000' }, { status: 400 })

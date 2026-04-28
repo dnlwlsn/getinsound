@@ -25,7 +25,7 @@ export function SocialAccountsEditor({ initial }: Props) {
     if (!editing || !url.trim()) return
     const config = SOCIAL_PLATFORMS.find(p => p.key === editing)
     if (config && !config.pattern.test(url.trim())) {
-      setError(`Invalid URL — expected a ${config.label} link`)
+      setError(`Invalid URL - expected a ${config.label} link`)
       return
     }
 

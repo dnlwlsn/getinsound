@@ -6,13 +6,13 @@ import { useCurrency } from '../providers/CurrencyProvider'
 
 const KEY_FACTS = [
   { label: 'Founded', value: '2026, UK' },
-  { label: 'Model', value: 'Bootstrapped — no investors' },
-  { label: 'Platform fee', value: '10% flat — artists keep 90%. We absorb all Stripe processing fees' },
+  { label: 'Model', value: 'Bootstrapped - no investors' },
+  { label: 'Platform fee', value: '10% flat - artists keep 90%. We absorb all Stripe processing fees' },
   { label: 'Monthly fee', value: 'None' },
   { label: 'Payout threshold', value: 'None' },
   { label: 'Who can join', value: 'Independent & unsigned artists only' },
   { label: 'Minimum sale', value: '£3.00' },
-  { label: 'Payment processing', value: 'Stripe processing fees absorbed by Insound out of our 10% — no additional cost to artists' },
+  { label: 'Payment processing', value: 'Stripe processing fees absorbed by Insound out of our 10% - no additional cost to artists' },
   { label: 'Masters', value: 'Artists retain 100%' },
   { label: 'Future features', value: 'Merch, pre-orders, download codes, collectives' },
 ]
@@ -55,7 +55,7 @@ export function ForPressClient() {
             The platform built on what<br />Bandcamp <span className="text-orange-500">forgot.</span>
           </h1>
           <p className="text-zinc-400 text-lg max-w-xl mx-auto leading-relaxed">
-            Insound is a direct-to-fan music platform for independent and unsigned artists — launching in 2026.
+            Insound is a direct-to-fan music platform for independent and unsigned artists - launching in 2026.
           </p>
         </div>
       </section>
@@ -101,13 +101,13 @@ export function ForPressClient() {
               Bandcamp was sold to Epic Games in 2022. Sold again to Songtradr in 2023, who laid off most of the team within weeks. By Q1 2026, active Bandcamp stores had declined 50% quarter-over-quarter.
             </p>
             <p>
-              Insound was built because the model that Bandcamp proved — direct-to-fan, artist-first, pay-what-you-want — deserved a platform that wouldn&apos;t get sold out from under the artists who depend on it.
+              Insound was built because the model that Bandcamp proved - direct-to-fan, artist-first, pay-what-you-want - deserved a platform that wouldn&apos;t get sold out from under the artists who depend on it.
             </p>
             <p>
-              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We take 10% and absorb all Stripe processing fees out of that cut. Artists keep exactly 90% — permanently.
+              We&apos;re bootstrapped. No investors. No board. No pressure to raise our cut or change the deal. We take 10% and absorb all Stripe processing fees out of that cut. Artists keep exactly 90% - permanently.
             </p>
             <p>
-              We only allow independent and unsigned artists. No labels. No aggregators. If you&apos;re signed to a label, Insound isn&apos;t for you — and we think that clarity matters.
+              We only allow independent and unsigned artists. No labels. No aggregators. If you&apos;re signed to a label, Insound isn&apos;t for you - and we think that clarity matters.
             </p>
           </div>
         </div>

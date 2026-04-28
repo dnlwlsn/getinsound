@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { createClient } from '@supabase/supabase-js'
+import { requireAdminApi } from '@/lib/admin'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { supabase, user } = await requireAdmin()
+  const user = await requireAdminApi()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { id } = await params
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
 
   const { error } = await supabase
     .from('suspicious_activity_flags')

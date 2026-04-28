@@ -16,7 +16,7 @@ const STRIPE_FIXED = 0.20
 const isValidEmail = (e: string) => !!e && /\S+@\S+\.\S+/.test(e)
 
 function calcProfit(price: number) {
-  return Math.max(0, price - price * PLATFORM_CUT - (price * STRIPE_PCT + STRIPE_FIXED))
+  return Math.max(0, price - price * PLATFORM_CUT)
 }
 
 export function WhyUsClient() {
@@ -118,7 +118,7 @@ export function WhyUsClient() {
       <div className="border-y border-zinc-900 bg-zinc-950 py-6">
         <div className="max-w-5xl mx-auto px-8">
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div><p className="text-2xl md:text-3xl font-black text-orange-600">10%</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Our cut, all-in</p></div>
+            <div><p className="text-2xl md:text-3xl font-black text-orange-600">90%</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Artists keep</p></div>
             <div><p className="text-2xl md:text-3xl font-black">{formatPrice(0)}</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Annual fee</p></div>
             <div><p className="text-2xl md:text-3xl font-black">Instant</p><p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Payouts</p></div>
           </div>
@@ -155,11 +155,7 @@ export function WhyUsClient() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-zinc-800">
                     <span className="text-xs text-zinc-400">Insound platform fee</span>
-                    <span className="text-zinc-300 font-black">10%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-zinc-800">
-                    <span className="text-xs text-zinc-400">Stripe processing</span>
-                    <span className="text-zinc-300 font-black">Stripe&apos;s standard processing fee</span>
+                    <span className="text-zinc-300 font-black">10% <span className="text-[10px] text-zinc-500 font-normal">(incl. Stripe processing)</span></span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-zinc-800">
                     <span className="text-xs text-zinc-400">TuneCore annual fee</span>
@@ -176,7 +172,7 @@ export function WhyUsClient() {
                 <div className="bg-orange-600 p-8 rounded-3xl shadow-xl shadow-orange-600/20">
                   <p className="text-[10px] font-black text-emerald-950 uppercase tracking-widest mb-1">Your Insound profit</p>
                   <p className="text-6xl font-black text-black">{formatPrice(profit)}</p>
-                  <p className="mt-4 text-[10px] text-emerald-900 font-bold italic">After our flat 10% and Stripe&apos;s standard processing fee. Paid instantly. No annual subscription.</p>
+                  <p className="mt-4 text-[10px] text-emerald-900 font-bold italic">After our flat 10% — we absorb all processing fees. Paid instantly. No annual subscription.</p>
                 </div>
 
                 <div className="bg-zinc-800 p-8 rounded-3xl border border-zinc-700">
@@ -225,7 +221,7 @@ export function WhyUsClient() {
                 </tr>
                 <tr className="border-b border-zinc-800">
                   <td className="p-8 font-bold text-zinc-300">Commission / fee</td>
-                  <td className="p-8 font-black text-white bg-orange-600/5">10% flat <span className="text-[10px] block opacity-60 font-normal italic">Stripe processing shown at checkout</span></td>
+                  <td className="p-8 font-black text-white bg-orange-600/5">10% flat <span className="text-[10px] block opacity-60 font-normal italic">Stripe processing absorbed by us</span></td>
                   <td className="p-8 text-zinc-400">0%* <span className="text-[10px] block opacity-50 font-normal italic">*Plus hidden admin fees</span></td>
                 </tr>
                 <tr className="border-b border-zinc-800">
@@ -257,7 +253,7 @@ export function WhyUsClient() {
 
       {/* ── CTA ──────────────────────────────────────────────────── */}
       <section className="py-24 bg-black relative overflow-hidden">
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-64 bg-orange-600/10 blur-[120px] -z-10" />
+        <div className="absolute bottom-0 left-1/2 - translate-x-1/2 w-2/3 h-64 bg-orange-600/10 blur-[120px] - z-10" />
 
         <div className="max-w-4xl mx-auto px-8 text-center">
           <h2 className="font-display text-5xl md:text-7xl font-black tracking-tighter mb-8 italic">
@@ -278,7 +274,7 @@ export function WhyUsClient() {
           </div>
 
           <p className="mt-10 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">
-            No annual fees. No hidden costs. 10% platform fee. Every fee shown at checkout.
+            No annual fees. No hidden costs. Artists keep 90% - we absorb all processing fees.
           </p>
         </div>
       </section>
@@ -314,7 +310,7 @@ export function WhyUsClient() {
           ) : (
             <div className="mb-5">
               <div className="inline-flex items-center gap-3 bg-orange-600/10 border border-orange-600/20 rounded-xl px-6 py-4">
-                <svg width="16" height="16" fill="none" stroke="#F56D00" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" className="text-orange-600"><polyline points="20 6 9 17 4 12" /></svg>
                 <span className="text-orange-500 font-black text-sm">You&apos;re on the list. We&apos;ll be in touch.</span>
               </div>
             </div>

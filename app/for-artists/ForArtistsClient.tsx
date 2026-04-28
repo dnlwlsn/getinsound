@@ -17,7 +17,7 @@ const STATS = [
 const STEPS = [
   { num: '01', title: 'Upload', desc: 'WAV, FLAC, AIFF or MP3. Page live instantly.' },
   { num: '02', title: 'Set your price', desc: '£3 minimum, pay what you want available on every release.' },
-  { num: '03', title: 'Get paid', desc: 'You keep 90% of every sale. We take 10% and absorb all Stripe processing fees — direct to your Stripe account.' },
+  { num: '03', title: 'Get paid', desc: 'You keep 90% of every sale. We take 10% and absorb all Stripe processing fees - direct to your Stripe account.' },
   { num: '04', title: 'Own everything', desc: 'Your masters, forever.' },
 ]
 
@@ -25,7 +25,7 @@ const WHY_NOW = [
   'Bandcamp sold twice. Artist trust is broken.',
   'Spotify: ~£0.003 per stream. 333,000+ to earn £1,000.',
   'Insound bootstrapped. No investors. No pressure to raise cut.',
-  'We only make money when you make money — 10%, nothing else.',
+  'We only make money when you make money - 10%, nothing else.',
   'Processing fees? We absorb them. Your 90% is your 90%.',
 ]
 
@@ -35,10 +35,10 @@ const COMPETITOR_CARDS = [
     name: 'Streaming vs Insound',
     subtitle: 'How streaming stacks up',
     rows: [
-      { label: 'Artist cut', them: '~0.003 per stream', us: '90% — processing fees on us' },
+      { label: 'Artist cut', them: '~0.003 per stream', us: '90% - processing fees on us' },
       { label: 'To earn 1,000', them: '333,000+ streams', us: '~112 sales at 10' },
       { label: 'Pricing control', them: 'None', us: 'You set the price' },
-      { label: 'Fan relationship', them: 'Anonymous', us: 'Direct — you own it' },
+      { label: 'Fan relationship', them: 'Anonymous', us: 'Direct - you own it' },
       { label: "Who it's for", them: 'Everyone', us: 'Independent artists only' },
     ],
   },
@@ -47,8 +47,8 @@ const COMPETITOR_CARDS = [
     name: 'Bandcamp vs Insound',
     subtitle: 'The platform we learned from',
     rows: [
-      { label: 'Artist cut', them: '~80% after all fees', us: '90% — processing fees on us' },
-      { label: 'Revenue threshold', them: 'Higher rate after $5k', us: 'None — same rate from sale one' },
+      { label: 'Artist cut', them: '~80% after all fees', us: '90% - processing fees on us' },
+      { label: 'Revenue threshold', them: 'Higher rate after $5k', us: 'None - same rate from sale one' },
       { label: 'Platform future', them: 'Sold twice since 2022', us: 'Independent, no investors' },
       { label: "Who it's for", them: 'Everyone including labels', us: 'Independent & unsigned only' },
       { label: 'Holds your money', them: 'Yes', us: 'Never' },
@@ -60,8 +60,8 @@ const COMPETITOR_CARDS = [
     subtitle: 'Other direct-to-fan platforms',
     rows: [
       { label: 'Cost to join', them: 'Up to $10/yr upfront', us: 'Free, forever' },
-      { label: 'Holds your money', them: 'Yes — PayPal or batched', us: 'Never — straight to Stripe' },
-      { label: 'Payment method', them: 'PayPal or delayed transfer', us: 'Stripe — instant, direct' },
+      { label: 'Holds your money', them: 'Yes - PayPal or batched', us: 'Never - straight to Stripe' },
+      { label: 'Payment method', them: 'PayPal or delayed transfer', us: 'Stripe - instant, direct' },
       { label: 'Platform stability', them: 'Donation-funded or beta', us: 'Independently sustainable' },
       { label: "Who it's for", them: 'Broad or niche scenes', us: 'Independent artists only' },
     ],
@@ -69,16 +69,16 @@ const COMPETITOR_CARDS = [
 ]
 
 const FAQ = [
-  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer — it's the whole business model. We absorb Stripe's processing fees out of our 10%, so you always keep exactly 90%." },
-  { q: 'Does Insound hold my money?', a: 'Never. We use Stripe Connect — when a fan buys your music, the payment goes directly to your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes.' },
-  { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible — your fans deserve the best quality.' },
+  { q: 'Is the 10% rate permanent?', a: "Yes. Our 10% is not a launch promotion or an introductory offer - it's the whole business model. We absorb Stripe's processing fees out of our 10%, so you always keep exactly 90%." },
+  { q: 'Does Insound hold my money?', a: 'Never. We use Stripe Connect - when a fan buys your music, the payment goes directly to your Stripe account. We take our 10% as an application fee at the point of sale. Your money is yours from the moment the transaction completes.' },
+  { q: 'What formats do you accept?', a: 'WAV, FLAC, AIFF, and MP3. We recommend lossless where possible - your fans deserve the best quality.' },
   { q: 'Are there any hidden fees?', a: "No. You keep 90%. We take 10% and absorb all processing fees out of our cut. What you see is what you get." },
   { q: 'Do I keep my masters?', a: 'Always. Uploading to Insound gives us nothing except permission to host and sell your music on your behalf. You own everything, forever.' },
   { q: 'Is there a subscription fee?', a: 'No. It costs nothing to sign up, nothing to upload, and nothing per month. We only make money when you make a sale.' },
-  { q: 'What happens if I want to leave?', a: 'You can remove your music at any time. Your Stripe earnings are already in your account — we never hold them. No lock-in, no penalty.' },
+  { q: 'What happens if I want to leave?', a: 'You can remove your music at any time. Your Stripe earnings are already in your account - we never hold them. No lock-in, no penalty.' },
   { q: 'Can I set pay what you want pricing?', a: 'Yes. Every release has a minimum price and fans can pay more if they choose. Many artists find fans voluntarily pay well above the minimum.' },
   { q: 'How do download codes work?', a: 'Coming soon. You\'ll be able to generate unique download codes for gig merch bundles, press, or promotions. Codes will be single-use and trackable from your dashboard.' },
-  { q: 'Can I do pre-orders?', a: 'Coming soon. Pre-orders are on our roadmap — fans will be able to pay upfront and get the release on launch day.' },
+  { q: 'Can I do pre-orders?', a: 'Coming soon. Pre-orders are on our roadmap - fans will be able to pay upfront and get the release on launch day.' },
 ]
 
 /* ── Component ────────────────────────────────────────────────── */
@@ -96,7 +96,7 @@ export function ForArtistsClient() {
   const STEPS_DYNAMIC = [
     { num: '01', title: 'Upload', desc: 'WAV, FLAC, AIFF or MP3. Page live instantly.' },
     { num: '02', title: 'Set your price', desc: `${formatPrice(convertPrice(3, 'GBP', currency))} minimum, pay what you want available on every release.` },
-    { num: '03', title: 'Get paid', desc: `You keep 90% of every sale. We take 10% and absorb all Stripe processing fees — direct to your Stripe account.` },
+    { num: '03', title: 'Get paid', desc: `You keep 90% of every sale. We take 10% and absorb all Stripe processing fees - direct to your Stripe account.` },
     { num: '04', title: 'Own everything', desc: 'Your masters, forever.' },
   ]
 
@@ -104,7 +104,7 @@ export function ForArtistsClient() {
     'Bandcamp sold twice. Artist trust is broken.',
     `Spotify: ~${formatPrice(convertPrice(0.003, 'GBP', currency))} per stream. 333,000+ to earn ${formatPrice(convertPrice(1000, 'GBP', currency))}.`,
     'Insound bootstrapped. No investors. No pressure to raise cut.',
-    'We only make money when you make money — 10%, nothing else.',
+    'We only make money when you make money - 10%, nothing else.',
     'Processing fees? We absorb them. Your 90% is your 90%.',
   ]
 
@@ -341,7 +341,7 @@ export function ForArtistsClient() {
             Your music.<br />Your money.
           </h2>
           <p className="text-zinc-400 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
-            Sign up and start selling. You keep 90% — we absorb all processing fees.
+            Sign up and start selling. You keep 90% - we absorb all processing fees.
           </p>
           <Link href="/signup?intent=artist"
             className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-8 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25">

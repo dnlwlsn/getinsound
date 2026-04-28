@@ -19,7 +19,7 @@ export function SoftNudge({
           {balance}
         </p>
         <p className="text-sm text-zinc-400 mt-1">
-          Below Stripe's £2 minimum — your balance will be paid out automatically once it reaches the threshold.
+          Below Stripe's minimum — your balance will be paid out automatically once it reaches the threshold.
         </p>
       </div>
       <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400/60 shrink-0">

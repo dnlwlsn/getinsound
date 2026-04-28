@@ -56,9 +56,22 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+const DELETABLE_TYPES: DetailType[] = ['artists', 'fans', 'releases', 'waitlist']
+
 function DetailModal({ type, onClose }: { type: DetailType; onClose: () => void }) {
   const [rows, setRows] = useState<DetailRow[]>([])
   const [loading, setLoading] = useState(true)
+  const canDelete = DELETABLE_TYPES.includes(type)
+
+  async function deleteRow(id: string) {
+    if (!window.confirm(`Are you sure you want to delete this ${type.slice(0, -1)}? This action cannot be undone.`)) return
+    const res = await fetch('/api/admin/details', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, id }),
+    })
+    if (res.ok) setRows(prev => prev.filter(r => r.id !== id))
+  }
 
   const titles: Record<DetailType, string> = {
     artists: 'Artist Profiles',
@@ -140,6 +153,17 @@ function DetailModal({ type, onClose }: { type: DetailType; onClose: () => void 
                     )}
                     <p className="text-[10px] text-zinc-600">{timeAgo(row.created)}</p>
                   </div>
+                  {canDelete && (
+                    <button
+                      onClick={() => deleteRow(row.id)}
+                      className="shrink-0 p-1.5 text-zinc-700 hover:text-red-400 transition-colors"
+                      aria-label={`Delete ${row.name}`}
+                    >
+                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

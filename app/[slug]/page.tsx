@@ -111,7 +111,8 @@ export default async function ProfilePage({ params }: Props) {
         .order('position', { ascending: true }),
       supabase.from('fan_badges')
         .select('badge_type, release_id, awarded_at, metadata')
-        .eq('user_id', fan.id),
+        .eq('user_id', fan.id)
+        .not('badge_type', 'in', '("founding_artist","first_sale")'),
       supabase.from('fan_preferences')
         .select('genre')
         .eq('user_id', fan.id)

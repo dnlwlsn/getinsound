@@ -7,11 +7,11 @@ import ReleaseClient from './ReleaseClient'
 const FALLBACK_METADATA: Metadata = {
   title: 'Release | insound.',
   description:
-    'Buy music directly from the artist. We only take 10%. Every fee shown transparently at checkout.',
+    'Buy music directly from the artist. We only take 10% - artists keep 90%. Processing fees are on us.',
   openGraph: {
     title: 'Release | insound.',
     description:
-      'Buy music directly from the artist. We only take 10%. Every fee shown transparently at checkout.',
+      'Buy music directly from the artist. We only take 10% - artists keep 90%. Processing fees are on us.',
     type: 'website',
   },
 }
@@ -46,7 +46,7 @@ export async function generateMetadata({
 
   const typeLabel =
     { single: 'Single', ep: 'EP', album: 'Album' }[release.type as string] || 'Release'
-  const title = `${release.title} — ${artist.name} | Insound`
+  const title = `${release.title} - ${artist.name} | Insound`
   const description = `${typeLabel} by ${artist.name}. Buy music directly from the artist on Insound.`
 
   const ogImages: { url: string; width: number; height: number; alt: string }[] = []
@@ -100,13 +100,86 @@ async function ReleasePageInner({
 
   const { data: release } = await supabase
     .from('releases')
-    .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, tracks(id, title, position, duration_sec)')
+    .select('id, slug, title, type, cover_url, price_pence, currency, published, pwyw_enabled, pwyw_minimum_pence, description, genre, release_tags(tag), tracks(id, title, position, duration_sec)')
     .eq('artist_id', artist.id)
     .eq('slug', releaseSlug)
     .eq('published', true)
     .maybeSingle()
 
   if (!release) notFound()
+
+  const [discographyRes, supportersRes, recommendationsRes] = await Promise.all([
+    supabase
+      .from('releases')
+      .select('id, slug, title, type, cover_url, created_at, artists!inner(slug)')
+      .eq('artist_id', artist.id)
+      .eq('published', true)
+      .neq('id', release.id)
+      .order('created_at', { ascending: false })
+      .limit(6),
+
+    supabase
+      .from('purchases')
+      .select('buyer_email, paid_at')
+      .eq('release_id', release.id)
+      .eq('status', 'paid')
+      .order('paid_at', { ascending: false })
+      .limit(20),
+
+    (() => {
+      const tags = (release.release_tags ?? []).map((t: { tag: string }) => t.tag)
+      if (tags.length > 0) {
+        return supabase
+          .from('releases')
+          .select('id, slug, title, cover_url, price_pence, currency, artists!inner(name, slug)')
+          .eq('published', true)
+          .neq('id', release.id)
+          .neq('artist_id', artist.id)
+          .limit(8)
+      }
+      if (release.genre) {
+        return supabase
+          .from('releases')
+          .select('id, slug, title, cover_url, price_pence, currency, artists!inner(name, slug)')
+          .eq('published', true)
+          .eq('genre', release.genre)
+          .neq('id', release.id)
+          .neq('artist_id', artist.id)
+          .order('created_at', { ascending: false })
+          .limit(8)
+      }
+      return Promise.resolve({ data: [] })
+    })(),
+  ])
+
+  const discography = (discographyRes.data ?? []).map((r: any) => ({
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    type: r.type,
+    cover_url: r.cover_url,
+    artistSlug: Array.isArray(r.artists) ? r.artists[0].slug : r.artists.slug,
+  }))
+
+  const supporters = (supportersRes.data ?? []).map((p: any) => {
+    const email = p.buyer_email || ''
+    const name = email.split('@')[0] || 'A fan'
+    return { name, paidAt: p.paid_at }
+  })
+
+  const recommendations = (recommendationsRes.data ?? []).map((r: any) => {
+    const a = Array.isArray(r.artists) ? r.artists[0] : r.artists
+    return {
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      cover_url: r.cover_url,
+      price_pence: r.price_pence,
+      currency: r.currency,
+      artistName: a.name,
+      artistSlug: a.slug,
+    }
+  })
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -127,7 +200,7 @@ async function ReleasePageInner({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ReleaseClient artist={artist} release={release} />
+      <ReleaseClient artist={artist} release={release} discography={discography} supporters={supporters} recommendations={recommendations} />
     </>
   )
 }

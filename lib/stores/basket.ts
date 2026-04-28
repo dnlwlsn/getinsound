@@ -17,6 +17,8 @@ export interface ReleaseBasketItem extends BaseItem {
   releaseSlug: string
   coverUrl: string | null
   customAmountPence?: number
+  pwyw?: boolean
+  pwywMinimumPence?: number
 }
 
 export interface MerchBasketItem extends BaseItem {
@@ -38,7 +40,9 @@ function itemKey(item: BasketItem): string {
 interface BasketState {
   items: BasketItem[]
   add: (item: BasketItem) => void
+  addMany: (newItems: BasketItem[]) => number
   remove: (item: BasketItem) => void
+  updateCustomAmount: (releaseId: string, amountPence: number) => void
   clear: () => void
   has: (item: BasketItem) => boolean
   itemsTotal: () => number
@@ -62,9 +66,28 @@ export const useBasketStore = create<BasketState>()(
         set({ items: [...items, item] })
       },
 
+      addMany: (newItems: BasketItem[]) => {
+        const { items } = get()
+        const existingKeys = new Set(items.map(itemKey))
+        const toAdd = newItems.filter(i => !existingKeys.has(itemKey(i)))
+        const limited = toAdd.slice(0, MAX_ITEMS - items.length)
+        if (limited.length > 0) set({ items: [...items, ...limited] })
+        return limited.length
+      },
+
       remove: (item: BasketItem) => {
         const key = itemKey(item)
         set({ items: get().items.filter(i => itemKey(i) !== key) })
+      },
+
+      updateCustomAmount: (releaseId: string, amountPence: number) => {
+        set({
+          items: get().items.map(i =>
+            i.type === 'release' && i.releaseId === releaseId
+              ? { ...i, customAmountPence: amountPence }
+              : i
+          ),
+        })
       },
 
       clear: () => set({ items: [] }),

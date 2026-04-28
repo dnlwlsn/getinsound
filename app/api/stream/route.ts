@@ -93,21 +93,9 @@ export async function GET(request: Request) {
     })
   }
 
-  // No dedicated preview — serve the master with a 30s client-enforced limit
+  // No dedicated preview available — do not expose the full master file
   if (track.audio_path) {
-    const { data: signed, error: signErr } = await supabase.storage
-      .from('masters')
-      .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)
-
-    if (signErr || !signed) {
-      return NextResponse.json({ error: 'Failed to generate URL' }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      url: signed.signedUrl,
-      isPreview: true,
-      previewDuration: 30,
-    })
+    return NextResponse.json({ error: 'Preview not available' }, { status: 404 })
   }
 
   return NextResponse.json({ error: 'No audio available' }, { status: 404 })

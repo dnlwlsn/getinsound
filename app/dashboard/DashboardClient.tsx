@@ -608,6 +608,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   }
 
   async function markDelivered(orderId: string) {
+    if (!window.confirm('Mark this order as delivered?')) return
     const res = await fetch(`/api/orders/${orderId}/deliver`, { method: 'PATCH' })
     if (res.ok) {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'delivered', delivered_at: new Date().toISOString() } : o))
@@ -615,6 +616,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   }
 
   async function confirmReturn(orderId: string) {
+    if (!window.confirm('Confirm this return and issue a refund? This cannot be undone.')) return
     const res = await fetch(`/api/orders/${orderId}/confirm-return`, { method: 'PATCH' })
     if (res.ok) {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'returned' } : o))
@@ -631,7 +633,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   }, [supabase, router])
 
   return (
-    <div className="min-h-screen flex bg-[#09090b] text-zinc-100">
+    <div className="min-h-screen flex bg-insound-bg text-zinc-100">
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
         <div className="flex items-center justify-between mb-12">
@@ -675,7 +677,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         <div className="max-w-5xl mx-auto p-8 md:p-12">
 
           {/* Header */}
-          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-4">
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
             <div>
               <p className="text-zinc-500 text-sm font-semibold mb-1">Welcome back</p>
               <div className="flex items-center gap-3">
@@ -696,7 +698,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                   </a>
                   {showArtistTooltip && (
                     <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-xs text-zinc-300 leading-relaxed shadow-xl">
-                      Your page is live but empty — upload your first release to make it shine
+                      Your page is live but empty - upload your first release to make it shine
                     </div>
                   )}
                 </div>
@@ -712,7 +714,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
             <div className="bg-gradient-to-br from-orange-600/10 via-zinc-900 to-zinc-900 border border-orange-600/20 rounded-2xl p-8 mb-10">
               <h2 className="font-display text-2xl font-bold tracking-tight mb-2">Welcome to Insound</h2>
               <p className="text-zinc-400 text-sm leading-relaxed mb-5 max-w-lg">
-                Your artist page is live. Upload your first release to start selling — your stats will appear here once fans find you.
+                Your artist page is live. Upload your first release to start selling - your stats will appear here once fans find you.
               </p>
               <a href="/discography" className="inline-flex items-center gap-2 bg-orange-600 text-black font-bold text-sm px-5 py-3 rounded-xl hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">
                 + Upload your first release
@@ -1077,7 +1079,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                 <tbody>
                   {payouts.map((p: any) => (
                     <tr key={p.id} className="border-t border-zinc-800/60">
-                      <td className="py-3 text-zinc-400">{p.arrival_date ? new Date(p.arrival_date).toLocaleDateString() : '—'}</td>
+                      <td className="py-3 text-zinc-400">{p.arrival_date ? new Date(p.arrival_date).toLocaleDateString() : '-'}</td>
                       <td className="py-3 font-bold">{pence(p.amount_pence)}</td>
                       <td className="py-3"><StatusBadge status={p.status} /></td>
                     </tr>
@@ -1573,10 +1575,10 @@ function MobileNavLink({ href, label, icon, active }: { href: string; label: str
 
 function SidebarLink({ href, label, active }: { href: string; label: string; active?: boolean }) {
   return (
-    <a href={href} className={`flex items-center gap-3 p-3.5 font-bold rounded-xl text-sm transition-all
+    <Link href={href} className={`flex items-center gap-3 p-3.5 font-bold rounded-xl text-sm transition-all
       ${active ? 'bg-orange-600/10 text-orange-500' : 'text-zinc-500 hover:bg-orange-600/[0.06] hover:text-white'}`}>
       {label}
-    </a>
+    </Link>
   )
 }
 
@@ -1597,6 +1599,8 @@ function StatusBadge({ status }: { status: string }) {
     pending: 'text-yellow-500 bg-yellow-600/10 border-yellow-600/20',
     in_transit: 'text-blue-500 bg-blue-600/10 border-blue-600/20',
     failed: 'text-red-500 bg-red-600/10 border-red-600/20',
+    refunded: 'text-red-500 bg-red-600/10 border-red-600/20',
+    disputed: 'text-orange-500 bg-orange-600/10 border-orange-600/20',
     canceled: 'text-zinc-500 bg-zinc-800 border-zinc-700',
   }
   const s = styles[status] || styles.pending
@@ -2022,7 +2026,7 @@ function FirstSaleMilestoneModal({ artistName, onClose }: { artistName: string; 
         {/* Milestone image */}
         <img
           src={imageUrl}
-          alt={`${artistName} — First sale on Insound`}
+          alt={`${artistName} - First sale on Insound`}
           className="w-full aspect-[1200/630] object-cover"
         />
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { resolveAccent } from '@/lib/accent'
@@ -14,7 +14,9 @@ import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
 import type { SocialLinks } from '@/lib/verification'
 import { MerchCard } from '@/app/components/ui/MerchCard'
 import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
+import { useBasketStore } from '@/lib/stores/basket'
 import { FollowButton } from '@/app/components/ui/FollowButton'
+import { ReportModal } from '@/app/components/ui/ReportModal'
 import { WallPostCard } from '@/app/[slug]/components/WallPost'
 
 /* ── Types ────────────────────────────────────────────────────── */
@@ -174,6 +176,32 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
   const pause = usePlayerStore(s => s.pause)
   const resume = usePlayerStore(s => s.resume)
   const { mode: viewMode, set: setViewMode } = useViewMode()
+  const [showReport, setShowReport] = useState(false)
+  const { addMany, has: basketHas } = useBasketStore()
+  const [addedAllCount, setAddedAllCount] = useState<number | null>(null)
+
+  const handleAddAll = useCallback(() => {
+    const items = releases.map(r => ({
+      type: 'release' as const,
+      releaseId: r.id,
+      releaseTitle: r.title,
+      releaseSlug: r.slug,
+      artistId: artist.id,
+      artistName: artist.name,
+      artistSlug: artist.slug,
+      coverUrl: r.cover_url,
+      pricePence: r.price_pence,
+      currency: r.currency || 'GBP',
+      accentColour: artist.accent_colour,
+    }))
+    const count = addMany(items)
+    setAddedAllCount(count)
+    setTimeout(() => setAddedAllCount(null), 3000)
+  }, [releases, artist, addMany])
+
+  const allInBasket = releases.length > 0 && releases.every(r =>
+    basketHas({ type: 'release', releaseId: r.id, releaseTitle: r.title, releaseSlug: r.slug, artistId: artist.id, artistName: artist.name, artistSlug: artist.slug, coverUrl: r.cover_url, pricePence: r.price_pence, currency: r.currency || 'GBP', accentColour: artist.accent_colour })
+  )
 
   const handlePlayTrack = useCallback((release: Release, track: Track, trackIndex: number) => {
     const queue: PlayerTrack[] = release.tracks.map(t => ({
@@ -231,7 +259,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
           <img src={artist.banner_url} alt="" role="presentation" className="w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#09090b_100%)]" />
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#09090b] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-insound-bg to-transparent" />
       </div>
 
       <div className="max-w-5xl mx-auto px-6 md:px-12 relative z-10 -mt-20">
@@ -269,16 +297,28 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
             )}
             <FollowButton artistId={artist.id} initialCount={followerCount} />
           </div>
-          <button
-            onClick={handleShare}
-            className="shrink-0 w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-            aria-label="Share"
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-              <path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleShare}
+              className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              aria-label="Share"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowReport(true)}
+              className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors"
+              aria-label="Report profile"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Releases */}
@@ -286,7 +326,32 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
           <section className="pb-32">
             <div className="flex items-center justify-between mb-8">
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Discography</p>
-              <ViewToggle mode={viewMode} onToggle={setViewMode} />
+              <div className="flex items-center gap-3">
+                {releases.length > 1 && (
+                  <span className="relative">
+                    <button
+                      onClick={handleAddAll}
+                      disabled={allInBasket}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${
+                        allInBasket
+                          ? 'ring-1 ring-zinc-700 text-zinc-500 cursor-default'
+                          : 'ring-1 ring-white/[0.12] text-white hover:ring-white/[0.25] hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
+                      </svg>
+                      {allInBasket ? 'All in basket' : 'Add all to basket'}
+                    </button>
+                    {addedAllCount !== null && (
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-zinc-800 border border-zinc-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl z-50">
+                        {addedAllCount === 0 ? 'Already in basket' : `Added ${addedAllCount} release${addedAllCount === 1 ? '' : 's'}`}
+                      </span>
+                    )}
+                  </span>
+                )}
+                <ViewToggle mode={viewMode} onToggle={setViewMode} />
+              </div>
             </div>
 
             {viewMode === 'compact' && (
@@ -298,7 +363,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                       const preorder = isPreorder(release)
 
                       return (
-                        <div key={release.id} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                        <div key={release.id} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
                           <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                             {release.cover_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -351,7 +416,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                             style={{ background: accent }}
                             aria-label="Play"
                           >
-                            <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                            <svg width="14" height="14" fill="black" viewBox="0 0 24 24" className="ml-0.5">
                               <path d="M8 5v14l11-7z" />
                             </svg>
                           </button>
@@ -375,7 +440,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                         const preorder = isPreorder(release)
 
                         return (
-                          <div key={release.id} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+                          <div key={release.id} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
                             <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                               {release.cover_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -420,7 +485,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                               style={{ background: accent }}
                               aria-label="Play"
                             >
-                              <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
+                              <svg width="14" height="14" fill="black" viewBox="0 0 24 24" className="ml-0.5">
                                 <path d="M8 5v14l11-7z" />
                               </svg>
                             </button>
@@ -694,6 +759,15 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
         id="artist-toast"
         className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 opacity-0 translate-y-4 pointer-events-none"
       />
+
+      {showReport && (
+        <ReportModal
+          profileType="artist"
+          artistId={artist.id}
+          profileName={artist.name}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </main>
   )
 }

@@ -220,7 +220,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
 
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         {/* Header + Stats */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
           <div>
             <p className="text-orange-600 text-[10px] font-black uppercase tracking-[0.3em] mb-3">
               Your Collection
@@ -382,7 +382,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
           </div>
         </div>
 
-        {/* Releases — animated view transition */}
+        {/* Releases - animated view transition */}
         <div
           className="transition-all duration-300 ease-in-out"
           style={{ opacity: 1 }}
@@ -584,7 +584,7 @@ function ReleaseRowCompact({
 
   return (
     <div className="rounded-xl">
-      <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-[#141414] transition-colors">
+      <div className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
         {isMultiTrack && (
           <button
             onClick={onToggleExpand}
@@ -683,7 +683,7 @@ function ReleaseRowCompact({
             {release.tracks.map((track, idx) => (
               <div
                 key={track.id}
-                className="group/track flex items-center gap-3 h-10 px-3 rounded-lg hover:bg-[#181818] transition-colors"
+                className="group/track flex items-center gap-3 h-10 px-3 rounded-lg hover:bg-zinc-900/50 transition-colors"
               >
                 <span className="text-[11px] text-zinc-600 font-bold w-5 text-right shrink-0">
                   {track.position}
@@ -720,9 +720,9 @@ function ReleaseRowCompact({
 type AudioFormat = 'wav' | 'flac' | 'mp3'
 
 const FORMAT_LABELS: Record<AudioFormat, string> = {
-  wav: 'WAV — Original Quality',
-  flac: 'FLAC — Lossless Compressed',
-  mp3: 'MP3 — 320kbps',
+  wav: 'WAV - Original Quality',
+  flac: 'FLAC - Lossless Compressed',
+  mp3: 'MP3 - 320kbps',
 }
 
 function FormatSelectorModal({
@@ -796,7 +796,7 @@ function FormatSelectorModal({
 
       showToast(`Downloaded ${release.releaseTitle}`)
     } catch {
-      showToast('Download failed — try again')
+      showToast('Download failed - check your connection and try again')
     } finally {
       setDownloading(false)
       onClose()
@@ -806,11 +806,12 @@ function FormatSelectorModal({
   return (
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
-      role="presentation"
       onClick={onClose}
     >
       <div
         className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6"
+        role="dialog"
+        aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="font-bold text-lg mb-1">{release.releaseTitle}</h3>
@@ -955,7 +956,7 @@ function RedownloadButton({ purchaseId, onSuccess }: { purchaseId: string; onSuc
         onSuccess('Failed to request download link')
       }
     } catch {
-      onSuccess('Something went wrong')
+      onSuccess('Request failed - check your connection')
     }
     setLoading(false)
   }
@@ -986,7 +987,7 @@ function OrderAction({ orderId, action, label }: { orderId: string; action: stri
       const data = await res.json()
       setResult(data.message || (res.ok ? 'Done' : data.error || 'Failed'))
     } catch {
-      setResult('Something went wrong')
+      setResult('Request failed - check your connection')
     }
     setLoading(false)
   }

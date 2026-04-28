@@ -44,7 +44,7 @@ export function SalesClient() {
   }, [])
 
   return (
-    <div className="min-h-screen flex font-display text-zinc-100" style={{ backgroundColor: '#09090b' }}>
+    <div className="min-h-screen flex font-display text-zinc-100 bg-insound-bg">
       {/* Sidebar */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
         <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter mb-12 block hover:text-orange-500 transition-colors">insound.</Link>
@@ -94,7 +94,7 @@ export function SalesClient() {
           ) : !data?.onboarded ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
               <div className="w-16 h-16 bg-orange-600/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <svg width="28" height="28" fill="none" stroke="#F56D00" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-orange-600"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
               </div>
               <h2 className="font-black text-xl mb-2">Set up payouts</h2>
               <p className="text-zinc-400 text-sm mb-6 max-w-sm mx-auto">Complete your Stripe account setup to start receiving payments from fans.</p>

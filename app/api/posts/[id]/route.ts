@@ -31,6 +31,7 @@ export async function DELETE(
     .from('artist_posts')
     .delete()
     .eq('id', id)
+    .eq('artist_id', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

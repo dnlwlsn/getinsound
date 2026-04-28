@@ -129,8 +129,16 @@ export function NotificationsClient({ userId }: Props) {
 
         {/* List */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-zinc-700 border-t-orange-500 rounded-full animate-spin" />
+          <div className="space-y-1 py-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex gap-4 px-4 py-4 rounded-xl">
+                <div className="w-6 h-6 rounded bg-zinc-800 animate-pulse shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-zinc-800 rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-zinc-800/60 rounded animate-pulse w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-600">

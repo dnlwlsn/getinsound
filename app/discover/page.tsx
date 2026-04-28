@@ -4,13 +4,13 @@ import DiscoverClient from './DiscoverClient'
 
 
 export const metadata: Metadata = {
-  title: 'Discover | insound.',
+  title: 'For You | insound.',
   description:
-    'Discover new music from independent artists. Hand-picked selections, new releases, and artist recommendations — all on insound.',
+    'Music picked for you. Hand-picked selections, new releases, and artist recommendations - all on insound.',
   openGraph: {
-    title: 'Discover | insound.',
+    title: 'For You | insound.',
     description:
-      'Discover new music from independent artists. Hand-picked selections, new releases, and artist recommendations.',
+      'Music picked for you. Hand-picked selections, new releases, and artist recommendations.',
     type: 'website',
   },
 }

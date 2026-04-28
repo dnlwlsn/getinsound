@@ -7,20 +7,28 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 });
 
 const SITE_URL = Deno.env.get('SITE_URL') || 'https://getinsound.com';
-const corsHeaders = {
-  'Access-Control-Allow-Origin': SITE_URL,
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+const ALLOWED_ORIGINS = [SITE_URL, 'http://localhost:3000'];
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : SITE_URL;
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -79,7 +87,7 @@ Deno.serve(async (req) => {
     const postageAmount = merch.postage;
     const applicationFee = Math.round((itemAmount * STANDARD_FEE_BPS) / 10000);
 
-    const currency = (fanCurrency || merch.currency || 'GBP').toLowerCase();
+    const currency = (merch.currency || 'GBP').toLowerCase();
     const photos = (merch.photos as string[]) || [];
     const itemName = variant ? `${merch.name} (${variant})` : merch.name;
 

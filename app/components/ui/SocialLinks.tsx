@@ -36,11 +36,11 @@ function SocialIcon({ platform, url, verified }: { platform: SocialPlatform; url
         rel="noopener noreferrer"
         className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] hover:ring-white/[0.16] hover:bg-white/[0.08] transition-all"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill={verified ? '#999' : '#52525b'}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className={verified ? 'text-zinc-400' : 'text-zinc-600'}>
           <path d={getSocialIcon(platform)} />
         </svg>
         {verified && (
-          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-600 border-2 border-[#09090b] flex items-center justify-center">
+          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-600 border-2 border-insound-bg flex items-center justify-center">
             <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 13l4 4L19 7" />
             </svg>

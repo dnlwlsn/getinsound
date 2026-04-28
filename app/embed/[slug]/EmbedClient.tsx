@@ -118,7 +118,7 @@ export function EmbedClient({ release, artist, tracks }: Props) {
   }, [playingTrackId, playTrack, tracks])
 
   return (
-    <div className="w-full max-w-[400px] h-[200px] bg-[#09090b] rounded-xl overflow-hidden flex font-[var(--font-montserrat)] relative border border-zinc-800/60">
+    <div className="w-full max-w-[400px] h-[200px] bg-insound-bg rounded-xl overflow-hidden flex font-[var(--font-montserrat)] relative border border-zinc-800/60">
       {/* Album art + play overlay */}
       <div className="relative w-[120px] h-[200px] shrink-0">
         <img

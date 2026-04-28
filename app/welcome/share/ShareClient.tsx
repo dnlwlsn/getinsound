@@ -26,7 +26,7 @@ export function ShareClient({ referralCode }: Props) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#09090b' }}>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-insound-bg">
       <div className="w-full max-w-md">
         <div
           className="rounded-3xl p-8 relative overflow-hidden"

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 interface UserProfile {
   isArtist: boolean
   artistSlug: string | null
+  fanUsername: string | null
 }
 
 export function ProfileMenu() {
@@ -16,19 +17,17 @@ export function ProfileMenu() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
-      supabase
-        .from('artists')
-        .select('slug')
-        .eq('id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          setProfile({
-            isArtist: !!data,
-            artistSlug: data?.slug ?? null,
-          })
-        })
+      const [{ data: artist }, { data: fan }] = await Promise.all([
+        supabase.from('artists').select('slug').eq('id', user.id).maybeSingle(),
+        supabase.from('fan_profiles').select('username').eq('id', user.id).maybeSingle(),
+      ])
+      setProfile({
+        isArtist: !!artist,
+        artistSlug: artist?.slug ?? null,
+        fanUsername: fan?.username ?? null,
+      })
     })
   }, [])
 
@@ -68,17 +67,29 @@ export function ProfileMenu() {
         <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl py-1.5 z-[60]">
           {profile.isArtist ? (
             <>
-              <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Dashboard</MenuLink>
-              <MenuLink href="/library" onClick={() => setOpen(false)}>My Collection</MenuLink>
+              <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Artist Settings</MenuLink>
               <MenuLink href={`/${profile.artistSlug}`} onClick={() => setOpen(false)} external>
-                View my artist page
+                View My Artist Page
               </MenuLink>
-              <MenuLink href="/settings" onClick={() => setOpen(false)}>Fan Profile</MenuLink>
+              <div className="mx-1.5 my-1 border-t border-zinc-800" />
+              <MenuLink href="/settings" onClick={() => setOpen(false)}>Fan Settings</MenuLink>
+              {profile.fanUsername && (
+                <MenuLink href={`/@${profile.fanUsername}`} onClick={() => setOpen(false)}>
+                  View My Fan Page
+                </MenuLink>
+              )}
+              <div className="mx-1.5 my-1 border-t border-zinc-800" />
+              <MenuLink href="/library" onClick={() => setOpen(false)}>My Collection</MenuLink>
             </>
           ) : (
             <>
               <MenuLink href="/library" onClick={() => setOpen(false)}>My Collection</MenuLink>
               <MenuLink href="/settings" onClick={() => setOpen(false)}>Settings</MenuLink>
+              {profile.fanUsername && (
+                <MenuLink href={`/@${profile.fanUsername}`} onClick={() => setOpen(false)}>
+                  View My Fan Page
+                </MenuLink>
+              )}
               <div className="mx-1.5 my-1 border-t border-zinc-800" />
               <MenuLink href="/become-an-artist" onClick={() => setOpen(false)} highlight>
                 Start selling your music

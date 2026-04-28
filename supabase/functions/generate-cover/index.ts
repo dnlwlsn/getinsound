@@ -175,6 +175,20 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // Verify the caller is the artist or a DB webhook (service role)
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && !authHeader.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)) {
+      const anonClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user } } = await anonClient.auth.getUser();
+      if (!user || user.id !== artistId) {
+        return json({ error: 'Unauthorized' }, 401);
+      }
+    }
+
     // Check the release exists and has no cover
     const { data: release, error: relErr } = await admin
       .from('releases')

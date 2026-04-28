@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createSession, setSessionCookie } from '@/lib/session'
+import { createTransferCode } from '@/lib/auth-transfer'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
@@ -23,7 +24,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (user) {
-    const response = NextResponse.redirect(`${origin}${next}`)
+    const transferCode = await createTransferCode(user.id)
+
+    const redirectUrl = new URL(`${origin}/auth/transfer`)
+    redirectUrl.searchParams.set('code', transferCode)
+    redirectUrl.searchParams.set('next', next)
+
+    const response = NextResponse.redirect(redirectUrl)
 
     const existingSessionId = request.cookies.get('session_id')?.value
     let sessionId = existingSessionId

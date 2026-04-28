@@ -56,14 +56,14 @@ export function SoundTagSelector({ selected, onChange }: Props) {
                 px-3 py-1.5 rounded-full text-xs font-bold transition-all
                 border
                 ${isSelected
-                  ? 'bg-[#F56D00]/15 border-[#F56D00] text-[#F56D00]'
+                  ? 'bg-orange-600/15 border-orange-600 text-orange-600'
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
                 }
                 ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >
               {sound}
-              {isSelected && <span className="ml-1.5 text-[#F56D00]">✓</span>}
+              {isSelected && <span className="ml-1.5 text-orange-600">✓</span>}
             </button>
           )
         })}
@@ -75,7 +75,7 @@ export function SoundTagSelector({ selected, onChange }: Props) {
               key={tag}
               type="button"
               onClick={() => toggle(tag)}
-              className="px-3 py-1.5 rounded-full text-xs font-bold transition-all border bg-[#F56D00]/15 border-[#F56D00] text-[#F56D00] cursor-pointer"
+              className="px-3 py-1.5 rounded-full text-xs font-bold transition-all border bg-orange-600/15 border-orange-600 text-orange-600 cursor-pointer"
             >
               {tag}
               <span className="ml-1.5">✓</span>

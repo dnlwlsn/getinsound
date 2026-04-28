@@ -44,6 +44,7 @@ interface Artist {
 
 interface Props {
   artist: Artist
+  stripeOnboarded: boolean
   releases: Release[]
 }
 
@@ -76,7 +77,7 @@ function formatDate(iso: string) {
 
 /* ── Component ─────────────────────────────────────────────────── */
 
-export function DiscographyClient({ artist, releases: initialReleases }: Props) {
+export function DiscographyClient({ artist, stripeOnboarded, releases: initialReleases }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -87,6 +88,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
 
   const [releases, setReleases] = useState(initialReleases)
   const [showModal, setShowModal] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
 
   // ── Create release form state ──────────────────────────────
   const [title, setTitle] = useState('')
@@ -187,9 +189,17 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
     }
 
     const pricePence = Math.round(parseFloat(pricePounds) * 100)
-    if (isNaN(pricePence) || pricePence < 200) {
-      setError(`Minimum price is ${formatPriceUtil(2, 'GBP')}.`)
+    if (isNaN(pricePence) || pricePence < 300) {
+      setError(`Minimum price is ${formatPriceUtil(3, 'GBP')}.`)
       return
+    }
+
+    if (pwyw) {
+      const pwywMinPence = Math.round(parseFloat(pwywMinPounds) * 100)
+      if (isNaN(pwywMinPence) || pwywMinPence < 300) {
+        setError(`PWYW minimum must be at least ${formatPriceUtil(3, 'GBP')}.`)
+        return
+      }
     }
 
     if (pendingTracks.length === 0) {
@@ -308,15 +318,25 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
         })))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(err instanceof Error ? err.message : 'We couldn\'t save your release - please try again.')
       setSaving(false)
     }
   }, [artist.id, slug, title, type, pricePounds, pwyw, pwywMinPounds, preorder, releaseDate, soundTags, coverFile, pendingTracks, supabase, router])
 
   // ── Toggle publish ──────────────────────────────────────────
   async function togglePublish(releaseId: string, current: boolean) {
-    const { error } = await supabase.from('releases').update({ published: !current }).eq('id', releaseId)
-    if (!error) setReleases(prev => prev.map(r => r.id === releaseId ? { ...r, published: !current } : r))
+    setPublishError(null)
+    const res = await fetch('/api/releases/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ release_id: releaseId, published: !current }),
+    })
+    if (res.ok) {
+      setReleases(prev => prev.map(r => r.id === releaseId ? { ...r, published: !current } : r))
+    } else {
+      const body = await res.json().catch(() => ({}))
+      setPublishError(body.error || 'Failed to update publish status.')
+    }
   }
 
   // ── Delete release ─────────────────────────────────────────
@@ -346,7 +366,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
   const totalTracks = releases.reduce((s, r) => s + r.tracks.length, 0)
 
   return (
-    <div className="min-h-screen flex font-display text-zinc-100" style={{ backgroundColor: '#09090b' }}>
+    <div className="min-h-screen flex font-display text-zinc-100 bg-insound-bg">
       {/* Sidebar */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
         <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter mb-12 block hover:text-orange-500 transition-colors">insound.</Link>
@@ -388,6 +408,22 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
             <StatCard label="Drafts" value={String(releases.length - liveCount)} />
             <StatCard label="Tracks" value={String(totalTracks)} />
           </div>
+
+          {!stripeOnboarded && (
+            <div className="bg-orange-600/10 border border-orange-600/30 rounded-2xl px-5 py-4 mb-4 flex items-start gap-3">
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="shrink-0 mt-0.5 text-orange-600"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <div>
+                <p className="text-sm font-bold text-orange-500">Connect Stripe to publish</p>
+                <p className="text-xs text-zinc-400 mt-0.5">You can upload and prepare releases, but you&apos;ll need to connect your Stripe account before publishing. <Link href="/dashboard" className="text-orange-500 underline hover:text-orange-400">Go to Dashboard → Stripe Connect</Link></p>
+              </div>
+            </div>
+          )}
+
+          {publishError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-3 mb-4">
+              <p className="text-sm font-bold text-red-400">{publishError}</p>
+            </div>
+          )}
 
           {/* Releases table */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
@@ -563,7 +599,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                       <input
                         type="number"
                         step="0.01"
-                        min="2.00"
+                        min="3.00"
                         required
                         value={pricePounds}
                         onChange={(e) => setPricePounds(e.target.value)}
@@ -578,7 +614,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                       </button>
                     </div>
                     <p className="text-[10px] text-zinc-600 mt-1.5">
-                      {pwyw ? 'Suggested price shown to fans.' : 'Fixed price fans pay to download.'} Min {formatPriceUtil(2, 'GBP')}.
+                      {pwyw ? 'Suggested price shown to fans.' : 'Fixed price fans pay to download.'} Min {formatPriceUtil(3, 'GBP')}.
                       {type === 'album' && ' Most albums sell between £5–£10.'}
                       {type === 'ep' && ' Most EPs sell between £3–£6.'}
                     </p>
@@ -598,7 +634,7 @@ export function DiscographyClient({ artist, releases: initialReleases }: Props) 
                     <input
                       type="number"
                       step="0.01"
-                      min="2.00"
+                      min="3.00"
                       value={pwywMinPounds}
                       onChange={(e) => setPwywMinPounds(e.target.value)}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white focus:border-orange-600 outline-none transition-colors"

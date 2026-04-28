@@ -17,13 +17,15 @@ export default async function AdminPage() {
 
   const links = [
     { href: '/admin/founding-artists', label: 'Founding Artists', description: 'View programme status, spots filled, pause toggle' },
+    { href: '/admin/badges', label: 'Badges', description: 'Award Beta Tester and Founder badges' },
     { href: '/admin/broadcast', label: 'Broadcast', description: 'Send emails to artists and fans' },
     { href: '/admin/insound-selects', label: 'Insound Selects', description: 'Curate featured releases' },
     { href: '/admin/flags', label: 'Security Flags', description: 'Review suspicious activity flags' },
+    { href: '/admin/reports', label: 'Profile Reports', description: 'Review user-submitted profile reports' },
   ]
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 p-8">
+    <div className="min-h-screen bg-insound-bg text-zinc-100 p-8">
       <div className="max-w-5xl mx-auto space-y-10">
         <div>
           <a href="/" className="text-2xl font-display font-bold text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</a>

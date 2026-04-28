@@ -15,7 +15,7 @@ export function PlayerBar() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, isMuted,
     audioUrl, isPreview, previewDuration, isExpanded,
-    pause, resume, next, previous,
+    pause, resume, next, previous, stop,
     setVolume, toggleMute, setCurrentTime, setDuration, setAudioUrl,
     setIsPlaying, toggleExpanded,
   } = usePlayerStore()
@@ -71,7 +71,14 @@ export function PlayerBar() {
   // Sync audio element with state
   useEffect(() => {
     const audio = audioRef.current
-    if (!audio || !audioUrl) return
+    if (!audio) return
+
+    if (!audioUrl) {
+      audio.pause()
+      audio.removeAttribute('src')
+      audio.load()
+      return
+    }
 
     if (audio.src !== audioUrl) {
       audio.src = audioUrl
@@ -358,11 +365,11 @@ export function PlayerBar() {
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#09090b">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="black">
                       <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
                     </svg>
                   ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#09090b">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="black">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   )}
@@ -434,6 +441,17 @@ export function PlayerBar() {
                 aria-label="Volume"
               />
             </div>
+
+            <button
+              onClick={stop}
+              className="text-zinc-500 hover:text-white transition-colors ml-1"
+              aria-label="Close player"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -538,11 +556,11 @@ export function PlayerBar() {
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#09090b">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="black">
                         <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
                       </svg>
                     ) : (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#09090b">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="black">
                         <path d="M8 5v14l11-7z" />
                       </svg>
                     )}
@@ -600,6 +618,19 @@ export function PlayerBar() {
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 )}
+              </button>
+              <button
+                className="flex-shrink-0 text-zinc-500 hover:text-white transition-colors"
+                aria-label="Close player"
+                onClick={e => {
+                  e.stopPropagation()
+                  stop()
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
           )}

@@ -20,17 +20,17 @@ export function VerifiedTick({ size = 16 }: { size?: number }) {
       >
         <path
           d="M9 12l2 2 4-4"
-          stroke="#999"
+          stroke="currentColor" className="text-zinc-400"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx="12" cy="12" r="10" stroke="#999" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="10" stroke="currentColor" className="text-zinc-400" strokeWidth="1.5" />
       </svg>
 
       {show && (
         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-200 font-medium whitespace-nowrap z-50 shadow-xl pointer-events-none">
-          Verified — identity-verified via Stripe, independent and unsigned.
+          Verified - identity-verified via Stripe, independent and unsigned.
           <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-zinc-800" />
         </span>
       )}

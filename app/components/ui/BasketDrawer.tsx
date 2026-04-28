@@ -117,19 +117,41 @@ export function BasketDrawer({ onClose }: Props) {
       const refCookie = document.cookie.split('; ').find(c => c.startsWith('insound_ref='))
       const refCode = refCookie?.split('=')[1] || undefined
 
-      const { data, error } = await supabase.functions.invoke('checkout-basket-create', {
-        body: {
-          items: items.map(i =>
-            i.type === 'merch'
-              ? { type: 'merch', merch_id: i.merchId, variant: i.variant ?? undefined }
-              : { type: 'release', release_id: i.releaseId, custom_amount: i.customAmountPence }
-          ),
-          fan_currency: currency,
-          origin: window.location.origin,
-          ref_code: refCode,
-        },
-      })
-      if (error) throw error
+      const { data: { session } } = await supabase.auth.getSession()
+      const requestBody = {
+        items: items.map(i =>
+          i.type === 'merch'
+            ? { type: 'merch', merch_id: i.merchId, variant: i.variant ?? undefined }
+            : { type: 'release', release_id: i.releaseId, custom_amount: i.customAmountPence }
+        ),
+        fan_currency: currency,
+        origin: window.location.origin,
+        ref_code: refCode,
+      }
+
+      let data: any
+      if (session?.access_token) {
+        const res = await supabase.functions.invoke('checkout-basket-create', { body: requestBody })
+        if (res.error) throw res.error
+        data = res.data
+      } else {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        const res = await fetch(`${supabaseUrl}/functions/v1/checkout-basket-create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify(requestBody),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || `Checkout failed (${res.status})`)
+        }
+        data = await res.json()
+      }
       if (!data?.sessions || data.sessions.length === 0) throw new Error('No checkout session returned')
 
       // Use the first session (single-artist baskets are most common)
@@ -372,7 +394,7 @@ export function BasketDrawer({ onClose }: Props) {
         {(stage === 'confirmed' || stage === 'consent' || stage === 'download') && (
           <div className="p-6 md:p-8 mt-8">
             <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
-              <svg width="24" height="24" fill="none" stroke="#F56D00" strokeWidth="2.5" viewBox="0 0 24 24">
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -474,18 +496,18 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
       {/* Fee breakdown */}
       <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 mb-5 space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-zinc-500 font-medium">{artistLabel}</span>
-          <span className="text-[11px] text-white font-bold">
-            {formatPrice(convertPrice(artistGetsPence / 100, baseCurrency, currency))}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
           <span className="text-[11px] text-zinc-500 font-medium">
-            Insound fee (10%)
-            <span className="text-zinc-600 ml-1">(incl. {formatPrice(convertPrice(fees.stripeFee / 100, baseCurrency, currency))} Stripe processing)</span>
+            10% Insound fee
+            <span className="text-zinc-600 ml-1">(incl. {formatPrice(convertPrice(fees.stripeFee / 100, baseCurrency, currency))} Stripe fee)</span>
           </span>
           <span className="text-[11px] text-zinc-400 font-medium">
             {formatPrice(convertPrice(fees.insoundFee / 100, baseCurrency, currency))}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-zinc-500 font-medium">{artistLabel}</span>
+          <span className="text-[11px] text-white font-bold">
+            {formatPrice(convertPrice(artistGetsPence / 100, baseCurrency, currency))}
           </span>
         </div>
       </div>

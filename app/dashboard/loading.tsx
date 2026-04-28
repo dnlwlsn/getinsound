@@ -1,6 +1,6 @@
 export default function DashboardLoading() {
   return (
-    <div className="min-h-screen flex bg-[#09090b] text-zinc-100">
+    <div className="min-h-screen flex bg-insound-bg text-zinc-100">
       {/* Sidebar */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
         <div className="flex items-center justify-between mb-12">

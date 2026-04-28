@@ -11,7 +11,7 @@ export default function UnsubscribePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: '#09090b' }}>
+        <div className="min-h-screen flex items-center justify-center bg-insound-bg">
           <p className="text-zinc-400 text-sm">Loading...</p>
         </div>
       }

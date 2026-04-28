@@ -124,7 +124,7 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
 
       router.push('/dashboard')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong.'
+      const message = err instanceof Error ? err.message : 'We couldn\'t complete your artist setup - please try again.'
       setError(message)
       setBusy(false)
     }

@@ -77,7 +77,7 @@ export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
                   transition-all duration-150 ease-out cursor-pointer
                   border
                   ${isSelected
-                    ? 'bg-[#F56D00]/15 border-[#F56D00] text-[#F56D00] scale-[1.02]'
+                    ? 'bg-orange-600/15 border-orange-600 text-orange-600 scale-[1.02]'
                     : 'bg-white/[0.03] border-white/[0.08] text-white hover:border-white/[0.2] hover:bg-white/[0.06]'
                   }
                   ${atMax ? 'opacity-40 cursor-not-allowed' : ''}
@@ -86,7 +86,7 @@ export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
               >
                 {genre}
                 {isSelected && (
-                  <span className="absolute top-1.5 right-2 text-[#F56D00] text-xs">✓</span>
+                  <span className="absolute top-1.5 right-2 text-orange-600 text-xs">✓</span>
                 )}
               </button>
             )
@@ -111,7 +111,7 @@ export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
               w-full px-8 py-3.5 rounded-full font-semibold text-sm
               transition-all duration-150 ease-out
               ${canSubmit
-                ? 'bg-[#F56D00] text-[#09090b] hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]'
+                ? 'bg-orange-600 text-insound-bg hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]'
                 : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
               }
               disabled:opacity-50

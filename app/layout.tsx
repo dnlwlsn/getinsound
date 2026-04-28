@@ -14,16 +14,16 @@ import './globals.css'
 
 const montserrat = Montserrat({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
+  weight: ['400', '600', '700', '900'],
   variable: '--font-montserrat',
 })
 
 export const metadata: Metadata = {
-  title: 'insound. — Music That Pays Artists',
-  description: 'The music platform that only takes 10%. Artists keep 90% — we absorb all processing fees. No labels, no middlemen.',
+  title: 'insound. - Music That Pays Artists',
+  description: 'The music platform that only takes 10%. Artists keep 90% - we absorb all processing fees. No labels, no middlemen.',
   openGraph: {
-    title: 'Insound — Music That Pays Artists',
-    description: 'Upload your music. We only take 10% — and absorb all processing fees. Artists keep 90%. Own your masters. No monthly fee.',
+    title: 'Insound - Music That Pays Artists',
+    description: 'Upload your music. We only take 10% - and absorb all processing fees. Artists keep 90%. Own your masters. No monthly fee.',
     url: 'https://getinsound.com',
     siteName: 'Insound',
     type: 'website',
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Insound — Music That Pays Artists',
-    description: 'Upload your music. We only take 10% — and absorb all processing fees. Artists keep 90%. Own your masters. No monthly fee.',
+    title: 'Insound - Music That Pays Artists',
+    description: 'Upload your music. We only take 10% - and absorb all processing fees. Artists keep 90%. Own your masters. No monthly fee.',
     images: ['https://getinsound.com/og-image.png'],
   },
   icons: { icon: '/favicon.svg' },

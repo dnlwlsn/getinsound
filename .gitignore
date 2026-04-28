@@ -12,6 +12,7 @@ out/
 
 # Claude Code
 .claude/
+.superpowers/
 docs/
 
 # Wrangler

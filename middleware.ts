@@ -2,8 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getCurrencyForCountry } from './app/lib/currency'
 
-const ARTIST_ROUTES = ['/dashboard', '/release']
-const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/discover', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
+const ARTIST_ROUTES = ['/dashboard']
+const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/discover', '/release', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
 const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/become-an-artist', '/api']
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30
@@ -77,8 +77,8 @@ export async function middleware(request: NextRequest) {
   // ── CSRF protection for state-changing API requests ──
   if (path.startsWith('/api') && request.method !== 'GET' && request.method !== 'HEAD') {
     const origin = request.headers.get('origin')
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-    if (origin && siteUrl && !origin.startsWith(siteUrl)) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
+    if (origin && !origin.startsWith(siteUrl)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
   }

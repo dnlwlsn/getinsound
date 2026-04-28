@@ -106,3 +106,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unknown type' }, { status: 400 })
   }
 }
+
+const DELETABLE: Record<string, string> = {
+  artists: 'artists',
+  fans: 'fan_profiles',
+  releases: 'releases',
+  waitlist: 'waitlist',
+}
+
+export async function DELETE(req: NextRequest) {
+  const admin = await requireAdminApi()
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const { type, id } = await req.json().catch(() => ({} as any))
+  if (!type || !id) return NextResponse.json({ error: 'type and id required' }, { status: 400 })
+
+  const table = DELETABLE[type]
+  if (!table) return NextResponse.json({ error: 'Cannot delete this type' }, { status: 400 })
+
+  const supabase = getAdmin()
+  const { error } = await supabase.from(table).delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

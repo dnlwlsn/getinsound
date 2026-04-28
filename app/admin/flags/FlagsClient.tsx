@@ -20,13 +20,47 @@ const FLAG_LABELS: Record<string, string> = {
   chargeback_volume: 'Chargeback Volume',
   rapid_transactions: 'Rapid Transactions',
   failed_payouts: 'Failed Payouts',
+  manual_review: 'Manual Review',
 }
+
+const MANUAL_FLAG_TYPES = [
+  { value: 'manual_review', label: 'Manual Review' },
+  { value: 'high_chargeback_rate', label: 'High Chargeback Rate' },
+  { value: 'rapid_transactions', label: 'Rapid Transactions' },
+  { value: 'failed_payouts', label: 'Failed Payouts' },
+]
 
 export function FlagsClient() {
   const [flags, setFlags] = useState<Flag[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unreviewed'>('unreviewed')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [artistName, setArtistName] = useState('')
+  const [flagType, setFlagType] = useState('manual_review')
+  const [notes, setNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
+
+  async function raiseFlag() {
+    if (!artistName.trim()) return
+    setSubmitting(true)
+    setMessage('')
+    const res = await fetch('/api/admin/flags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artist_name: artistName.trim(), flag_type: flagType, notes: notes.trim() }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setMessage(`Flag raised for ${data.artist_name}`)
+      setArtistName('')
+      setNotes('')
+      window.location.reload()
+    } else {
+      setMessage(data.error || 'Failed to raise flag')
+    }
+    setSubmitting(false)
+  }
 
   useEffect(() => {
     fetch('/api/admin/flags')
@@ -80,6 +114,24 @@ export function FlagsClient() {
               All
             </button>
           </div>
+        </div>
+
+        {/* Raise flag manually */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mb-6">
+          <h2 className="text-sm font-bold mb-3">Raise Flag Manually</h2>
+          <div className="flex flex-col sm:flex-row gap-2 mb-2">
+            <input type="text" placeholder="Artist name or slug" value={artistName} onChange={e => setArtistName(e.target.value)} className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-orange-600" />
+            <select value={flagType} onChange={e => setFlagType(e.target.value)} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-orange-600 cursor-pointer">
+              {MANUAL_FLAG_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <input type="text" placeholder="Notes (optional)" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') raiseFlag() }} className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-orange-600" />
+            <button onClick={raiseFlag} disabled={submitting || !artistName.trim()} className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-sm px-5 py-2 rounded-lg transition-colors">
+              {submitting ? '...' : 'Raise'}
+            </button>
+          </div>
+          {message && <p className={`text-sm mt-2 font-medium ${message.startsWith('Flag') ? 'text-green-400' : 'text-red-400'}`}>{message}</p>}
         </div>
 
         {loading ? (

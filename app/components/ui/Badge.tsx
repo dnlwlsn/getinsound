@@ -2,18 +2,31 @@
 
 import { useState } from 'react'
 
-type BadgeType = 'founding_artist' | 'founding_fan' | 'first_sale'
+type BadgeType = 'founding_artist' | 'founding_fan' | 'first_sale' | 'beta_tester' | 'founder'
+
+/** Matches Tailwind theme orange-600 */
+const ORANGE_600 = '#F56D00'
 
 const CONFIG: Record<BadgeType, { label: string; color: string; tooltip: string }> = {
+  founder: {
+    label: 'Founder',
+    color: ORANGE_600,
+    tooltip: 'Founder of Insound',
+  },
   founding_artist: {
     label: 'Founding Artist',
-    color: '#F56D00',
-    tooltip: 'Founding Artist — one of the first 50',
+    color: ORANGE_600,
+    tooltip: 'Founding Artist - one of the first 50',
   },
   founding_fan: {
     label: 'Founding Fan',
-    color: '#F56D00',
-    tooltip: 'Founding Fan — one of the first 1,000 supporters',
+    color: ORANGE_600,
+    tooltip: 'Founding Fan - one of the first 1,000 supporters',
+  },
+  beta_tester: {
+    label: 'Beta Tester',
+    color: '#A78BFA',
+    tooltip: 'Helped test Insound during beta',
   },
   first_sale: {
     label: 'First Sale',

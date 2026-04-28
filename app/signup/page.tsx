@@ -5,7 +5,7 @@ import { SignupClient } from './SignupClient'
 
 export const metadata: Metadata = {
   title: 'Join Insound',
-  description: 'Sign up to Insound — the music platform that pays artists.',
+  description: 'Sign up to Insound - the music platform that pays artists.',
 }
 
 export default async function SignupPage() {

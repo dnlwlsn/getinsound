@@ -40,8 +40,8 @@ function createWaveformSvg(size, padding = 0) {
 const configs = [
   { name: 'icon-192.png', size: 192, padding: 20 },
   { name: 'icon-512.png', size: 512, padding: 50 },
-  { name: 'icon-192-maskable.png', size: 192, padding: 192 * 0.1 },
-  { name: 'icon-512-maskable.png', size: 512, padding: 512 * 0.1 },
+  { name: 'icon-192-maskable.png', size: 192, padding: 192 * 0.2 },
+  { name: 'icon-512-maskable.png', size: 512, padding: 512 * 0.2 },
   { name: 'apple-touch-icon.png', size: 180, padding: 18 },
 ]
 

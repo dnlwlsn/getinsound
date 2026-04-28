@@ -4,7 +4,7 @@ import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Insound',
-  description: 'Insound Privacy Policy — how we collect, use, and protect your personal data under UK GDPR.',
+  description: 'Insound Privacy Policy - how we collect, use, and protect your personal data under UK GDPR.',
 }
 
 export default function PrivacyPage() {
