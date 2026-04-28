@@ -14,7 +14,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function ExplorePage() {
+export default async function ExplorePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tag?: string }>
+}) {
+  const { tag } = await searchParams
   const supabase = await createClient()
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -50,5 +55,5 @@ export default async function ExplorePage() {
     }
   })
 
-  return <ExploreClient releases={mapped} />
+  return <ExploreClient releases={mapped} initialTag={tag ?? null} />
 }

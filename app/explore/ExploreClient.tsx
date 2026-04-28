@@ -30,6 +30,7 @@ interface ExploreRelease {
 
 interface ExploreClientProps {
   releases: ExploreRelease[]
+  initialTag?: string | null
 }
 
 const PAGE_SIZE = 20
@@ -81,9 +82,9 @@ function priceGbp(r: ExploreRelease) {
 
 /* ── Main Component ───────────────────────────────────────────── */
 
-export default function ExploreClient({ releases }: ExploreClientProps) {
+export default function ExploreClient({ releases, initialTag }: ExploreClientProps) {
   const { currency, formatPrice, convertPrice } = useCurrency()
-  const [currentGenre, setCurrentGenre] = useState('All')
+  const [currentGenre, setCurrentGenre] = useState(initialTag || 'All')
   const [currentReleaseType, setCurrentReleaseType] = useState<'albums' | 'all'>('all')
   const [currentSort, setCurrentSort] = useState('newest')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
