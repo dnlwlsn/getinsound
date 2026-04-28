@@ -148,9 +148,11 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     const name = editName.trim()
     if (!name) return
     setProfileSaving(true)
-    const { error } = await supabase.from('artists').update({ name, bio: editBio.trim() || null }).eq('id', artist.id)
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const { error } = await supabase.from('artists').update({ name, slug, bio: editBio.trim() || null }).eq('id', artist.id)
     if (!error) {
       artist.name = name
+      artist.slug = slug
       artist.bio = editBio.trim() || null
       setEditingProfile(false)
     }
