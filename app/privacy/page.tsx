@@ -124,7 +124,7 @@ export default function PrivacyPage() {
           <p>We do not use Google Analytics, Facebook Pixel, or any third-party advertising or tracking technology.</p>
 
           <h2>9. Children&apos;s privacy</h2>
-          <p>Insound is not directed at children under 13. We do not knowingly collect personal data from anyone under 13. If you believe a child has provided us with personal data, please contact us and we will delete it promptly.</p>
+          <p>Insound is for users aged 18 and over. We do not knowingly collect personal data from anyone under 18. If you believe a person under 18 has provided us with personal data, please contact us and we will delete it promptly.</p>
 
           <h2>10. Changes to this policy</h2>
           <p>If we make material changes to this policy, we will:</p>

@@ -36,7 +36,7 @@ export default function TermsPage() {
 
           <h2>2. Acceptance of Terms</h2>
           <p>By creating an Artist account the Artist confirms that they have read, understood, and agree to these Terms of Service, the <Link href="/privacy">Privacy Policy</Link>, and the <Link href="/ai-policy">AI Content Policy</Link>.</p>
-          <p>By purchasing music or creating a Fan account the Fan agrees to these terms as they apply to Fans. Fans must be at least 16 years old to create an account or make a purchase. If a Fan is under 18, they confirm that a parent or legal guardian has consented to their use of the Platform and agrees to these terms on their behalf.</p>
+          <p>By purchasing music or creating a Fan account the Fan agrees to these terms as they apply to Fans. Fans must be at least 18 years old to create an account or make a purchase. By using the Platform, the Fan confirms that they are at least 18 years of age.</p>
           <p>The Platform may update these terms. If the Platform makes material changes, it will notify registered users by email at least 14 days before the changes take effect. Continued use after that date constitutes acceptance.</p>
 
           <h2>3. Artist Eligibility</h2>
@@ -46,7 +46,7 @@ export default function TermsPage() {
           <ul>
             <li>The Artist controls the rights needed to distribute and sell the music uploaded to the Platform.</li>
             <li>The Artist is not signing up on behalf of a record label, management company, or any entity with an exclusive commercial music distribution agreement, unless Insound has given written permission.</li>
-            <li>The Artist is at least 18 years old, or has the consent of a parent or legal guardian who agrees to these terms on the Artist&rsquo;s behalf.</li>
+            <li>The Artist is at least 18 years old.</li>
           </ul>
           <p>If the Platform has reasonable grounds to believe an account is operated by or on behalf of a label or management entity without permission, the Platform may suspend or terminate it with Notice.</p>
 

@@ -111,7 +111,7 @@ export function SignupClient() {
                       className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-950 accent-orange-600 cursor-pointer"
                     />
                     <span className="text-xs text-zinc-500 leading-snug">
-                      I confirm I am at least 18 years old, or I have parental/guardian consent.
+                      I confirm I am at least 18 years old.
                     </span>
                   </label>
                   <button
