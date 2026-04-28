@@ -1,13 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server'
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-}
+import { createClient } from '@/lib/supabase/server'
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
@@ -35,17 +27,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
   }
 
-  const supabase = await createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { error } = await getServiceClient()
+  const { error } = await supabase
     .from('newsletter_subscribers')
-    .upsert(
-      { email, user_id: user?.id ?? null, source: 'homepage' },
-      { onConflict: 'email' }
-    )
+    .insert({ email, user_id: user?.id ?? null, source: 'homepage' })
+
+  if (error?.code === '23505') {
+    return NextResponse.json({ ok: true })
+  }
 
   if (error) {
+    console.error('Newsletter subscribe error:', error)
     return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 })
   }
 
