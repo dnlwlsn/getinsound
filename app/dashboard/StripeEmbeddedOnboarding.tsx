@@ -46,7 +46,7 @@ export function StripeEmbeddedOnboarding({
       }
     } catch (err) {
       console.error('Stripe onboarding error:', err)
-      setError('Something went wrong. Please try again.')
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
