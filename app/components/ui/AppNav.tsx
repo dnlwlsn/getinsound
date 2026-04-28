@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useScrollDirection } from '@/lib/hooks/useScrollDirection'
 import { SearchInput } from './SearchInput'
 import { ProfileMenu } from './ProfileMenu'
 import { NotificationBell } from './NotificationBell'
@@ -103,13 +104,16 @@ export function AppNav() {
     })
   }, [])
 
+  const navHidden = useScrollDirection()
+
   if (!loaded) return null
   if (HIDE_NAV_ROUTES.some(r => pathname === r)) return null
   if (HIDE_NAV_PREFIXES.some(p => pathname.startsWith(p))) return null
 
   if (!userId) {
     return (
-      <nav className="sticky top-0 z-50 w-full pt-4 px-4" style={{ background: 'transparent' }}>
+      <>
+      <nav className={`fixed top-0 z-50 w-full pt-4 px-4 transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ background: 'transparent' }}>
         <div className="mx-auto max-w-7xl rounded-full px-6 py-3 flex items-center justify-between ring-1 ring-white/[0.06]"
           style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
           <Link href="/" className="font-display text-lg font-bold text-orange-500 tracking-tight">
@@ -129,12 +133,15 @@ export function AppNav() {
           </div>
         </div>
       </nav>
+      <div className="h-[72px]" />
+      </>
     )
   }
 
   return (
     <>
-      <nav className="sticky top-0 w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl">
+      <div className="h-[65px]" />
+      <nav className={`fixed top-0 w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
           <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
             insound.
