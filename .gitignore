@@ -18,6 +18,9 @@ out/
 # OpenNext
 .open-next/
 
+# Build cache
+tsconfig.tsbuildinfo
+
 # Environment
 .env.local
 .env*.local
