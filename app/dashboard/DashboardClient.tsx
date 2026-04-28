@@ -198,6 +198,10 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     return value.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
   }
 
+  function titleCaseGenre(g: string): string {
+    return g.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+  }
+
   async function saveRelease(updated: { title: string; description: string; genre: string; price_pence: number; coverFile?: File; tracks: { id: string; title: string; position: number }[] }) {
     if (!editingRelease) return
     const releaseId = editingRelease.id
@@ -219,7 +223,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
       title: updated.title.trim(),
       slug: newSlug,
       description: updated.description.trim() || null,
-      genre: updated.genre.trim() || null,
+      genre: updated.genre.trim() ? titleCaseGenre(updated.genre) : null,
       price_pence: updated.price_pence,
     }).eq('id', releaseId)
 
@@ -227,7 +231,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
       setRels(prev => prev.map(r => r.id === releaseId ? {
         ...r, title: updated.title.trim(), slug: newSlug,
         description: updated.description.trim() || null,
-        genre: updated.genre.trim() || null,
+        genre: updated.genre.trim() ? titleCaseGenre(updated.genre) : null,
         price_pence: updated.price_pence,
       } : r))
     }
