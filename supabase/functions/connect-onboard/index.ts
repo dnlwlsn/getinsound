@@ -124,7 +124,20 @@ Deno.serve(async (req) => {
 
     if (onboarded) return json({ onboarded: true });
 
-    // Not onboarded yet — hand the artist a fresh onboarding link.
+    // Try embedded onboarding (Account Session) first, fall back to redirect link.
+    if (body.mode === 'embedded') {
+      try {
+        const accountSession = await (stripe as any).accountSessions.create({
+          account: stripeAccountId,
+          components: { account_onboarding: { enabled: true } },
+        });
+        return json({ onboarded: false, client_secret: accountSession.client_secret });
+      } catch (embeddedErr) {
+        console.error('Account Session failed, falling back to link:', embeddedErr);
+      }
+    }
+
+    // Fallback: redirect-based onboarding link.
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
       refresh_url: returnUrl,

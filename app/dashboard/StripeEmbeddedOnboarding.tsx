@@ -26,7 +26,7 @@ export function StripeEmbeddedOnboarding({
     return session?.access_token
   }
 
-  async function ensureStripeAccount(token: string) {
+  async function callOnboard(token: string, mode?: 'embedded') {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-onboard`,
       {
@@ -35,7 +35,10 @@ export function StripeEmbeddedOnboarding({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ return_url: `${window.location.origin}/dashboard` }),
+        body: JSON.stringify({
+          return_url: `${window.location.origin}/dashboard`,
+          ...(mode && { mode }),
+        }),
       }
     )
     if (!res.ok) {
@@ -51,7 +54,7 @@ export function StripeEmbeddedOnboarding({
     try {
       const token = await getToken()
       if (!token) { setError('Not signed in.'); return }
-      const data = await ensureStripeAccount(token)
+      const data = await callOnboard(token)
       if (data.onboarded) { onComplete(); return }
       if (data.url) { window.location.href = data.url; return }
       setError('Could not get onboarding link.')
@@ -69,51 +72,40 @@ export function StripeEmbeddedOnboarding({
       const token = await getToken()
       if (!token) { setError('Not signed in. Please refresh and try again.'); return }
 
-      if (!stripeAccountId) {
-        const data = await ensureStripeAccount(token)
-        if (data.onboarded) { onComplete(); return }
+      const data = await callOnboard(token, 'embedded')
+      if (data.onboarded) { onComplete(); return }
+
+      if (data.client_secret) {
+        const instance = loadConnectAndInitialize({
+          publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+          fetchClientSecret: async () => data.client_secret,
+          appearance: {
+            overlays: 'dialog',
+            variables: {
+              colorPrimary: '#ea580c',
+              colorBackground: '#18181b',
+              colorText: '#e4e4e7',
+              colorSecondaryText: '#71717a',
+              colorBorder: '#27272a',
+              borderRadius: '12px',
+              fontFamily: 'inherit',
+            },
+          },
+        })
+        setStripeConnectInstance(instance)
+        setStarted(true)
+        return
       }
 
-      const sessionRes = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-session`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      if (!sessionRes.ok) {
-        const err = await sessionRes.json().catch(() => ({}))
-        throw new Error(err.error || `connect-session failed (${sessionRes.status})`)
+      // Server couldn't create account session — redirect instead
+      if (data.url) {
+        window.location.href = data.url
+        return
       }
 
-      const { client_secret } = await sessionRes.json()
-      if (!client_secret) throw new Error('No client secret returned.')
-
-      const instance = loadConnectAndInitialize({
-        publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-        fetchClientSecret: async () => client_secret,
-        appearance: {
-          overlays: 'dialog',
-          variables: {
-            colorPrimary: '#ea580c',
-            colorBackground: '#18181b',
-            colorText: '#e4e4e7',
-            colorSecondaryText: '#71717a',
-            colorBorder: '#27272a',
-            borderRadius: '12px',
-            fontFamily: 'inherit',
-          },
-        },
-      })
-
-      setStripeConnectInstance(instance)
-      setStarted(true)
+      setError('Could not start onboarding.')
     } catch (err) {
-      console.error('Embedded onboarding failed, redirect available:', err)
+      console.error('Embedded onboarding failed:', err)
       setError('Embedded setup failed. You can continue on Stripe instead.')
     } finally {
       setLoading(false)
@@ -136,7 +128,7 @@ export function StripeEmbeddedOnboarding({
         {error && (
           <div className="mt-3">
             <p className="text-red-400 text-xs">{error}</p>
-            {error.includes('redirect') || error.includes('Embedded') ? (
+            {error.includes('Embedded') && (
               <button
                 onClick={fallbackToRedirect}
                 disabled={loading}
@@ -144,7 +136,7 @@ export function StripeEmbeddedOnboarding({
               >
                 {loading ? 'Redirecting...' : 'Continue on Stripe instead →'}
               </button>
-            ) : null}
+            )}
           </div>
         )}
       </div>
