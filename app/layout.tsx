@@ -7,6 +7,7 @@ import { CurrencyProvider } from './providers/CurrencyProvider'
 import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistration'
 import { InstallBanner } from './components/pwa/InstallBanner'
 import { CookieBanner } from './components/ui/CookieBanner'
+import { PwaSplash } from './components/pwa/PwaSplash'
 import { GenreOnboarding } from './components/GenreOnboarding'
 import './globals.css'
 
@@ -19,10 +20,10 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = {
   title: 'insound. — Music That Pays Artists',
-  description: 'The music platform that only takes 10%. Stripe processing shown transparently at checkout. No labels, no middlemen.',
+  description: 'The music platform that only takes 10%. Artists keep 90% — we absorb all processing fees. No labels, no middlemen.',
   openGraph: {
     title: 'Insound — Music That Pays Artists',
-    description: 'Upload your music. We only take 10%. Stripe processing shown at checkout. Own your masters. No monthly fee.',
+    description: 'Upload your music. We only take 10% — and absorb all processing fees. Artists keep 90%. Own your masters. No monthly fee.',
     url: 'https://getinsound.com',
     siteName: 'Insound',
     type: 'website',
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Insound — Music That Pays Artists',
-    description: 'Upload your music. We only take 10%. Stripe processing shown at checkout. Own your masters. No monthly fee.',
+    description: 'Upload your music. We only take 10% — and absorb all processing fees. Artists keep 90%. Own your masters. No monthly fee.',
     images: ['https://getinsound.com/og-image.png'],
   },
   icons: { icon: '/favicon.svg' },
@@ -63,6 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ServiceWorkerRegistration />
         <InstallBanner />
         <CookieBanner />
+        <PwaSplash />
       </body>
     </html>
   )

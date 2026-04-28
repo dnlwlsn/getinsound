@@ -22,12 +22,12 @@ const AnalyticsCharts = dynamic(() => import('./AnalyticsCharts').then(m => m.An
 // ── Types ──────────────────────────────────────────────────────
 type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; banner_url: string | null; accent_colour: string | null; social_links: SocialLinks | null }
 type Account = { id: string; email: string; stripe_account_id: string | null; stripe_onboarded: boolean }
-type Track = { id: string; preview_plays: number; full_plays: number }
+type Track = { id: string; title: string; position: number; preview_plays: number; full_plays: number }
 type Release = {
   id: string; slug: string; title: string; type: string; cover_url: string | null
   price_pence: number; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null
-  preorder_enabled: boolean; release_date: string | null; visibility: string; created_at: string
-  tracks: Track[]
+  preorder_enabled: boolean; release_date: string | null; visibility: string; description: string | null
+  genre: string | null; created_at: string; tracks: Track[]
 }
 type Stats = {
   totalEarningsPence: number; monthEarningsPence: number; totalSales: number
@@ -108,6 +108,8 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [postsLoaded, setPostsLoaded] = useState(false)
   const [deletingPost, setDeletingPost] = useState<string | null>(null)
 
+  const [publishError, setPublishError] = useState<string | null>(null)
+
   // Artist name/bio editing
   const [editingProfile, setEditingProfile] = useState(false)
   const [editName, setEditName] = useState(artist.name)
@@ -133,6 +135,10 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [returnAddrForm, setReturnAddrForm] = useState({ line1: '', line2: '', city: '', postcode: '', country: 'GB' })
   const [returnAddrSaving, setReturnAddrSaving] = useState(false)
   const [showReturnAddrForm, setShowReturnAddrForm] = useState(!returnAddress)
+
+  // Edit release modal
+  const [editingRelease, setEditingRelease] = useState<Release | null>(null)
+  const [stripeOnboarding, setStripeOnboarding] = useState(false)
 
   const hasPublishedContent = rels.some(r => r.published) || !!artist.bio
   const isAllZero = stats.totalEarningsPence === 0 && stats.totalSales === 0 && stats.totalPreviewPlays === 0 && stats.totalFullPlays === 0 && stats.uniqueFans === 0
@@ -168,16 +174,73 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   // ── Release toggles ─────────────────────────────────────────
   async function toggleField(releaseId: string, field: string, value: any) {
     if (field === 'published') {
+      setPublishError(null)
       const res = await fetch('/api/releases/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ release_id: releaseId, published: value }),
       })
-      if (res.ok) setRels(prev => prev.map(r => r.id === releaseId ? { ...r, published: value } : r))
+      if (res.ok) {
+        setRels(prev => prev.map(r => r.id === releaseId ? { ...r, published: value } : r))
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setPublishError(body.error || 'Failed to update publish status.')
+      }
       return
     }
     const { error } = await supabase.from('releases').update({ [field]: value }).eq('id', releaseId)
     if (!error) setRels(prev => prev.map(r => r.id === releaseId ? { ...r, [field]: value } : r))
+  }
+
+  function slugify(value: string): string {
+    return value.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+  }
+
+  async function saveRelease(updated: { title: string; description: string; genre: string; price_pence: number; coverFile?: File; tracks: { id: string; title: string; position: number }[] }) {
+    if (!editingRelease) return
+    const releaseId = editingRelease.id
+    const newSlug = slugify(updated.title)
+
+    if (updated.coverFile) {
+      const ext = updated.coverFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const coverPath = `${artist.id}/${releaseId}.${ext}`
+      const { error: coverErr } = await supabase.storage.from('covers').upload(coverPath, updated.coverFile, { contentType: updated.coverFile.type, upsert: true })
+      if (!coverErr) {
+        const { data: { publicUrl } } = supabase.storage.from('covers').getPublicUrl(coverPath)
+        const coverUrl = `${publicUrl}?t=${Date.now()}`
+        await supabase.from('releases').update({ cover_url: coverUrl }).eq('id', releaseId)
+        setRels(prev => prev.map(r => r.id === releaseId ? { ...r, cover_url: coverUrl } : r))
+      }
+    }
+
+    const { error } = await supabase.from('releases').update({
+      title: updated.title.trim(),
+      slug: newSlug,
+      description: updated.description.trim() || null,
+      genre: updated.genre.trim() || null,
+      price_pence: updated.price_pence,
+    }).eq('id', releaseId)
+
+    if (!error) {
+      setRels(prev => prev.map(r => r.id === releaseId ? {
+        ...r, title: updated.title.trim(), slug: newSlug,
+        description: updated.description.trim() || null,
+        genre: updated.genre.trim() || null,
+        price_pence: updated.price_pence,
+      } : r))
+    }
+
+    for (const track of updated.tracks) {
+      const original = editingRelease.tracks.find(t => t.id === track.id)
+      if (original && (original.title !== track.title || original.position !== track.position)) {
+        await supabase.from('tracks').update({ title: track.title.trim(), position: track.position }).eq('id', track.id)
+        setRels(prev => prev.map(r => r.id === releaseId ? {
+          ...r, tracks: r.tracks.map(t => t.id === track.id ? { ...t, title: track.title.trim(), position: track.position } : t)
+        } : r))
+      }
+    }
+
+    setEditingRelease(null)
   }
 
   // ── Download codes ──────────────────────────────────────────
@@ -679,6 +742,11 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           {referral && <ReferralWidget referral={referral} />}
 
           {/* ── 2. Releases ────────────────────────────────── */}
+          {publishError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-3 mb-4">
+              <p className="text-sm font-bold text-red-400">{publishError}</p>
+            </div>
+          )}
           <Section title="Releases" count={rels.length}>
             {rels.length === 0 ? (
               <p className="text-zinc-600 text-sm py-10 text-center">No releases yet.</p>
@@ -695,6 +763,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                       artistSlug={artist.slug}
                       onToggle={toggleField}
                       onCancelPreorder={cancelPreorder}
+                      onEdit={setEditingRelease}
                       saveCount={relSaves + trkSaves}
                     />
                   )
@@ -729,7 +798,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                 <div className="grid grid-cols-2 gap-3">
                   <input placeholder="Name" value={merchForm.name} onChange={e => setMerchForm(f => ({ ...f, name: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                   <textarea placeholder="Description" value={merchForm.description} onChange={e => setMerchForm(f => ({ ...f, description: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm h-20 resize-none" />
-                  <input placeholder="Price (£)" type="number" step="0.01" min="2" value={merchForm.price} onChange={e => setMerchForm(f => ({ ...f, price: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                  <input placeholder="Price (£)" type="number" step="0.01" min="3" value={merchForm.price} onChange={e => setMerchForm(f => ({ ...f, price: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                   <input placeholder="Postage (£)" type="number" step="0.01" min="0" value={merchForm.postage} onChange={e => setMerchForm(f => ({ ...f, postage: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                   <input placeholder="Stock" type="number" min="1" value={merchForm.stock} onChange={e => setMerchForm(f => ({ ...f, stock: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                   <input placeholder="Variants (S, M, L, XL)" value={merchForm.variants} onChange={e => setMerchForm(f => ({ ...f, variants: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
@@ -854,7 +923,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                       <div className="grid grid-cols-2 gap-3">
                         <input placeholder="Name" value={editMerchForm.name} onChange={e => setEditMerchForm(f => ({ ...f, name: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                         <textarea placeholder="Description" value={editMerchForm.description} onChange={e => setEditMerchForm(f => ({ ...f, description: e.target.value }))} className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm h-20 resize-none" />
-                        <input placeholder="Price (£)" type="number" step="0.01" min="2" value={editMerchForm.price} onChange={e => setEditMerchForm(f => ({ ...f, price: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
+                        <input placeholder="Price (£)" type="number" step="0.01" min="3" value={editMerchForm.price} onChange={e => setEditMerchForm(f => ({ ...f, price: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                         <input placeholder="Postage (£)" type="number" step="0.01" min="0" value={editMerchForm.postage} onChange={e => setEditMerchForm(f => ({ ...f, postage: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                         <input placeholder="Stock" type="number" min="0" value={editMerchForm.stock} onChange={e => setEditMerchForm(f => ({ ...f, stock: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
                         <input placeholder="Variants (S, M, L, XL)" value={editMerchForm.variants} onChange={e => setEditMerchForm(f => ({ ...f, variants: e.target.value }))} className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" />
@@ -967,22 +1036,8 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                 {posts.map(p => (
                   <div key={p.id} className="flex items-start gap-4 bg-black/20 rounded-xl p-4 ring-1 ring-white/[0.04]">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/[0.04] text-zinc-500">
-                          {p.post_type === 'voice_note' ? 'Voice Note' : p.post_type}
-                        </span>
-                        <span className="text-[10px] text-zinc-600">{new Date(p.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap line-clamp-3">{p.content}</p>
-                      {p.media_url && p.post_type === 'photo' && (
-                        <img src={p.media_url} alt="Post photo" className="mt-2 h-16 w-16 rounded-lg object-cover" />
-                      )}
-                      {p.media_url && (p.post_type === 'demo' || p.post_type === 'voice_note') && (
-                        <div className="mt-2 flex items-center gap-2 text-[10px] text-zinc-500">
-                          <svg width="12" height="12" fill="#F56D00" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                          Audio attached
-                        </div>
-                      )}
+                      <span className="text-[10px] text-zinc-600">{new Date(p.created_at).toLocaleDateString()}</span>
+                      <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap line-clamp-3 mt-1">{p.content}</p>
                     </div>
                     <button
                       onClick={() => deletePost(p.id)}
@@ -1097,9 +1152,36 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
               </a>
             )}
             {!account.stripe_onboarded && (
-              <a href="/discography" className="mt-4 inline-block bg-orange-600 text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors">
-                Complete Stripe Setup
-              </a>
+              <button
+                onClick={async () => {
+                  setStripeOnboarding(true)
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    const res = await fetch(
+                      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-onboard`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${session?.access_token}`,
+                        },
+                        body: JSON.stringify({ return_url: `${window.location.origin}/dashboard` }),
+                      }
+                    )
+                    const data = await res.json()
+                    if (data.onboarded) {
+                      window.location.reload()
+                    } else if (data.url) {
+                      window.location.href = data.url
+                    }
+                  } catch (err) { console.error('Operation failed:', err) }
+                  setStripeOnboarding(false)
+                }}
+                disabled={stripeOnboarding}
+                className="mt-4 inline-block bg-orange-600 text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors disabled:opacity-50"
+              >
+                {stripeOnboarding ? 'Connecting...' : 'Complete Stripe Setup'}
+              </button>
             )}
           </Section>
 
@@ -1427,6 +1509,16 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         </div>
       )}
 
+      {/* Edit release modal */}
+      {editingRelease && (
+        <EditReleaseModal
+          release={editingRelease}
+          artistId={artist.id}
+          onSave={saveRelease}
+          onClose={() => setEditingRelease(null)}
+        />
+      )}
+
       {/* Cancel pre-order confirmation modal */}
       {cancelTarget && (() => {
         const rel = rels.find(r => r.id === cancelTarget)
@@ -1529,10 +1621,11 @@ function Section({ title, count, children }: { title: string; count?: number; ch
   )
 }
 
-function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreorder, saveCount = 0 }: {
+function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreorder, onEdit, saveCount = 0 }: {
   release: Release; artistId: string; artistSlug: string
   onToggle: (id: string, field: string, value: any) => void
   onCancelPreorder: (id: string) => void
+  onEdit: (release: Release) => void
   saveCount?: number
 }) {
   const [showControls, setShowControls] = useState(false)
@@ -1557,6 +1650,7 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
               Embed
             </button>
           )}
+          <button onClick={() => onEdit(r)} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">Edit</button>
           <a href={`/release?a=${artistSlug}&r=${r.slug}`} className="text-[10px] text-zinc-500 hover:text-orange-500 font-bold transition-colors">View</a>
           <button onClick={() => setShowControls(!showControls)} className="text-zinc-500 hover:text-white transition-colors p-1">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1674,6 +1768,160 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
         <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'left-5' : 'left-1'}`} />
       </button>
     </label>
+  )
+}
+
+function EditReleaseModal({ release, artistId, onSave, onClose }: {
+  release: Release; artistId: string
+  onSave: (data: { title: string; description: string; genre: string; price_pence: number; coverFile?: File; tracks: { id: string; title: string; position: number }[] }) => Promise<void>
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(release.title)
+  const [description, setDescription] = useState(release.description || '')
+  const [genre, setGenre] = useState(release.genre || '')
+  const [pricePounds, setPricePounds] = useState((release.price_pence / 100).toFixed(2))
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  const [tracks, setTracks] = useState(
+    [...release.tracks].sort((a, b) => a.position - b.position).map(t => ({ id: t.id, title: t.title, position: t.position }))
+  )
+  const [saving, setSaving] = useState(false)
+  const coverSrc = coverPreview || release.cover_url || generateGradientDataUri(artistId, release.id)
+
+  function handleCoverSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setCoverFile(file)
+    setCoverPreview(URL.createObjectURL(file))
+  }
+
+  function moveTrack(idx: number, dir: -1 | 1) {
+    const target = idx + dir
+    if (target < 0 || target >= tracks.length) return
+    const next = [...tracks]
+    ;[next[idx], next[target]] = [next[target], next[idx]]
+    setTracks(next.map((t, i) => ({ ...t, position: i + 1 })))
+  }
+
+  async function handleSave() {
+    if (!title.trim()) return
+    setSaving(true)
+    try {
+      await onSave({
+        title: title.trim(),
+        description,
+        genre,
+        price_pence: Math.round(parseFloat(pricePounds || '0') * 100),
+        coverFile: coverFile || undefined,
+        tracks,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !saving) onClose() }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [saving, onClose])
+
+  const inputClass = 'w-full bg-zinc-950 border border-zinc-800 rounded-lg py-2 px-3 text-sm text-white focus:border-orange-600 outline-none transition-colors'
+  const labelClass = 'text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1'
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4" onClick={() => !saving && onClose()}>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-bold text-lg">Edit Release</h3>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors p-1">
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Cover art */}
+        <div className="mb-6">
+          <label className={labelClass}>Cover Art</label>
+          <div className="flex items-center gap-4">
+            <img src={coverSrc} alt={title} className="w-24 h-24 rounded-lg object-cover shrink-0" />
+            <div>
+              <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors inline-block">
+                Change Cover
+                <input type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="mb-4">
+          <label className={labelClass}>Title</label>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} className={inputClass} />
+        </div>
+
+        {/* Description */}
+        <div className="mb-4">
+          <label className={labelClass}>Description</label>
+          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className={inputClass + ' resize-none'} placeholder="Release notes, credits, liner notes..." />
+        </div>
+
+        {/* Genre + Price row */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className={labelClass}>Genre</label>
+            <input type="text" value={genre} onChange={e => setGenre(e.target.value)} className={inputClass} placeholder="e.g. Indie, Electronic" />
+          </div>
+          <div>
+            <label className={labelClass}>Price (£)</label>
+            <input type="number" value={pricePounds} onChange={e => setPricePounds(e.target.value)} min="0" step="0.01" className={inputClass} />
+          </div>
+        </div>
+
+        {/* Tracks */}
+        {tracks.length > 0 && (
+          <div className="mb-6">
+            <label className={labelClass}>Tracks</label>
+            <div className="space-y-2">
+              {tracks.map((t, i) => (
+                <div key={t.id} className="flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-600 font-bold w-5 text-right shrink-0">{t.position}</span>
+                  <input
+                    type="text"
+                    value={t.title}
+                    onChange={e => {
+                      const next = [...tracks]
+                      next[i] = { ...next[i], title: e.target.value }
+                      setTracks(next)
+                    }}
+                    className={inputClass}
+                  />
+                  {tracks.length > 1 && (
+                    <div className="flex flex-col shrink-0">
+                      <button onClick={() => moveTrack(i, -1)} disabled={i === 0} className="text-zinc-600 hover:text-white disabled:opacity-20 transition-colors p-0.5">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" /></svg>
+                      </button>
+                      <button onClick={() => moveTrack(i, 1)} disabled={i === tracks.length - 1} className="text-zinc-600 hover:text-white disabled:opacity-20 transition-colors p-0.5">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={saving} className="flex-1 text-zinc-400 font-bold text-sm py-3 rounded-full border border-zinc-800 hover:border-zinc-700 transition-colors">
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={saving || !title.trim()} className="flex-1 bg-orange-600 text-black font-bold text-sm py-3 rounded-full hover:bg-orange-500 transition-colors disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 

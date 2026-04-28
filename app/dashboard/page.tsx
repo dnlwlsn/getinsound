@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     supabase.from('artists').select('id, slug, name, bio, avatar_url, banner_url, accent_colour, social_links, milestone_first_sale, milestone_first_sale_at, milestone_first_sale_shown, return_address').eq('id', user.id).maybeSingle(),
     supabase.from('artist_accounts').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('releases')
-      .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, created_at, tracks(id, preview_plays, full_plays)')
+      .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, description, genre, created_at, tracks(id, title, position, preview_plays, full_plays)')
       .eq('artist_id', user.id)
       .order('created_at', { ascending: false }),
     supabase.from('purchases')
