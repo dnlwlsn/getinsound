@@ -1,7 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import {
+  ConnectAccountOnboarding,
+  ConnectComponentsProvider,
+} from '@stripe/react-connect-js'
+import { loadConnectAndInitialize } from '@stripe/connect-js'
 
 export function StripeEmbeddedOnboarding({
   stripeAccountId,
@@ -11,60 +16,125 @@ export function StripeEmbeddedOnboarding({
   onComplete: () => void
 }) {
   const supabase = createClient()
+  const [started, setStarted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<ReturnType<typeof loadConnectAndInitialize> | null>(null)
 
-  async function startOnboarding() {
+  async function getToken() {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token
+  }
+
+  async function ensureAccount(token: string) {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-onboard`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ return_url: `${window.location.origin}/dashboard` }),
+      }
+    )
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || `connect-onboard failed (${res.status})`)
+    }
+    return res.json()
+  }
+
+  const startOnboarding = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (!token) { setError('Not signed in. Please refresh and try again.'); return }
+      const token = await getToken()
+      if (!token) { setError('Not signed in. Please refresh.'); return }
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-onboard`,
+      // Ensure Stripe account exists
+      const onboardData = await ensureAccount(token)
+      if (onboardData.onboarded) { onComplete(); return }
+
+      // Try embedded onboarding
+      const sessionRes = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-session`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ return_url: `${window.location.origin}/dashboard` }),
         }
       )
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        setError(err.error || `Failed (${res.status})`)
-        return
+
+      if (!sessionRes.ok) {
+        // Embedded not available — redirect instead
+        if (onboardData.url) { window.location.href = onboardData.url; return }
+        const err = await sessionRes.json().catch(() => ({}))
+        throw new Error(err.error || 'Could not start onboarding')
       }
-      const data = await res.json()
-      if (data.onboarded) {
-        onComplete()
-      } else if (data.url) {
-        window.location.href = data.url
+
+      const { client_secret } = await sessionRes.json()
+      if (!client_secret) {
+        if (onboardData.url) { window.location.href = onboardData.url; return }
+        throw new Error('No client secret returned')
       }
+
+      const instance = loadConnectAndInitialize({
+        publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+        fetchClientSecret: async () => client_secret,
+        appearance: {
+          overlays: 'dialog',
+          variables: {
+            colorPrimary: '#ea580c',
+            colorBackground: '#18181b',
+            colorText: '#e4e4e7',
+            colorSecondaryText: '#71717a',
+            colorBorder: '#27272a',
+            borderRadius: '12px',
+            fontFamily: 'inherit',
+          },
+        },
+      })
+
+      setStripeConnectInstance(instance)
+      setStarted(true)
     } catch (err) {
       console.error('Stripe onboarding error:', err)
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
+  }, [stripeAccountId, supabase, onComplete])
+
+  if (!started) {
+    return (
+      <div className="mt-4">
+        <p className="text-sm text-zinc-500 mb-3">
+          Set up payouts so you can receive money for your releases. This takes about 2 minutes.
+        </p>
+        <button
+          onClick={startOnboarding}
+          disabled={loading}
+          className="inline-block bg-orange-600 text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Loading...' : 'Set Up Payouts'}
+        </button>
+        {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+      </div>
+    )
   }
 
   return (
     <div className="mt-4">
-      <p className="text-sm text-zinc-500 mb-3">
-        Set up payouts so you can receive money for your releases. This takes about 2 minutes.
-      </p>
-      <button
-        onClick={startOnboarding}
-        disabled={loading}
-        className="inline-block bg-orange-600 text-black font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors disabled:opacity-50"
-      >
-        {loading ? 'Loading...' : 'Set Up Payouts'}
-      </button>
-      {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+      {stripeConnectInstance && (
+        <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+          <ConnectAccountOnboarding
+            onExit={() => onComplete()}
+          />
+        </ConnectComponentsProvider>
+      )}
     </div>
   )
 }

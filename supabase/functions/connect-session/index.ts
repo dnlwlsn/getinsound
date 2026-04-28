@@ -1,6 +1,5 @@
 // Edge Function: connect-session
 // Creates a Stripe Account Session for the embedded onboarding component.
-// Requires the artist to already have a Stripe account (created via connect-onboard).
 
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -45,7 +44,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!account?.stripe_account_id) {
-      return json({ error: 'No Stripe account yet — call connect-onboard first' }, 400);
+      return json({ error: 'No Stripe account yet' }, 400);
     }
 
     const accountSession = await (stripe as any).accountSessions.create({
