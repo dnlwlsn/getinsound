@@ -10,6 +10,9 @@ export interface PersistedPlayerState {
   currentTime: number
   volume: number
   isMuted: boolean
+  shuffle: boolean
+  repeat: 'off' | 'one' | 'all'
+  originalQueue: Track[]
 }
 
 export async function loadPlayerState(): Promise<PersistedPlayerState | null> {

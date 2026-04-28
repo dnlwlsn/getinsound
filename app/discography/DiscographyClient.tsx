@@ -118,7 +118,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
     setType('album')
     setPricePounds('10.00')
     setPwyw(false)
-    setPwywMinPounds('2.00')
+    setPwywMinPounds('3.00')
     setPreorder(false)
     setReleaseDate('')
     setSoundTags([])
@@ -569,9 +569,9 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                         type="button"
                         onClick={() => {
                           setType(t)
-                          if (t === 'album' && pricePounds === '2.00') setPricePounds('10.00')
-                          if (t === 'ep' && pricePounds === '2.00') setPricePounds('5.00')
-                          if (t === 'single' && (pricePounds === '10.00' || pricePounds === '5.00')) setPricePounds('2.00')
+                          if (t === 'album' && (pricePounds === '3.00' || pricePounds === '5.00')) setPricePounds('10.00')
+                          if (t === 'ep' && (pricePounds === '3.00' || pricePounds === '10.00')) setPricePounds('5.00')
+                          if (t === 'single' && (pricePounds === '10.00' || pricePounds === '5.00')) setPricePounds('3.00')
                         }}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-bold capitalize transition-colors ${type === t ? 'bg-orange-600 text-black' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'}`}
                       >

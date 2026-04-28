@@ -23,7 +23,7 @@ export function SoundTagSelector({ selected, onChange }: Props) {
   }
 
   function addCustom() {
-    const cleaned = customValue.trim().toLowerCase().slice(0, MAX_TAG_LENGTH)
+    const cleaned = customValue.trim().replace(/\b\w/g, c => c.toUpperCase()).slice(0, MAX_TAG_LENGTH)
     if (!cleaned) return
     if (selected.includes(cleaned)) return
     if (selected.some(s => s.toLowerCase() === cleaned)) return

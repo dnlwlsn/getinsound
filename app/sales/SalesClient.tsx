@@ -104,28 +104,20 @@ export function SalesClient() {
             </div>
           ) : (
             <>
-              {/* Balance Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-                <div className="md:col-span-1 bg-zinc-900 p-8 rounded-2xl border border-zinc-800">
-                  <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">Available</p>
-                  <p className="text-4xl font-black text-orange-600">{GBP(data.balance.available_pence)}</p>
-                  <p className="text-xs text-zinc-500 mt-2">Ready for payout</p>
+              {/* Stripe Dashboard Link */}
+              <div className="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 mb-12 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-zinc-200">Stripe manages your payouts</p>
+                  <p className="text-xs text-zinc-500 mt-1">Earnings go directly to your connected Stripe account and are paid out to your bank automatically.</p>
                 </div>
-                <div className="md:col-span-1 bg-zinc-900 p-8 rounded-2xl border border-zinc-800">
-                  <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">Pending</p>
-                  <p className="text-4xl font-black">{GBP(data.balance.pending_pence)}</p>
-                  <p className="text-xs text-zinc-500 mt-2">Processing</p>
-                </div>
-                <div className="md:col-span-1 bg-zinc-900 p-8 rounded-2xl border border-zinc-800 flex items-center justify-center">
-                  {data.dashboard_url ? (
-                    <a href={data.dashboard_url} target="_blank" rel="noopener noreferrer"
-                      className="bg-white text-black font-black px-6 py-3.5 rounded-xl hover:bg-orange-600 hover:text-white transition-colors text-sm text-center">
-                      Open Stripe Dashboard ↗
-                    </a>
-                  ) : (
-                    <p className="text-zinc-600 text-sm font-bold">Stripe dashboard unavailable</p>
-                  )}
-                </div>
+                {data.dashboard_url ? (
+                  <a href={data.dashboard_url} target="_blank" rel="noopener noreferrer"
+                    className="bg-white text-black font-black px-6 py-3.5 rounded-xl hover:bg-orange-600 hover:text-white transition-colors text-sm text-center shrink-0 ml-6">
+                    Open Stripe Dashboard ↗
+                  </a>
+                ) : (
+                  <p className="text-zinc-600 text-sm font-bold shrink-0 ml-6">Stripe dashboard unavailable</p>
+                )}
               </div>
 
               {/* Payout History */}
