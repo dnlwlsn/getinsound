@@ -1,15 +1,16 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Montserrat } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { PlayerBar } from './components/PlayerBar'
 import { AppNav } from './components/ui/AppNav'
+import { VerificationBanner } from './components/ui/VerificationBanner'
 import { CurrencyProvider } from './providers/CurrencyProvider'
 import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistration'
 import { InstallBanner } from './components/pwa/InstallBanner'
 import { CookieBanner } from './components/ui/CookieBanner'
 import { FeedbackButton } from './components/ui/FeedbackButton'
+import { GlobalShortcuts } from './components/GlobalShortcuts'
 import { PwaSplash } from './components/pwa/PwaSplash'
-import { GenreOnboarding } from './components/GenreOnboarding'
 import './globals.css'
 
 
@@ -18,6 +19,10 @@ const montserrat = Montserrat({
   weight: ['400', '600', '700', '900'],
   variable: '--font-montserrat',
 })
+
+export const viewport: Viewport = {
+  viewportFit: 'cover',
+}
 
 export const metadata: Metadata = {
   title: 'insound. - Music That Pays Artists',
@@ -48,6 +53,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`dark ${montserrat.variable}`}>
       <head>
+        <link rel="dns-prefetch" href="https://js.stripe.com" />
+        <link rel="preconnect" href="https://js.stripe.com" crossOrigin="anonymous" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#F56D00" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -58,10 +65,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-orange-600 focus:text-black focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">Skip to content</a>
         <CurrencyProvider initialLocale={initialLocale} initialCurrency={initialCurrency}>
           <AppNav />
+          <VerificationBanner />
           <main id="main-content">{children}</main>
         </CurrencyProvider>
-        <GenreOnboarding redirectTo="/discover" />
         <PlayerBar />
+        <GlobalShortcuts />
         <ServiceWorkerRegistration />
         <InstallBanner />
         <FeedbackButton />

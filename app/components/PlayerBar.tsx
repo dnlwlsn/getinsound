@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { usePlayerStore } from '@/lib/stores/player'
 import { setAccentVar, resolveAccent } from '@/lib/accent'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
+import { QueuePanel } from '@/app/components/ui/QueuePanel'
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60)
@@ -23,10 +25,13 @@ export function PlayerBar() {
   } = usePlayerStore()
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const crossfadeRef = useRef<HTMLAudioElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const rafRef = useRef<number>(0)
   const fetchingRef = useRef<string | null>(null)
   const playLoggedRef = useRef<string | null>(null)
+  const [queueOpen, setQueueOpen] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(false)
 
   // Log play count helper (fires once per track play)
   const logPlay = useCallback((trackId: string, preview: boolean) => {
@@ -48,6 +53,7 @@ export function PlayerBar() {
   // Fetch signed URL when track changes
   useEffect(() => {
     if (!currentTrack) return
+    setIsBuffering(true)
     const trackId = currentTrack.id
     const ac = new AbortController()
     fetchingRef.current = trackId
@@ -195,11 +201,35 @@ export function PlayerBar() {
     return () => cancelAnimationFrame(rafRef.current)
   }, [drawWaveform, setCurrentTime, previewDuration, next, currentTrack?.id, isPreview, logPlay])
 
+  // MediaSession: lock-screen & headphone controls
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !currentTrack) return
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentTrack.title,
+      artist: currentTrack.artistName,
+      album: currentTrack.releaseTitle,
+      artwork: currentTrack.coverUrl ? [{ src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' }] : [],
+    })
+    navigator.mediaSession.setActionHandler('play', resume)
+    navigator.mediaSession.setActionHandler('pause', pause)
+    navigator.mediaSession.setActionHandler('previoustrack', previous)
+    navigator.mediaSession.setActionHandler('nexttrack', next)
+    return () => {
+      try {
+        navigator.mediaSession.setActionHandler('play', null)
+        navigator.mediaSession.setActionHandler('pause', null)
+        navigator.mediaSession.setActionHandler('previoustrack', null)
+        navigator.mediaSession.setActionHandler('nexttrack', null)
+      } catch {}
+    }
+  }, [currentTrack, resume, pause, previous, next])
+
   // Audio event handlers
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration)
     }
+    setIsBuffering(false)
   }, [setDuration])
 
   const handleEnded = useCallback(() => {
@@ -208,6 +238,39 @@ export function PlayerBar() {
     }
     next()
   }, [next, currentTrack, isPreview, logPlay])
+
+  // Crossfade: fade out current audio 3s before end
+  const crossfadeStarted = useRef(false)
+  useEffect(() => {
+    crossfadeStarted.current = false
+    // Restore volume after track change (crossfade may have reduced it)
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume
+    }
+  }, [currentTrack?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !isPlaying || duration <= 0) return
+
+    const timeLeft = duration - currentTime
+    if (timeLeft <= 3 && timeLeft > 0 && !crossfadeStarted.current && !isPreview) {
+      crossfadeStarted.current = true
+      const storeVolume = isMuted ? 0 : volume
+      const fadeInterval = setInterval(() => {
+        if (audio.volume > 0.05) {
+          audio.volume = Math.max(0, audio.volume - 0.05)
+        } else {
+          clearInterval(fadeInterval)
+          audio.volume = storeVolume
+        }
+      }, 100)
+      return () => {
+        clearInterval(fadeInterval)
+        audio.volume = storeVolume
+      }
+    }
+  }, [currentTime, duration, isPlaying, isPreview, volume, isMuted])
 
   const handleScrubberClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
@@ -299,7 +362,10 @@ export function PlayerBar() {
     toggleExpanded()
   }, [toggleExpanded])
 
-  if (!currentTrack) return null
+  const pathname = usePathname()
+  const isAuthPage = pathname === '/auth' || pathname === '/signup'
+
+  if (!currentTrack || isAuthPage) return null
 
   const accent = resolveAccent(currentTrack.accentColour)
 
@@ -313,7 +379,7 @@ export function PlayerBar() {
       />
 
       {/* Desktop player bar */}
-      <div className="player-bar-active fixed bottom-0 left-0 right-0 z-40 hidden sm:block">
+      <div className="player-bar-active fixed bottom-0 left-0 right-0 z-40 hidden sm:block" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div
           className="border-t border-white/[0.06] backdrop-blur-xl"
           style={{ background: 'rgba(10,10,10,0.95)' }}
@@ -378,9 +444,11 @@ export function PlayerBar() {
                   onClick={isPlaying ? pause : resume}
                   className="w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
                   style={{ background: accent }}
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                  aria-label={isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
                 >
-                  {isPlaying ? (
+                  {isBuffering ? (
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ) : isPlaying ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="black">
                       <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
                     </svg>
@@ -472,6 +540,17 @@ export function PlayerBar() {
               />
             </div>
 
+            {/* Queue button */}
+            <button
+              onClick={() => setQueueOpen(true)}
+              className="text-zinc-400 hover:text-white transition-colors"
+              aria-label="Open queue"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+              </svg>
+            </button>
+
             <button
               onClick={stop}
               className="text-zinc-500 hover:text-white transition-colors ml-1"
@@ -486,8 +565,14 @@ export function PlayerBar() {
         </div>
       </div>
 
+      {/* Queue panel */}
+      <QueuePanel open={queueOpen} onClose={() => setQueueOpen(false)} />
+
+      {/* Crossfade audio element */}
+      <audio ref={crossfadeRef} preload="auto" />
+
       {/* Mobile player bar */}
-      <div className="player-bar-active fixed bottom-[60px] left-0 right-0 z-40 sm:hidden">
+      <div className="player-bar-active fixed left-0 right-0 z-40 sm:hidden" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom))' }}>
         <div
           className="border-t border-white/[0.06] backdrop-blur-xl"
           style={{ background: 'rgba(10,10,10,0.95)' }}
@@ -673,6 +758,18 @@ export function PlayerBar() {
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 )}
+              </button>
+              <button
+                className="flex-shrink-0 text-zinc-500 hover:text-white transition-colors mr-0.5"
+                aria-label="Next track"
+                onClick={e => {
+                  e.stopPropagation()
+                  next()
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                </svg>
               </button>
               <button
                 className="flex-shrink-0 text-zinc-500 hover:text-white transition-colors"

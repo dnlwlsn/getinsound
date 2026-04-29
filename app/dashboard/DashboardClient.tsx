@@ -3,12 +3,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
 import { ColourPicker } from '@/app/components/ui/ColourPicker'
 import { ImageUploader } from '@/app/components/ui/ImageUploader'
 import { SoftNudge } from '@/app/components/ui/SoftNudge'
 import { generateGradientDataUri } from '@/lib/gradient'
-import { referralShareUrl, twitterShareUrl, whatsappShareUrl, emailShareUrl } from '@/lib/referral'
 import { NotificationBell } from '@/app/components/ui/NotificationBell'
 import { Badge } from '@/app/components/ui/Badge'
 import { PostComposer } from '@/app/components/ui/PostComposer'
@@ -42,10 +43,6 @@ type DownloadCode = {
   redeemed_at: string | null; expires_at: string; created_at: string
 }
 
-type Referral = {
-  code: string; count: number
-}
-
 type Milestone = {
   artistName: string
   achievedAt: string | null
@@ -71,7 +68,6 @@ type Props = {
   fans: Fan[]; codesByRelease: Record<string, CodeSummary>
   fanUsername: string | null; fanIsPublic: boolean
   milestone?: Milestone
-  referral?: Referral
   merchItems?: MerchItem[]
   merchOrders?: MerchOrder[]
   returnAddress?: any
@@ -83,7 +79,7 @@ type Props = {
 function pence(n: number) { return formatPriceUtil(n / 100, 'GBP') }
 
 // ── Component ──────────────────────────────────────────────────
-export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, referral, merchItems = [], merchOrders = [], returnAddress, saveCounts = {}, earningsHistory = [], releaseBreakdown = [] }: Props) {
+export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, merchItems = [], merchOrders = [], returnAddress, saveCounts = {}, earningsHistory = [], releaseBreakdown = [] }: Props) {
   const supabase = createClient()
   const [rels, setRels] = useState(releases)
   const [payouts, setPayouts] = useState<any[] | null>(null)
@@ -644,7 +640,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
         <div className="flex items-center justify-between mb-12">
-          <a href="/" className="text-2xl font-display font-bold text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</a>
+          <InsoundLogo size="lg" />
           <NotificationBell userId={artist.id} />
         </div>
         <nav className="space-y-1 flex-1">
@@ -687,28 +683,26 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
             <div>
               <p className="text-zinc-500 text-sm font-semibold mb-1">Welcome back</p>
-              <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-display font-bold tracking-tight">{artist.name}</h1>
-                <div className="relative">
-                  <a
-                    href={`/${artist.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-500 rounded-full ring-1 ring-white/[0.12] hover:ring-white/[0.25] hover:bg-white/[0.04] hover:text-white active:scale-[0.98] transition-all"
-                    onMouseEnter={() => !hasPublishedContent && setShowArtistTooltip(true)}
-                    onMouseLeave={() => setShowArtistTooltip(false)}
-                  >
-                    View my page
-                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-                    </svg>
-                  </a>
-                  {showArtistTooltip && (
-                    <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-xs text-zinc-300 leading-relaxed shadow-xl">
-                      Your page is live but empty - upload your first release to make it shine
-                    </div>
-                  )}
-                </div>
+              <h1 className="text-4xl font-display font-bold tracking-tight">{artist.name}</h1>
+              <div className="relative mt-2">
+                <a
+                  href={`/${artist.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-500 rounded-full ring-1 ring-white/[0.12] hover:ring-white/[0.25] hover:bg-white/[0.04] hover:text-white active:scale-[0.98] transition-all whitespace-nowrap"
+                  onMouseEnter={() => !hasPublishedContent && setShowArtistTooltip(true)}
+                  onMouseLeave={() => setShowArtistTooltip(false)}
+                >
+                  View my page
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                  </svg>
+                </a>
+                {showArtistTooltip && (
+                  <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-xs text-zinc-300 leading-relaxed shadow-xl">
+                    Your page is live but empty - upload your first release to make it shine
+                  </div>
+                )}
               </div>
             </div>
             {account.stripe_onboarded ? (
@@ -772,7 +766,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           )}
 
           {/* ── Referral & Zero Fees ──────────────────────── */}
-          {referral && <ReferralWidget referral={referral} />}
+          <SharePageWidget slug={artist.slug} />
 
           {/* ── 2. Releases ────────────────────────────────── */}
           {publishError && (
@@ -992,8 +986,8 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                   return (
                     <div key={o.id} className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
-                          {photo ? <img src={photo} alt={merchData?.name || 'Order item'} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+                        <div className="relative w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
+                          {photo ? <Image src={photo} fill className="object-cover" sizes="40px" alt={merchData?.name || 'Order item'} /> : <div className="w-full h-full" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm truncate">{merchData?.name || 'Unknown item'}{o.variant_selected ? ` (${o.variant_selected})` : ''}</p>
@@ -1220,7 +1214,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                         onClick={() => c && c.total > 0 ? toggleCodesExpand(r.id) : undefined}
                         className="w-full flex items-center gap-4 p-4 text-left hover:bg-zinc-800/30 transition-colors"
                       >
-                        <img src={r.cover_url || generateGradientDataUri(artist.id, r.id)} alt={r.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                        <div className="relative w-10 h-10 shrink-0"><Image src={r.cover_url || generateGradientDataUri(artist.id, r.id)} fill className="rounded-lg object-cover" sizes="40px" alt={r.title} /></div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm truncate">{r.title}</p>
                           {c && c.total > 0 ? (
@@ -1641,7 +1635,7 @@ function ReleaseRow({ release: r, artistId, artistSlug, onToggle, onCancelPreord
   return (
     <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl overflow-hidden">
       <div className="flex items-center gap-4 p-4">
-        <img src={coverSrc} alt={r.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+        <div className="relative w-12 h-12 shrink-0"><Image src={coverSrc} fill className="rounded-lg object-cover" sizes="48px" alt={r.title} /></div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm truncate">{r.title}</p>
           <p className="text-[10px] text-zinc-500">{r.type} · {r.tracks.length} track{r.tracks.length !== 1 ? 's' : ''} · {plays} plays · {saveCount} {saveCount === 1 ? 'save' : 'saves'}</p>
@@ -1846,7 +1840,7 @@ function EditReleaseModal({ release, artistId, onSave, onClose }: {
         <div className="mb-6">
           <label className={labelClass}>Cover Art</label>
           <div className="flex items-center gap-4">
-            <img src={coverSrc} alt={title} className="w-24 h-24 rounded-lg object-cover shrink-0" />
+            <div className="relative w-24 h-24 rounded-lg overflow-hidden shrink-0"><Image src={coverSrc} fill className="object-cover" sizes="96px" alt={title} /></div>
             <div>
               <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors inline-block">
                 Change Cover
@@ -1928,9 +1922,9 @@ function EditReleaseModal({ release, artistId, onSave, onClose }: {
   )
 }
 
-function ReferralWidget({ referral }: { referral: Referral }) {
+function SharePageWidget({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false)
-  const shareLink = referralShareUrl(referral.code)
+  const shareLink = `https://getinsound.com/@${slug}`
 
   async function copyLink() {
     try {
@@ -1942,10 +1936,10 @@ function ReferralWidget({ referral }: { referral: Referral }) {
 
   return (
     <div className="mb-6 space-y-4">
-      <Section title="Share Insound" count={referral.count}>
+      <Section title="Share your page">
         <div className="space-y-4">
           <p className="text-sm text-zinc-400">
-            Share your link to help more artists discover Insound.
+            Share your artist page with fans and followers.
           </p>
 
           <div className="bg-black/30 rounded-xl p-3 flex items-center gap-3">
@@ -1956,21 +1950,6 @@ function ReferralWidget({ referral }: { referral: Referral }) {
             >
               {copied ? 'Copied!' : 'Copy'}
             </button>
-          </div>
-
-          <div className="flex gap-2">
-            <a href={twitterShareUrl(referral.code)} target="_blank" rel="noopener noreferrer"
-              className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] rounded-lg py-2 text-center text-[10px] font-bold text-zinc-400 transition-all">
-              𝕏
-            </a>
-            <a href={whatsappShareUrl(referral.code)} target="_blank" rel="noopener noreferrer"
-              className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] rounded-lg py-2 text-center text-[10px] font-bold text-zinc-400 transition-all">
-              WhatsApp
-            </a>
-            <a href={emailShareUrl(referral.code)}
-              className="flex-1 bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] rounded-lg py-2 text-center text-[10px] font-bold text-zinc-400 transition-all">
-              Email
-            </a>
           </div>
         </div>
       </Section>

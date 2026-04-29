@@ -30,21 +30,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid genre' }, { status: 400 })
   }
 
-  // Clear any old preferences, then insert new ones
-  const { error: deleteErr } = await supabase.from('fan_preferences').delete().eq('user_id', user.id)
+  const { error: rpcErr } = await supabase.rpc('set_fan_preferences', {
+    p_user_id: user.id,
+    p_genres: genres,
+  })
 
-  if (deleteErr) {
-    console.error('[fan-preferences] delete failed:', deleteErr.message, deleteErr.code)
-    return NextResponse.json({ error: deleteErr.message }, { status: 500 })
-  }
-
-  const { error: insertErr } = await supabase
-    .from('fan_preferences')
-    .insert(genres.map(genre => ({ user_id: user.id, genre })))
-
-  if (insertErr) {
-    console.error('[fan-preferences] insert failed:', insertErr.message, insertErr.code)
-    return NextResponse.json({ error: insertErr.message }, { status: 500 })
+  if (rpcErr) {
+    console.error('[fan-preferences] save failed:', rpcErr.message, rpcErr.code)
+    return NextResponse.json({ error: rpcErr.message }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import dynamic from 'next/dynamic'
 import { resolveAccent } from '@/lib/accent'
 import { useCurrency } from '@/app/providers/CurrencyProvider'
@@ -151,7 +153,7 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
     return (
       <main className="flex-1 min-h-screen bg-insound-bg">
         <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)' }}>
-          <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter font-display">insound.</Link>
+          <InsoundLogo size="lg" />
         </nav>
         <div className="max-w-2xl mx-auto px-6 py-12">
           <StripeCheckoutEmbed clientSecret={checkoutClientSecret} stripePromise={stripePromise} />
@@ -163,7 +165,7 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
   return (
     <main className="flex-1 min-h-screen bg-insound-bg" style={{ '--artist-accent': accent } as React.CSSProperties}>
       <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)' }}>
-        <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter font-display">insound.</Link>
+        <InsoundLogo size="lg" />
         <Link href={`/${artist.slug}`} className="text-sm font-bold text-zinc-400 hover:text-white transition-colors">
           ← {artist.name}
         </Link>
@@ -173,10 +175,9 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
         <div className="flex flex-col md:flex-row gap-10">
           {/* Photo gallery */}
           <div className="flex-1 min-w-0">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 mb-3">
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 mb-3">
               {merch.photos.length > 0 ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={merch.photos[selectedPhoto]} alt={merch.name} className="w-full h-full object-cover" />
+                <Image src={merch.photos[selectedPhoto]} fill className="object-cover" sizes="(min-width: 768px) 50vw, 100vw" alt={merch.name} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-zinc-700">
                   <svg width="64" height="64" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">

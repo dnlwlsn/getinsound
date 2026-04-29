@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
 
 type Programme = {
@@ -89,7 +90,7 @@ export function FoundingArtistsClient({ programme, artists: initialArtists, tota
     <div className="min-h-screen bg-insound-bg text-zinc-100 p-8">
       <div className="max-w-5xl mx-auto space-y-10">
         <div>
-          <a href="/admin" className="text-2xl font-display font-bold text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</a>
+          <InsoundLogo size="lg" href="/admin" />
           <h1 className="text-3xl font-display font-bold tracking-tight mt-4">Founding Artists</h1>
         </div>
 

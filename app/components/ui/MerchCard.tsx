@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface MerchCardProps {
   id: string
@@ -17,8 +18,7 @@ export function MerchCard({ id, name, price, photo, artistSlug, soldOut, accent 
     <Link href={`/${artistSlug}/merch/${id}`} className="group">
       <div className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 mb-2.5 transition-transform group-hover:scale-[1.02]">
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt={name} className="w-full h-full object-cover" />
+          <Image src={photo} fill className="object-cover" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" alt={name} />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-700">
             <svg width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">

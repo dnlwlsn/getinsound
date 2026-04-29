@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
 
 export default function AuthTransferPage() {
@@ -29,7 +30,7 @@ export default function AuthTransferPage() {
       const supabase = createClient()
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (user) {
-          setStatus('browser-ok')
+          window.location.href = next
         } else {
           setStatus('error')
         }
@@ -78,9 +79,7 @@ export default function AuthTransferPage() {
   return (
     <div className="min-h-screen bg-insound-bg text-white flex items-center justify-center p-6">
       <div className="w-full max-w-sm text-center">
-        <a href="/" className="text-3xl font-black text-orange-600 tracking-tighter font-display inline-block mb-8">
-          insound.
-        </a>
+        <InsoundLogo size="xl" className="inline-block mb-8" />
 
         {(status === 'checking' || status === 'transferring') && (
           <div className="space-y-4">
@@ -98,19 +97,13 @@ export default function AuthTransferPage() {
             </div>
             <div>
               <h1 className="text-lg font-bold mb-2">You&apos;re signed in</h1>
-              <p className="text-sm text-zinc-400">You can now open the Insound app.</p>
+              <p className="text-sm text-zinc-400">Redirecting you now...</p>
             </div>
-            <button
-              onClick={handleOpenInApp}
-              className="w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider"
-            >
-              Open in app
-            </button>
             <a
               href={next}
-              className="block text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider block text-center"
             >
-              Continue in browser instead
+              Continue
             </a>
           </div>
         )}
@@ -157,8 +150,8 @@ export default function AuthTransferPage() {
               <p className="text-sm text-zinc-400">This link has expired or has already been used. Please request a new one.</p>
             </div>
             <a
-              href="/signup"
-              className="inline-block w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider"
+              href="/auth"
+              className="inline-block w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider text-center"
             >
               Sign in again
             </a>

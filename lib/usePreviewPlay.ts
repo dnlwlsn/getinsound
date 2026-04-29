@@ -3,6 +3,7 @@ import { usePlayerStore, type Track } from '@/lib/stores/player'
 
 interface ReleaseInfo {
   id: string
+  slug: string
   title: string
   cover_url: string | null
   artist_id: string
@@ -40,6 +41,7 @@ export function usePreviewPlay() {
         artistName: release.artist_name,
         artistSlug: release.artist_slug,
         releaseId: release.id,
+        releaseSlug: release.slug,
         releaseTitle: release.title,
         coverUrl: release.cover_url,
         position: t.position,

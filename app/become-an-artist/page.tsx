@@ -14,6 +14,10 @@ export default async function BecomeArtistPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/signup?intent=artist')
 
+  if (!user.email_confirmed_at) {
+    redirect('/explore?verify=artist')
+  }
+
   const role = await getUserRole(supabase, user.id)
   if (role.isArtist) {
     const { data: account } = await supabase

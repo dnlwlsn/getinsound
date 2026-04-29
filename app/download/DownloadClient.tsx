@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
 interface DownloadTrack { title: string; url?: string }
@@ -105,9 +106,8 @@ export default function DownloadClient() {
     <article className="max-w-2xl mx-auto px-6 md:px-12 py-12 md:py-16 animate-slide-in-up">
       <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">Payment received — thank you</p>
       <div className="flex items-center gap-5 mb-10">
-        <div className="w-20 h-20 rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={coverSrc} alt={`${data.release.title} cover`} className="w-full h-full object-cover" />
+        <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0">
+          <Image src={coverSrc} fill className="object-cover" sizes="80px" alt={`${data.release.title} cover`} />
         </div>
         <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-black tracking-tight truncate font-display">{data.release.title}</h1>

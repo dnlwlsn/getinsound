@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
@@ -369,7 +371,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
     <div className="min-h-screen flex font-display text-zinc-100 bg-insound-bg">
       {/* Sidebar */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
-        <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter mb-12 block hover:text-orange-500 transition-colors">insound.</Link>
+        <InsoundLogo size="lg" className="mb-12 block" />
         <nav className="space-y-1 flex-1">
           <SidebarLink href="/dashboard" label="Dashboard" icon="grid" />
           <SidebarLink href="/discography" label="Discography" icon="music" active />
@@ -452,10 +454,9 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                       <td className="p-5 pl-6 text-zinc-600 font-mono text-xs">{String(i + 1).padStart(2, '0')}</td>
                       <td className="p-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
+                          <div className="relative w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
                             {r.cover_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={r.cover_url} alt={`${r.title} cover art`} className="w-full h-full object-cover" />
+                              <Image src={r.cover_url} fill className="object-cover" sizes="40px" alt={`${r.title} cover art`} />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-zinc-600">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
@@ -585,7 +586,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                 </div>
 
                 {/* Price */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Price (GBP)</label>
                     <div className="flex items-center gap-2">

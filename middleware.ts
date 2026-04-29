@@ -46,9 +46,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Capture referral code from ?ref= into a cookie (7-day expiry)
-  const refCode = request.nextUrl.searchParams.get('ref')
-
   // ── Supabase auth (may rebuild supabaseResponse via setAll) ──
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -182,15 +179,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (refCode && /^[A-Z0-9]{6}$/.test(refCode) && hasFunctionalConsent) {
-    supabaseResponse.cookies.set('insound_ref', refCode, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-      sameSite: 'lax',
-      secure: true,
-      httpOnly: false,
-    })
-  }
 
   return supabaseResponse
 }

@@ -17,6 +17,7 @@ export function FavouriteButton({ trackId, releaseId, size = 18, className = '',
   const [userId, setUserId] = useState<string | null | undefined>(undefined)
   const [showPrompt, setShowPrompt] = useState(false)
   const [error, setError] = useState(false)
+  const [burst, setBurst] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -47,7 +48,10 @@ export function FavouriteButton({ trackId, releaseId, size = 18, className = '',
     if (trackId) ok = await toggleTrack(trackId)
     else if (releaseId) ok = await toggleRelease(releaseId)
 
-    if (!ok) {
+    if (ok) {
+      setBurst(true)
+      setTimeout(() => setBurst(false), 400)
+    } else {
       setError(true)
       setTimeout(() => setError(false), 2500)
     }
@@ -60,7 +64,7 @@ export function FavouriteButton({ trackId, releaseId, size = 18, className = '',
       <button
         onClick={handleClick}
         aria-label={saved ? 'Remove from saved' : 'Save for later'}
-        className={`transition-colors ${className}`}
+        className={`transition-colors ${burst ? 'heart-burst' : ''} ${className}`}
       >
         <svg
           width={size}

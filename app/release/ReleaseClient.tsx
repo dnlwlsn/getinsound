@@ -4,12 +4,14 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Script from 'next/script'
 import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
 import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
 import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { resolveAccent } from '@/lib/accent'
+import { extractDominantColor, hexToRgba } from '@/lib/color-extract'
 
 /* ── Deterministic gradient fallback ──────────────────────────── */
 function cyrb53(str: string, seed = 0) {
@@ -65,14 +67,14 @@ interface Track { id: string; title: string; position: number; duration_sec: num
 interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null; description: string | null; tracks: Track[] }
 interface Artist { id: string; slug: string; name: string; bio: string; avatar_url: string; accent_colour: string | null }
 interface DiscographyItem { id: string; slug: string; title: string; type: string; cover_url: string | null; artistSlug: string }
-interface Supporter { name: string; paidAt: string }
+interface Supporter { name: string; paidAt: string | null }
 interface Recommendation { id: string; slug: string; title: string; cover_url: string | null; price_pence: number; currency: string; artistName: string; artistSlug: string }
 
 type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'preorder-confirmed' | 'error'
 
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
-export default function ReleaseClient({ artist, release, discography, supporters, recommendations }: { artist: Artist; release: Release; discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[] }) {
+export default function ReleaseClient({ artist, release, discography, supporters, recommendations, isOwned = false }: { artist: Artist; release: Release; discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[]; isOwned?: boolean }) {
   // Set accent colour CSS variable
   useEffect(() => {
     document.documentElement.style.setProperty('--artist-accent', artist.accent_colour || '#F56D00')
@@ -117,17 +119,20 @@ export default function ReleaseClient({ artist, release, discography, supporters
 
     try {
       if (!(window as any).Stripe) {
-        throw new Error('Payment system unavailable. Please check your connection and try again.')
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script')
+          s.src = 'https://js.stripe.com/v3/'
+          s.onload = () => resolve()
+          s.onerror = () => reject(new Error('Failed to load payment system.'))
+          document.head.appendChild(s)
+        })
       }
       const stripe = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY)
       const supabase = createClient()
-      const refCookie = document.cookie.split('; ').find(c => c.startsWith('insound_ref='))
-      const refCode = refCookie?.split('=')[1] || undefined
       const { data, error } = await supabase.functions.invoke('checkout-create', {
         body: {
           release_id: release.id,
           origin: window.location.origin,
-          ref_code: refCode,
           ...(customAmountPence ? { custom_amount: customAmountPence } : {}),
         },
       })
@@ -212,8 +217,8 @@ export default function ReleaseClient({ artist, release, discography, supporters
 
   return (
     <>
-      {/* Stripe.js script */}
-      <Script src="https://js.stripe.com/v3/" strategy="lazyOnload" />
+      {/* Preload Stripe.js so the buy button is instant */}
+      <Script src="https://js.stripe.com/v3/" strategy="afterInteractive" />
 
       <ReleasePageContent
         artist={artist}
@@ -226,6 +231,7 @@ export default function ReleaseClient({ artist, release, discography, supporters
         discography={discography}
         supporters={supporters}
         recommendations={recommendations}
+        isOwned={isOwned}
       />
 
       {/* Toast */}
@@ -372,16 +378,25 @@ export default function ReleaseClient({ artist, release, discography, supporters
 
 /* ── Release page content ────────────────────────────────────── */
 
-function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, accent, openCheckout, discography, supporters, recommendations }: {
+function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, accent, openCheckout, discography, supporters, recommendations, isOwned }: {
   artist: Artist; release: Release; tracks: Track[]; typeLabel: string; coverSrc: string; accent: string
   openCheckout: (customAmountPence?: number) => void
   discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[]
+  isOwned: boolean
 }) {
+  const [ownedDismissed, setOwnedDismissed] = useState(false)
+  const [albumColor, setAlbumColor] = useState<string | null>(null)
   const play = usePlayerStore(s => s.play)
   const currentTrack = usePlayerStore(s => s.currentTrack)
   const isPlaying = usePlayerStore(s => s.isPlaying)
   const pause = usePlayerStore(s => s.pause)
   const resume = usePlayerStore(s => s.resume)
+
+  useEffect(() => {
+    if (release.cover_url) {
+      extractDominantColor(release.cover_url).then(setAlbumColor)
+    }
+  }, [release.cover_url])
 
   const handleToggleTrack = useCallback((track: Track, index: number) => {
     if (currentTrack?.id === track.id) {
@@ -393,6 +408,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
         artistName: artist.name,
         artistSlug: artist.slug,
         releaseId: release.id,
+        releaseSlug: release.slug,
         releaseTitle: release.title,
         coverUrl: release.cover_url,
         position: t.position,
@@ -412,15 +428,17 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
 
   return (
     <main className="flex-1 relative pb-36">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--accent-glow),transparent_60%)] pointer-events-none" style={{ '--accent-glow': `${accent}0d` } as React.CSSProperties} />
+      <div
+        className="absolute inset-0 pointer-events-none album-color-wash"
+        style={{ background: `radial-gradient(ellipse at top, ${hexToRgba(albumColor || accent, 0.12)}, transparent 60%)` }}
+      />
 
       <article className="max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-14">
         <div className="flex flex-col sm:flex-row gap-8 md:gap-10 items-start">
           {/* Cover — constrained size */}
           <div className="w-40 mx-auto sm:mx-0 sm:w-56 md:w-64 shrink-0">
-            <div className="aspect-square w-full rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={coverSrc} alt={`${release.title} cover art`} className="w-full h-full object-cover" />
+            <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl">
+              <Image src={coverSrc} fill className="object-cover" sizes="(min-width: 768px) 256px, (min-width: 640px) 224px, 160px" alt={`${release.title} cover art`} priority />
             </div>
           </div>
 
@@ -432,6 +450,23 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
             <h1 className="text-3xl md:text-4xl font-black tracking-tight mt-2 mb-1.5 font-display">{release.title}</h1>
             <p className="text-zinc-500 text-sm mb-6">{typeLabel} · {tracks.length} track{tracks.length === 1 ? '' : 's'}</p>
 
+            {isOwned && !ownedDismissed && (
+              <div className="mb-4 bg-zinc-900/80 border border-zinc-800 rounded-xl px-4 py-3 flex items-start gap-3">
+                <span className="text-orange-600 text-sm mt-0.5 shrink-0">✓</span>
+                <p className="text-sm text-zinc-300 flex-1">
+                  You already own this release — you can find it in your{' '}
+                  <Link href="/library" className="text-orange-500 hover:text-orange-400 font-bold">Collection</Link>.
+                  {' '}Dismiss this if you want to purchase it again.
+                </p>
+                <button
+                  onClick={() => setOwnedDismissed(true)}
+                  className="shrink-0 text-zinc-600 hover:text-zinc-400 transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                </button>
+              </div>
+            )}
             <PriceSection release={release} accent={accent} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
 
             <div className="flex items-center gap-3 mt-4">
@@ -539,9 +574,9 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
               {discography.map(d => (
                 <Link key={d.id} href={`/release?a=${d.artistSlug}&r=${d.slug}`} className="group">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-1.5">
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-1.5">
                     {d.cover_url ? (
-                      <img src={d.cover_url} alt={d.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      <Image src={d.cover_url} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(min-width: 768px) 16vw, (min-width: 640px) 25vw, 33vw" alt={d.title} />
                     ) : (
                       <div className="w-full h-full" style={{ background: accent, opacity: 0.3 }} />
                     )}
@@ -563,9 +598,9 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {recommendations.map(r => (
                 <Link key={r.id} href={`/release?a=${r.artistSlug}&r=${r.slug}`} className="group">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-2">
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-2">
                     {r.cover_url ? (
-                      <img src={r.cover_url} alt={r.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      <Image src={r.cover_url} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(min-width: 768px) 25vw, 50vw" alt={r.title} />
                     ) : (
                       <div className="w-full h-full bg-zinc-800" />
                     )}
@@ -600,7 +635,6 @@ function PriceSection({ release, accent, onBuy }: { release: Release; accent: st
   const fees = calculateFeesPence(amountPence)
   const artistGetsAmount = convertPrice(Math.max(0, fees.artistReceived) / 100, relCurrency, currency)
   const insoundFeeAmount = convertPrice(fees.insoundFee / 100, relCurrency, currency)
-  const stripeFeeAmount = convertPrice(fees.stripeFee / 100, relCurrency, currency)
 
   const displayPrice = formatPrice(convertPrice(release.price_pence / 100, relCurrency, currency))
   const displayMin = formatPrice(convertPrice(minPence / 100, relCurrency, currency))
@@ -663,7 +697,7 @@ function PriceSection({ release, accent, onBuy }: { release: Release; accent: st
 
       {isValid && (
         <div className="text-[11px] text-zinc-600 mb-5 space-y-0.5">
-          <p>{formatPrice(artistGetsAmount)} to the artist · {formatPrice(insoundFeeAmount)} Insound fee · {formatPrice(stripeFeeAmount)} processing</p>
+          <p>{formatPrice(artistGetsAmount)} to the artist · {formatPrice(insoundFeeAmount)} to Insound</p>
         </div>
       )}
       {!isValid && (

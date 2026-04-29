@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin'
 import { AdminFeatureFlags } from './AdminFeatureFlags'
@@ -48,7 +49,7 @@ export default async function AdminPage() {
     <div className="min-h-screen bg-insound-bg text-zinc-100 p-8">
       <div className="max-w-5xl mx-auto space-y-10">
         <div>
-          <a href="/" className="text-2xl font-display font-bold text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</a>
+          <InsoundLogo size="lg" />
           <h1 className="text-3xl font-display font-bold tracking-tight mt-4">Admin</h1>
         </div>
 

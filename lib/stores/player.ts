@@ -7,6 +7,7 @@ export interface Track {
   artistName: string
   artistSlug: string
   releaseId: string
+  releaseSlug: string
   releaseTitle: string
   coverUrl: string | null
   position: number

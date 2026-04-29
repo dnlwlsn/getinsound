@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const requestItems: BasketRequestItem[] = body.items;
-    const origin: string = body.origin || 'https://getinsound.com';
     const fanCurrency: string | undefined = body.fan_currency;
     const refCode: string | undefined = body.ref_code;
 
@@ -51,7 +50,6 @@ Deno.serve(async (req) => {
       return json({ error: 'Maximum 20 items per basket' }, 400);
     }
 
-    // Default untyped items to 'release' for backwards compat
     for (const item of requestItems) {
       if (!(item as any).type) (item as any).type = 'release';
     }
@@ -135,7 +133,6 @@ Deno.serve(async (req) => {
         return json({ error: 'Some merch items are no longer available', stale_ids: staleIds }, 400);
       }
 
-      // Validate stock and variants
       for (const reqItem of merchItems) {
         const m = data.find((d: any) => d.id === reqItem.merch_id)!;
         if (m.stock <= 0) return json({ error: `${m.name} is sold out` }, 400);
@@ -255,45 +252,26 @@ Deno.serve(async (req) => {
 
     if (basketErr) return json({ error: 'Failed to create basket session' }, 500);
 
-    // ── Create one Stripe session per artist ──
-    // Stripe only supports a single transfer_data destination per payment,
-    // so multi-artist baskets get one checkout per artist.
+    // ── Build line items for a single consolidated Stripe session ──
     const hasMerch = merchItems.length > 0;
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
-    // Group line items and fees by artist
-    interface ArtistGroup {
-      artistId: string;
-      artistName: string;
-      stripeAccountId: string;
-      lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
-      applicationFee: number;
-      hasReleases: boolean;
-      hasMerch: boolean;
+    // Validate all items share the same currency
+    const allCurrencies = new Set<string>();
+    for (const release of releases) {
+      allCurrencies.add((release.currency || 'GBP').toLowerCase());
     }
-
-    const artistGroups = new Map<string, ArtistGroup>();
-    for (const artistId of allArtistIds) {
-      const rel = releases.find((r: any) => r.artist_id === artistId);
-      const mer = merchData.find((m: any) => m.artist_id === artistId);
-      const artistObj = rel
-        ? (Array.isArray(rel.artists) ? rel.artists[0] : rel.artists)
-        : (mer ? (Array.isArray(mer.artists) ? mer.artists[0] : mer.artists) : null);
-      artistGroups.set(artistId, {
-        artistId,
-        artistName: artistObj?.name || 'Artist',
-        stripeAccountId: accountMap.get(artistId)!,
-        lineItems: [],
-        applicationFee: 0,
-        hasReleases: false,
-        hasMerch: false,
-      });
+    for (const merch of merchData) {
+      allCurrencies.add((merch.currency || 'GBP').toLowerCase());
     }
+    if (allCurrencies.size > 1) {
+      return json({ error: 'Items in different currencies cannot be combined in one checkout. Please remove conflicting items.' }, 400);
+    }
+    const sessionCurrency = allCurrencies.values().next().value || 'gbp';
 
-    // Assign release line items
     for (const reqItem of releaseItems) {
       const release = releases.find((r: any) => r.id === reqItem.release_id)!;
       const artist = Array.isArray(release.artists) ? release.artists[0] : release.artists;
-      const group = artistGroups.get(release.artist_id)!;
 
       let unitAmount = release.price_pence;
       if (release.pwyw_enabled && reqItem.custom_amount != null) {
@@ -304,13 +282,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      const bps = foundingArtistMap.get(release.artist_id) ? FOUNDING_ARTIST_FEE_BPS : STANDARD_FEE_BPS;
-      group.applicationFee += Math.round((unitAmount * bps) / 10000);
-      group.hasReleases = true;
-      group.lineItems.push({
+      lineItems.push({
         quantity: 1,
         price_data: {
-          currency: (release.currency || 'GBP').toLowerCase(),
+          currency: sessionCurrency,
           unit_amount: unitAmount,
           product_data: {
             name: release.title,
@@ -321,23 +296,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign merch line items
     for (const reqItem of merchItems) {
       const merch = merchData.find((m: any) => m.id === reqItem.merch_id)!;
       const artist = Array.isArray(merch.artists) ? merch.artists[0] : merch.artists;
-      const group = artistGroups.get(merch.artist_id)!;
-
-      group.applicationFee += Math.round((merch.price * STANDARD_FEE_BPS) / 10000);
-      group.hasMerch = true;
       const variant = reqItem.variant || null;
       const itemName = variant ? `${merch.name} (${variant})` : merch.name;
       const photos = (merch.photos as string[]) || [];
 
-      const merchCurrency = (merch.currency || 'GBP').toLowerCase();
-      group.lineItems.push({
+      lineItems.push({
         quantity: 1,
         price_data: {
-          currency: merchCurrency,
+          currency: sessionCurrency,
           unit_amount: merch.price,
           product_data: {
             name: itemName,
@@ -348,10 +317,10 @@ Deno.serve(async (req) => {
       });
 
       if (merch.postage > 0) {
-        group.lineItems.push({
+        lineItems.push({
           quantity: 1,
           price_data: {
-            currency: merchCurrency,
+            currency: sessionCurrency,
             unit_amount: merch.postage,
             product_data: { name: `Postage — ${itemName}` },
           },
@@ -359,58 +328,35 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Validate all line items in each artist group share the same currency
-    for (const group of artistGroups.values()) {
-      const currencies = new Set(group.lineItems.map(li => (li.price_data as any)?.currency).filter(Boolean));
-      if (currencies.size > 1) {
-        return json({ error: `${group.artistName} has items in multiple currencies. Please remove conflicting items.` }, 400);
-      }
-    }
+    // ── Create one consolidated Stripe session ──
+    // No transfer_data — the webhook will create separate transfers to each artist.
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: 'payment',
+      ui_mode: 'embedded',
+      redirect_on_completion: 'never',
+      line_items: lineItems,
+      metadata: {
+        type: 'basket',
+        basket_session_id: basketRow.id,
+        fan_currency: fanCurrency || 'GBP',
+      },
+    };
 
-    // Create one Stripe session per artist group
-    const sessions: { artist_name: string; client_secret: string; session_id: string; has_releases: boolean; has_merch: boolean }[] = [];
-
-    for (const group of artistGroups.values()) {
-      const sessionParams: Stripe.Checkout.SessionCreateParams = {
-        mode: 'payment',
-        ui_mode: 'embedded',
-        redirect_on_completion: 'never',
-        line_items: group.lineItems,
-        payment_intent_data: {
-          application_fee_amount: group.applicationFee,
-          transfer_data: { destination: group.stripeAccountId },
-          metadata: {
-            type: 'basket',
-            basket_session_id: basketRow.id,
-            artist_id: group.artistId,
-          },
-        },
-        metadata: {
-          type: 'basket',
-          basket_session_id: basketRow.id,
-          artist_id: group.artistId,
-          fan_currency: fanCurrency || 'GBP',
-        },
+    if (hasMerch) {
+      sessionParams.shipping_address_collection = {
+        allowed_countries: SHIPPING_COUNTRIES as [string, ...string[]],
       };
-
-      if (group.hasMerch) {
-        sessionParams.shipping_address_collection = {
-          allowed_countries: SHIPPING_COUNTRIES as [string, ...string[]],
-        };
-      }
-
-      const session = await stripe.checkout.sessions.create(sessionParams);
-      sessions.push({
-        artist_name: group.artistName,
-        client_secret: session.client_secret!,
-        session_id: session.id,
-        has_releases: group.hasReleases,
-        has_merch: group.hasMerch,
-      });
     }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return json({
-      sessions,
+      sessions: [{
+        client_secret: session.client_secret!,
+        session_id: session.id,
+        has_releases: releaseItems.length > 0,
+        has_merch: hasMerch,
+      }],
       has_merch: hasMerch,
       has_releases: releaseItems.length > 0,
     });

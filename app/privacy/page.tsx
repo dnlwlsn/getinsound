@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Insound',
@@ -12,7 +13,7 @@ export default function PrivacyPage() {
     <main className="bg-zinc-950 text-white min-h-screen">
       <nav className="fixed top-0 left-0 right-0 z-50">
         <div id="navInner" className="mx-4 mt-4 px-5 py-3 rounded-2xl ring-1 ring-white/[0.05] flex items-center justify-between" style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-          <Link href="/" className="font-display text-lg font-bold">insound<span className="text-orange-500">.</span></Link>
+          <InsoundLogo size="sm" />
           <Link href="/" className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">&larr; Home</Link>
         </div>
       </nav>

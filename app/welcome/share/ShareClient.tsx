@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import {
   referralShareUrl,
   twitterShareUrl,
@@ -33,7 +34,7 @@ export function ShareClient({ referralCode }: Props) {
         >
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-orange-600 to-transparent" />
 
-          <p className="text-orange-600 font-black text-2xl tracking-tighter font-display mb-8">insound.</p>
+          <InsoundLogo size="lg" className="mb-8" />
 
           <h1 className="font-display text-3xl font-bold tracking-tight mb-3">
             You&apos;re in.

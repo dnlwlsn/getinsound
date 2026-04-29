@@ -6,6 +6,7 @@ import { useCurrency } from '@/app/providers/CurrencyProvider'
 import { createClient } from '@/lib/supabase/client'
 import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
+import Image from 'next/image'
 
 type Stage = 'review' | 'checkout' | 'preparing' | 'consent' | 'download' | 'confirmed' | 'error'
 
@@ -27,7 +28,9 @@ export function BasketDrawer({ onClose }: Props) {
   const [basketHadMerch, setBasketHadMerch] = useState(false)
   const [basketHadReleases, setBasketHadReleases] = useState(false)
   const [merchOrderNames, setMerchOrderNames] = useState<string[]>([])
+  const [wasGuest, setWasGuest] = useState(false)
   const sessionIdRef = useRef<string | null>(null)
+  const stripeRef = useRef<any>(null)
   const stripeMountRef = useRef<HTMLDivElement>(null)
   const embeddedCheckoutRef = useRef<any>(null)
   const drawerRef = useRef<HTMLDivElement>(null)
@@ -90,8 +93,42 @@ export function BasketDrawer({ onClose }: Props) {
     onClose()
   }, [onClose])
 
+  const mountSession = useCallback(async (stripe: any, clientSecret: string, sessionId: string) => {
+    if (embeddedCheckoutRef.current) {
+      try { embeddedCheckoutRef.current.destroy() } catch {}
+      embeddedCheckoutRef.current = null
+    }
+    if (stripeMountRef.current) stripeMountRef.current.innerHTML = ''
+
+    sessionIdRef.current = sessionId
+
+    const embedded = await stripe.initEmbeddedCheckout({
+      clientSecret,
+      onComplete: () => {
+        setStage('confirmed')
+        clear()
+      },
+    })
+    embeddedCheckoutRef.current = embedded
+
+    requestAnimationFrame(() => {
+      if (stripeMountRef.current) embedded.mount(stripeMountRef.current)
+    })
+  }, [clear])
+
   const openCheckout = useCallback(async () => {
     if (items.length === 0) return
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user && !user.email_confirmed_at) {
+      setErrorTitle('Email not verified')
+      setErrorMsg('verify_email')
+      setStage('error')
+      return
+    }
+
+    setWasGuest(!user)
     setStage('checkout')
 
     // Capture basket composition before checkout
@@ -114,9 +151,6 @@ export function BasketDrawer({ onClose }: Props) {
       }
       const stripe = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY)
       const supabase = createClient()
-      const refCookie = document.cookie.split('; ').find(c => c.startsWith('insound_ref='))
-      const refCode = refCookie?.split('=')[1] || undefined
-
       const { data: { session } } = await supabase.auth.getSession()
       const requestBody = {
         items: items.map(i =>
@@ -126,7 +160,6 @@ export function BasketDrawer({ onClose }: Props) {
         ),
         fan_currency: currency,
         origin: window.location.origin,
-        ref_code: refCode,
       }
 
       let data: any
@@ -154,22 +187,9 @@ export function BasketDrawer({ onClose }: Props) {
       }
       if (!data?.sessions || data.sessions.length === 0) throw new Error('No checkout session returned')
 
-      // Use the first session (single-artist baskets are most common)
-      // Multi-artist baskets will sequentially complete each session
-      const firstSession = data.sessions[0]
-      sessionIdRef.current = firstSession.session_id
-      const embedded = await stripe.initEmbeddedCheckout({
-        clientSecret: firstSession.client_secret,
-        onComplete: () => {
-          setStage('confirmed')
-          clear()
-        },
-      })
-      embeddedCheckoutRef.current = embedded
-
-      requestAnimationFrame(() => {
-        if (stripeMountRef.current) embedded.mount(stripeMountRef.current)
-      })
+      const { client_secret, session_id } = data.sessions[0]
+      stripeRef.current = stripe
+      await mountSession(stripe, client_secret, session_id)
     } catch (err: any) {
       setErrorTitle("Couldn't open checkout.")
       setErrorMsg(err.message || 'Please try again.')
@@ -283,10 +303,9 @@ export function BasketDrawer({ onClose }: Props) {
                           return (
                             <div key={item.releaseId} className="py-2 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
                               <div className="flex items-center gap-3">
-                                <Link href={`/release?a=${item.artistSlug}&r=${item.releaseSlug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                                <Link href={`/release?a=${item.artistSlug}&r=${item.releaseSlug}`} className="relative w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                                   {item.coverUrl ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={item.coverUrl} alt={item.releaseTitle} className="w-full h-full object-cover" />
+                                    <Image src={item.coverUrl} fill className="object-cover" sizes="40px" alt={item.releaseTitle} />
                                   ) : (
                                     <div className="w-full h-full" style={{ background: item.accentColour || '#F56D00' }} />
                                   )}
@@ -327,10 +346,9 @@ export function BasketDrawer({ onClose }: Props) {
                           : null
                         return (
                           <div key={`${item.merchId}-${item.variant}`} className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
-                            <Link href={`/${item.artistSlug}/merch/${item.merchId}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                            <Link href={`/${item.artistSlug}/merch/${item.merchId}`} className="relative w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                               {item.photoUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={item.photoUrl} alt={item.merchName} className="w-full h-full object-cover" />
+                                <Image src={item.photoUrl} fill className="object-cover" sizes="40px" alt={item.merchName} />
                               ) : (
                                 <div className="w-full h-full bg-zinc-800" />
                               )}
@@ -404,7 +422,11 @@ export function BasketDrawer({ onClose }: Props) {
             {basketHadReleases && (
               <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Music</p>
-                <p className="text-sm text-zinc-300">Your music is ready to listen to and download from your collection.</p>
+                <p className="text-sm text-zinc-300">
+                  {wasGuest
+                    ? 'Check your email for a link to access your music.'
+                    : 'Your music is ready to listen to and download from your collection.'}
+                </p>
               </div>
             )}
 
@@ -423,14 +445,27 @@ export function BasketDrawer({ onClose }: Props) {
               </div>
             )}
 
-            <Link
-              href="/library"
-              onClick={handleClose}
-              className="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
-            >
-              Go to my collection
-            </Link>
-            <p className="text-center text-[11px] text-zinc-600 font-medium mt-3">A receipt has been sent by Stripe.</p>
+            {wasGuest ? (
+              <button
+                onClick={handleClose}
+                className="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              >
+                Done
+              </button>
+            ) : (
+              <Link
+                href="/library"
+                onClick={handleClose}
+                className="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              >
+                Go to my collection
+              </Link>
+            )}
+            <p className="text-center text-[11px] text-zinc-600 font-medium mt-3">
+              {wasGuest
+                ? 'A receipt and sign-in link have been sent to your email.'
+                : 'A receipt has been sent by Stripe.'}
+            </p>
           </div>
         )}
 
@@ -439,7 +474,26 @@ export function BasketDrawer({ onClose }: Props) {
           <div className="p-12 text-center mt-20">
             <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Something&apos;s off</p>
             <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
-            <p className="text-zinc-500 text-sm font-medium mb-6">{errorMsg}</p>
+            {errorMsg === 'verify_email' ? (
+              <div className="mb-6">
+                <p className="text-zinc-500 text-sm font-medium mb-4">Please verify your email before purchasing.</p>
+                <button
+                  onClick={async () => {
+                    const supabase = createClient()
+                    const { data: { user } } = await supabase.auth.getUser()
+                    if (user?.email) {
+                      await supabase.auth.resend({ type: 'signup', email: user.email })
+                      setErrorMsg('Verification email sent! Check your inbox, then try again.')
+                    }
+                  }}
+                  className="text-orange-500 hover:text-orange-400 text-sm font-bold"
+                >
+                  Resend verification email
+                </button>
+              </div>
+            ) : (
+              <p className="text-zinc-500 text-sm font-medium mb-6">{errorMsg}</p>
+            )}
             <button onClick={handleClose} className="bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Close</button>
           </div>
         )}
@@ -459,9 +513,18 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
   openCheckout: () => void
 }) {
   const { currency, formatPrice, convertPrice } = useCurrency()
-  const baseCurrency = items[0]?.currency || 'GBP'
 
-  const totalPence = total()
+  const feeCurrency = items[0]?.currency || 'GBP'
+  const convertedSubtotal = items.reduce((sum, i) => {
+    const pence = i.type === 'release' ? (i.customAmountPence ?? i.pricePence) : i.pricePence
+    return sum + convertPrice(pence / 100, i.currency, currency)
+  }, 0)
+  const convertedPostage = items.reduce((sum, i) => {
+    if (i.type === 'merch') return sum + convertPrice(i.postagePence / 100, i.currency, currency)
+    return sum
+  }, 0)
+  const convertedTotal = convertedSubtotal + convertedPostage
+
   const fees = calculateFeesPence(itemsTotal())
   const artistGetsPence = fees.artistReceived + postageTotal()
 
@@ -474,21 +537,21 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
         <div className="flex items-center justify-between">
           <span className="text-sm font-bold text-zinc-400">Subtotal</span>
           <span className="text-sm font-bold text-white">
-            {formatPrice(convertPrice(itemsTotal() / 100, baseCurrency, currency))}
+            {formatPrice(convertedSubtotal)}
           </span>
         </div>
-        {postageTotal() > 0 && (
+        {convertedPostage > 0 && (
           <div className="flex items-center justify-between">
             <span className="text-sm font-bold text-zinc-400">P&amp;P</span>
             <span className="text-sm font-bold text-white">
-              {formatPrice(convertPrice(postageTotal() / 100, baseCurrency, currency))}
+              {formatPrice(convertedPostage)}
             </span>
           </div>
         )}
         <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
           <span className="text-sm font-bold text-zinc-400">Total</span>
           <span className="text-xl font-black text-orange-600">
-            {formatPrice(convertPrice(totalPence / 100, baseCurrency, currency))}
+            {formatPrice(convertedTotal)}
           </span>
         </div>
       </div>
@@ -497,17 +560,17 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
       <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 mb-5 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-zinc-500 font-medium">
-            10% Insound fee
-            <span className="text-zinc-600 ml-1">(incl. {formatPrice(convertPrice(fees.stripeFee / 100, baseCurrency, currency))} Stripe fee)</span>
+            10% to Insound
+            <span className="text-zinc-600 ml-1">(incl. {formatPrice(convertPrice(fees.stripeFee / 100, feeCurrency, currency))} Stripe fee)</span>
           </span>
           <span className="text-[11px] text-zinc-400 font-medium">
-            {formatPrice(convertPrice(fees.insoundFee / 100, baseCurrency, currency))}
+            {formatPrice(convertPrice(fees.insoundFee / 100, feeCurrency, currency))}
           </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-zinc-500 font-medium">{artistLabel}</span>
           <span className="text-[11px] text-white font-bold">
-            {formatPrice(convertPrice(artistGetsPence / 100, baseCurrency, currency))}
+            {formatPrice(convertPrice(artistGetsPence / 100, feeCurrency, currency))}
           </span>
         </div>
       </div>
@@ -527,9 +590,7 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
         Checkout
       </button>
       <p className="text-center text-[10px] text-zinc-600 mt-3">
-        {hasMerch()
-          ? 'Music added to your collection after payment. Merch dispatched by the artist.'
-          : 'Added to your collection and available for download after payment.'}
+        No account needed — just enter your email at checkout.
       </p>
     </div>
   )

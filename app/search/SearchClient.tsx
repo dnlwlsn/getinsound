@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { useViewMode } from '@/lib/useViewMode'
 import { useCurrency } from '@/app/providers/CurrencyProvider'
@@ -147,7 +148,7 @@ export default function SearchClient() {
                       <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06] hover:ring-white/[0.12] transition-all duration-150"
                       >
                         {a.avatar_url ? (
-                          <img src={a.avatar_url} alt={a.name} className="w-12 h-12 rounded-full object-cover ring-1 ring-white/[0.1]" />
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden ring-1 ring-white/[0.1] shrink-0"><Image src={a.avatar_url} fill className="object-cover" sizes="48px" alt={a.name} /></div>
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-zinc-800 ring-1 ring-white/[0.1] flex items-center justify-center text-sm font-bold text-zinc-400">
                             {a.name.charAt(0).toUpperCase()}
@@ -187,9 +188,9 @@ export default function SearchClient() {
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
                     {results.releases.map(r => (
                       <Link key={r.id} href={`/release?a=${r.artist_slug}&r=${r.slug}`} className="group">
-                        <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-2">
+                        <div className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.06] mb-2">
                           {r.cover_url ? (
-                            <img src={r.cover_url} alt={r.title} className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity" />
+                            <Image src={r.cover_url} fill className="object-cover opacity-75 group-hover:opacity-100 transition-opacity" sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw" alt={r.title} />
                           ) : (
                             <div className="w-full h-full bg-zinc-800" />
                           )}
@@ -215,7 +216,7 @@ export default function SearchClient() {
                         className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] ring-1 ring-white/[0.06] hover:ring-white/[0.12] transition-all"
                       >
                         {r.cover_url ? (
-                          <img src={r.cover_url} alt={r.title} className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/[0.1]" />
+                          <div className="relative w-10 h-10 rounded-lg overflow-hidden ring-1 ring-white/[0.1] shrink-0"><Image src={r.cover_url} fill className="object-cover" sizes="40px" alt={r.title} /></div>
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-zinc-800 ring-1 ring-white/[0.1]" />
                         )}

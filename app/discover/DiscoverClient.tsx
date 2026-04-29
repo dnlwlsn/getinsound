@@ -2,12 +2,14 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { Badge } from '@/app/components/ui/Badge'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
-import { usePreviewPlay } from '@/lib/usePreviewPlay'
+import { GenrePromptCard } from '@/app/components/ui/GenrePromptCard'
+import { usePlayerStore } from '@/lib/stores/player'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -61,14 +63,7 @@ const PAGE_SIZE = 12
 
 /* ── SVG Icons ───────────────────────────────────────────────── */
 
-function PlayIcon({ size = 22, playing = false }: { size?: number; playing?: boolean }) {
-  if (playing) {
-    return (
-      <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24">
-        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-      </svg>
-    )
-  }
+function PlayIcon({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
       <path d="M8 5v14l11-7z" />
@@ -124,12 +119,30 @@ function formatDuration(sec: number | null): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+function DiscoverPlayButton({ releaseId, title }: { releaseId: string; title: string }) {
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
+  const active = currentTrack?.releaseId === releaseId
+  return (
+    <Link
+      href={`/release?r=${releaseId}`}
+      className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
+      aria-label={`Play ${title}`}
+    >
+      {active && isPlaying ? (
+        <svg width="14" height="14" fill="#000" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg>
+      ) : (
+        <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5"><path d="M8 5v14l11-7z" /></svg>
+      )}
+    </Link>
+  )
+}
+
 export default function DiscoverClient({ featured, newReleases, recommendations, fanGenres, isLoggedIn, artistBadges = {} }: Props) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const { mode: viewMode, set: setViewMode } = useViewMode()
   const [currentGenre, setCurrentGenre] = useState('All')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const { playRelease, isReleaseActive, isPlaying: isPlayerPlaying } = usePreviewPlay()
   const [expandedReleases, setExpandedReleases] = useState<Set<string>>(new Set())
   const [trackCache, setTrackCache] = useState<Record<string, TrackItem[]>>({})
   const [loadingTracks, setLoadingTracks] = useState<Set<string>>(new Set())
@@ -162,21 +175,6 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
       }
     }
   }, [trackCache, loadingTracks])
-
-  const handlePlay = useCallback((e: React.MouseEvent, r: Release) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const artist = getArtist(r.artists as Artist | Artist[])
-    playRelease({
-      id: r.id,
-      title: r.title,
-      cover_url: r.cover_url,
-      artist_id: artist.id,
-      artist_name: artist.name,
-      artist_slug: artist.slug,
-      accent_colour: artist.accent_colour,
-    })
-  }, [playRelease])
 
   const genres = useMemo(() => getAllSounds(newReleases), [newReleases])
 
@@ -318,6 +316,12 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
         </section>
       )}
 
+      {isLoggedIn && fanGenres.length === 0 && (
+        <div className="max-w-7xl mx-auto px-5 md:px-10 pt-8">
+          <GenrePromptCard />
+        </div>
+      )}
+
       {/* ── SECTION 2: NEW THIS WEEK ──────────────────────────── */}
       <section className="py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-5 md:px-10">
@@ -382,7 +386,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                 const artist = getArtist(r.artists as Artist | Artist[])
                 return (
                   <div key={r.id} className="group cursor-pointer">
-                    <Link href={`/${artist.slug}/${r.slug}`}>
+                    <Link href={`/release?a=${artist.slug}&r=${r.slug}`}>
                       <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
                         {r.cover_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -400,19 +404,10 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                         <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                           {r.type}
                         </span>
-                        <button
-                          onClick={(e) => handlePlay(e, r)}
-                          className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                          aria-label={`Play ${r.title}`}
-                        >
-                          <div className="bg-orange-600 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl">
-                            <PlayIcon size={18} playing={isReleaseActive(r.id) && isPlayerPlaying} />
-                          </div>
-                        </button>
                       </div>
                     </Link>
                     <div className="flex items-center justify-between">
-                      <Link href={`/${artist.slug}/${r.slug}`} className="min-w-0 flex-1">
+                      <Link href={`/release?a=${artist.slug}&r=${r.slug}`} className="min-w-0 flex-1">
                         <h3 className="font-bold text-sm truncate">{r.title}</h3>
                       </Link>
                       <FavouriteButton releaseId={r.id} size={16} />
@@ -476,17 +471,16 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                           </svg>
                         </button>
                       )}
-                      <Link href={`/${artist.slug}/${r.slug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                      <Link href={`/release?a=${artist.slug}&r=${r.slug}`} className="relative w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                         {r.cover_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={r.cover_url} className="w-full h-full object-cover" loading="lazy" alt={r.title} />
+                          <Image src={r.cover_url} fill className="object-cover" sizes="40px" alt={r.title} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xs font-black text-zinc-700">
                             {r.title.charAt(0)}
                           </div>
                         )}
                       </Link>
-                      <Link href={`/${artist.slug}/${r.slug}`} className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0 hover:text-orange-500 transition-colors">
+                      <Link href={`/release?a=${artist.slug}&r=${r.slug}`} className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0 hover:text-orange-500 transition-colors">
                         {r.title}
                       </Link>
                       <span className="hidden md:flex items-center gap-1 text-[13px] text-zinc-500 truncate w-36 flex-shrink-0">
@@ -510,21 +504,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                         {price(r.price_pence)}
                       </span>
                       <FavouriteButton releaseId={r.id} size={16} />
-                      <button
-                        onClick={(e) => handlePlay(e, r)}
-                        className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
-                        aria-label={`Play ${r.title}`}
-                      >
-                        {isReleaseActive(r.id) && isPlayerPlaying ? (
-                          <svg width="14" height="14" fill="#000" viewBox="0 0 24 24">
-                            <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-                          </svg>
-                        ) : (
-                          <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        )}
-                      </button>
+                      <DiscoverPlayButton releaseId={r.id} title={r.title} />
                     </div>
 
                     {isMultiTrack && (
@@ -660,10 +640,9 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                         href={`/${rec.slug}`}
                         className="flex items-center gap-3 py-2 group/rec hover:bg-white/[0.02] rounded-lg px-2 -ml-2 transition-colors"
                       >
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0">
                           {rec.avatar_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={rec.avatar_url} alt={rec.name} className="w-full h-full object-cover" />
+                            <Image src={rec.avatar_url} fill className="object-cover" sizes="32px" alt={rec.name} />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-zinc-600">
                               {rec.name.charAt(0)}

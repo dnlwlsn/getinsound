@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 export interface LibraryRelease {
   purchaseId: string
   releaseId: string
+  releaseSlug: string
   releaseTitle: string
   releaseType: 'album' | 'ep' | 'single'
   coverUrl: string | null
@@ -162,6 +163,7 @@ export default async function LibraryPage() {
       return {
         purchaseId: p.id,
         releaseId: r.id,
+        releaseSlug: r.slug ?? '',
         releaseTitle: r.title,
         releaseType: r.type,
         coverUrl: r.cover_url,

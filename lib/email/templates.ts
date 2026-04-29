@@ -119,11 +119,11 @@ function wrapEmail(body: string, userId?: string): string {
 </html>`;
 }
 
-export function buildMerchOrderArtistEmail(itemName: string, buyerEmail: string, variant: string | null): string {
+export function buildMerchOrderArtistEmail(itemName: string, fanLabel: string, variant: string | null): string {
   const variantLine = variant ? ` (${escapeHtml(variant)})` : '';
   return wrapEmail(`
         <tr><td style="color:${TEXT_WHITE};font-size:18px;line-height:1.6;padding-bottom:32px;">
-          You have a new order for ${escapeHtml(itemName)}${variantLine} from ${escapeHtml(buyerEmail)}.
+          You have a new order for ${escapeHtml(itemName)}${variantLine} from ${escapeHtml(fanLabel)}.
         </td></tr>
         <tr><td style="padding-bottom:48px;">
           <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'}/dashboard" style="display:inline-block;background:${BRAND_ORANGE};color:${TEXT_WHITE};font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">

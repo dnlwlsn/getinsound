@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 
 export const metadata: Metadata = {
   title: 'FAQ | Insound',
@@ -11,7 +12,7 @@ export default function FAQPage() {
     <main className="bg-zinc-950 text-white min-h-screen">
       <nav className="fixed top-0 left-0 right-0 z-50">
         <div className="mx-4 mt-4 px-5 py-3 rounded-2xl ring-1 ring-white/[0.05] flex items-center justify-between" style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-          <Link href="/" className="font-display text-lg font-bold">insound<span className="text-orange-500">.</span></Link>
+          <InsoundLogo size="sm" />
           <Link href="/" className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">&larr; Home</Link>
         </div>
       </nav>
@@ -247,7 +248,7 @@ export default function FAQPage() {
 
       <footer className="border-t border-zinc-900/80 py-16">
         <div className="max-w-4xl mx-auto px-6 flex flex-col items-center gap-6">
-          <Link href="/" className="font-display text-lg font-bold">insound<span className="text-orange-500">.</span></Link>
+          <InsoundLogo size="sm" />
           <div className="flex flex-wrap justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
             <Link href="/" className="hover:text-orange-500 transition-colors">Home</Link>
             <Link href="/for-artists" className="hover:text-orange-500 transition-colors">Artists</Link>

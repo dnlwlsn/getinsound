@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 
 type ArtistResult = {
@@ -148,7 +149,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
 "
                     >
                       {a.avatar_url ? (
-                        <img src={a.avatar_url} alt={a.name} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/[0.1]" />
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden ring-1 ring-white/[0.1] shrink-0"><Image src={a.avatar_url} fill className="object-cover" sizes="32px" alt={a.name} /></div>
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-zinc-800 ring-1 ring-white/[0.1] flex items-center justify-center text-xs font-bold text-zinc-400">
                           {a.name.charAt(0).toUpperCase()}
@@ -177,7 +178,7 @@ export function SearchInput({ className = '' }: { className?: string }) {
 "
                     >
                       {r.cover_url ? (
-                        <img src={r.cover_url} alt={`${r.title} by ${r.artist_name}`} className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/[0.1]" />
+                        <div className="relative w-8 h-8 rounded-lg overflow-hidden ring-1 ring-white/[0.1] shrink-0"><Image src={r.cover_url} fill className="object-cover" sizes="32px" alt={`${r.title} by ${r.artist_name}`} /></div>
                       ) : (
                         <div className="w-8 h-8 rounded-lg bg-zinc-800 ring-1 ring-white/[0.1]" />
                       )}

@@ -67,29 +67,20 @@ export function ProfileMenu() {
         <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl py-1.5 z-[60]">
           {profile.isArtist ? (
             <>
-              <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Artist Settings</MenuLink>
-              <MenuLink href={`/${profile.artistSlug}`} onClick={() => setOpen(false)} external>
-                View My Artist Page
-              </MenuLink>
-              <div className="mx-1.5 my-1 border-t border-zinc-800" />
-              <MenuLink href="/settings" onClick={() => setOpen(false)}>Fan Settings</MenuLink>
               {profile.fanUsername && (
-                <MenuLink href={`/@${profile.fanUsername}`} onClick={() => setOpen(false)}>
-                  View My Fan Page
-                </MenuLink>
+                <MenuLink href={`/@${profile.fanUsername}`} onClick={() => setOpen(false)}>View profile</MenuLink>
               )}
-              <div className="mx-1.5 my-1 border-t border-zinc-800" />
-              <MenuLink href="/library" onClick={() => setOpen(false)}>My Collection</MenuLink>
+              <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Artist dashboard</MenuLink>
+              <MenuLink href="/settings" onClick={() => setOpen(false)}>Settings</MenuLink>
+              <MenuLink href="/library" onClick={() => setOpen(false)}>Your collection</MenuLink>
             </>
           ) : (
             <>
-              <MenuLink href="/library" onClick={() => setOpen(false)}>My Collection</MenuLink>
-              <MenuLink href="/settings" onClick={() => setOpen(false)}>Settings</MenuLink>
               {profile.fanUsername && (
-                <MenuLink href={`/@${profile.fanUsername}`} onClick={() => setOpen(false)}>
-                  View My Fan Page
-                </MenuLink>
+                <MenuLink href={`/@${profile.fanUsername}`} onClick={() => setOpen(false)}>View profile</MenuLink>
               )}
+              <MenuLink href="/settings" onClick={() => setOpen(false)}>Settings</MenuLink>
+              <MenuLink href="/library" onClick={() => setOpen(false)}>Your collection</MenuLink>
               <div className="mx-1.5 my-1 border-t border-zinc-800" />
               <MenuLink href="/become-an-artist" onClick={() => setOpen(false)} highlight>
                 Start selling your music
@@ -99,6 +90,11 @@ export function ProfileMenu() {
               </MenuLink>
             </>
           )}
+          <div className="mx-1.5 my-1 border-t border-zinc-800" />
+          <MenuLink href="/faq" onClick={() => setOpen(false)} muted>FAQ</MenuLink>
+          <MenuLink href="/privacy" onClick={() => setOpen(false)} muted>Privacy</MenuLink>
+          <MenuLink href="/terms" onClick={() => setOpen(false)} muted>Terms</MenuLink>
+          <MenuLink href="/ai-policy" onClick={() => setOpen(false)} muted>AI Policy</MenuLink>
           <div className="mx-1.5 my-1 border-t border-zinc-800" />
           <button
             onClick={handleSignOut}
@@ -118,16 +114,20 @@ function MenuLink({
   children,
   external,
   highlight,
+  muted,
 }: {
   href: string
   onClick: () => void
   children: React.ReactNode
   external?: boolean
   highlight?: boolean
+  muted?: boolean
 }) {
   const className = highlight
     ? 'flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-orange-500 hover:bg-orange-600/[0.06] transition-colors'
-    : 'flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-colors'
+    : muted
+      ? 'flex items-center gap-2 px-4 py-2 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] transition-colors'
+      : 'flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-colors'
 
   if (external) {
     return (

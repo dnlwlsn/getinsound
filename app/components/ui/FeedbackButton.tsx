@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { usePlayerStore } from '@/lib/stores/player'
 
 const CATEGORIES = [
   { value: 'bug', label: 'Something\'s broken', icon: '⚠' },
@@ -16,8 +17,19 @@ export function FeedbackButton() {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const hasTrack = usePlayerStore(s => !!s.currentTrack)
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const hasModal = document.querySelector('[role="dialog"], [data-modal]') !== null
+      setModalOpen(hasModal)
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -74,7 +86,7 @@ export function FeedbackButton() {
   }
 
   return (
-    <div ref={ref} className="fixed bottom-24 right-4 z-50 sm:bottom-6">
+    <div ref={ref} className={`fixed right-4 z-30 sm:bottom-6 transition-opacity duration-200 ${modalOpen ? 'opacity-0 pointer-events-none' : ''} ${hasTrack ? 'bottom-[160px]' : 'bottom-[80px]'}`}>
       {open && (
         <div className="absolute bottom-12 right-0 w-80 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
           {sent ? (

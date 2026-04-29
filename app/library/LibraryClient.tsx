@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { generateGradient } from '@/lib/gradient'
 import { useViewMode } from '@/lib/useViewMode'
@@ -138,6 +139,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
     artistName: string
     artistSlug: string
     releaseId: string
+    releaseSlug: string
     releaseTitle: string
     coverUrl: string | null
     accentColour: string | null
@@ -157,6 +159,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
           artistName: r.artistName,
           artistSlug: r.artistSlug,
           releaseId: r.releaseId,
+          releaseSlug: r.releaseSlug,
           releaseTitle: r.releaseTitle,
           coverUrl: r.coverUrl,
           accentColour: r.accentColour,
@@ -204,6 +207,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
       artistName: t.artistName,
       artistSlug: t.artistSlug,
       releaseId: t.releaseId,
+      releaseSlug: t.releaseSlug,
       releaseTitle: t.releaseTitle,
       coverUrl: t.coverUrl,
       position: t.position,
@@ -250,6 +254,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
       artistName: release.artistName,
       artistSlug: release.artistSlug,
       releaseId: release.releaseId,
+      releaseSlug: release.releaseSlug,
       releaseTitle: release.releaseTitle,
       coverUrl: release.coverUrl,
       position: t.position,
@@ -416,8 +421,8 @@ export default function LibraryClient({ releases, error, userId, favourites = []
 
               return (
                 <div key={o.id} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
-                    {photo ? <img src={photo} alt={merchData?.name || 'Merch item'} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+                  <div className="relative w-14 h-14 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
+                    {photo ? <Image src={photo} fill className="object-cover" sizes="56px" alt={merchData?.name || 'Merch item'} /> : <div className="w-full h-full" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm truncate">{merchData?.name || 'Unknown item'}{o.variant_selected ? ` (${o.variant_selected})` : ''}</p>
@@ -876,10 +881,9 @@ function ReleaseRowCompact({
           </button>
         )}
 
-        <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+        <div className="relative w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
           {release.coverUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={release.coverUrl} className="w-full h-full object-cover" loading="lazy" alt={release.releaseTitle} />
+            <Image src={release.coverUrl} fill className="object-cover" sizes="40px" alt={release.releaseTitle} />
           ) : (
             <div className="w-full h-full" style={{ background: gradient?.css }} />
           )}
@@ -1157,10 +1161,9 @@ function SavedTab({ items }: { items: FavouriteItem[] }) {
         const gradient = item.coverUrl ? null : generateGradient(item.artistSlug, item.releaseId || item.trackId || 'x')
         return (
           <div key={item.favouriteId} className="flex items-center gap-3 sm:gap-4 bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 sm:p-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex-shrink-0">
               {item.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.coverUrl} alt={item.releaseTitle} className="w-full h-full object-cover" />
+                <Image src={item.coverUrl} fill className="object-cover" sizes="56px" alt={item.releaseTitle} />
               ) : (
                 <div className="w-full h-full" style={gradient ? { background: gradient.css } : undefined} />
               )}

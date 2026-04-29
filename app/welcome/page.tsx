@@ -18,5 +18,13 @@ export default async function WelcomePage() {
   if (role.hasSeenWelcome && role.isArtist) redirect('/dashboard')
   if (role.hasSeenWelcome) redirect('/explore')
 
-  return <WelcomeClient />
+  const { data: profile } = await supabase
+    .from('fan_profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+
+  const hasProfile = !!profile?.username
+
+  return <WelcomeClient hasProfile={hasProfile} />
 }

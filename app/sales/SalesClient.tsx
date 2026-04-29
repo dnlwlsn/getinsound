@@ -3,10 +3,11 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 
-const GBP = (n: number) => formatPriceUtil(n, 'GBP')
+const fmtPayout = (n: number, cur: string) => formatPriceUtil(n, cur || 'GBP')
 
 interface Payout {
   id: string
@@ -47,7 +48,7 @@ export function SalesClient() {
     <div className="min-h-screen flex font-display text-zinc-100 bg-insound-bg">
       {/* Sidebar */}
       <aside className="w-64 border-r border-zinc-900 p-8 hidden md:flex flex-col flex-shrink-0 sticky top-0 h-screen">
-        <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter mb-12 block hover:text-orange-500 transition-colors">insound.</Link>
+        <InsoundLogo size="lg" className="mb-12 block" />
         <nav className="space-y-1 flex-1">
           <Link href="/dashboard" className="sidebar-link flex items-center gap-3 p-3.5 text-zinc-500 font-bold rounded-xl text-sm hover:bg-orange-600/[0.06] hover:text-white transition-all">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -132,7 +133,7 @@ export function SalesClient() {
                     {data.payouts.map(p => (
                       <div key={p.id} className="flex items-center justify-between px-6 py-4">
                         <div>
-                          <p className="font-bold text-sm">{GBP(p.amount_pence)}</p>
+                          <p className="font-bold text-sm">{fmtPayout(p.amount_pence, p.currency)}</p>
                           <p className="text-xs text-zinc-500 mt-0.5">
                             {p.arrival_date ? new Date(p.arrival_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Processing'}
                           </p>

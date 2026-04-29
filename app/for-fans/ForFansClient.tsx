@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { useCurrency } from '../providers/CurrencyProvider'
 
 const WHY_HERE = [
@@ -22,7 +23,7 @@ export function ForFansClient() {
       {/* ── NAV ──────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50">
         <div id="navInner" className="mx-4 mt-4 px-5 py-3 rounded-2xl ring-1 ring-white/[0.05] flex items-center justify-between">
-          <Link href="/" className="font-display text-lg font-bold">insound<span className="text-orange-500">.</span></Link>
+          <InsoundLogo size="sm" />
           <Link href="/" className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">← Back</Link>
         </div>
       </nav>

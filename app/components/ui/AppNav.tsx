@@ -9,6 +9,7 @@ import { SearchInput } from './SearchInput'
 import { ProfileMenu } from './ProfileMenu'
 import { NotificationBell } from './NotificationBell'
 import { BasketButton } from './BasketButton'
+import { InsoundLogo } from './InsoundLogo'
 
 const NAV_LINKS = [
   { href: '/explore', label: 'Explore' },
@@ -16,7 +17,7 @@ const NAV_LINKS = [
   { href: '/library', label: 'My Collection' },
 ]
 
-const MENU_LINKS = [
+const LOGGED_OUT_MENU_LINKS = [
   { href: '/for-artists', label: 'For Artists' },
   { href: '/for-fans', label: 'For Fans' },
   { href: '/faq', label: 'FAQ' },
@@ -25,10 +26,16 @@ const MENU_LINKS = [
   { href: '/ai-policy', label: 'AI Policy' },
 ]
 
+const LOGGED_IN_MENU_LINKS = [
+  { href: '/explore', label: 'Explore' },
+  { href: '/discover', label: 'For You' },
+  { href: '/library', label: 'My Collection' },
+]
+
 const HIDE_NAV_ROUTES = ['/signup', '/auth', '/welcome', '/become-an-artist', '/faq']
 const HIDE_NAV_PREFIXES = ['/for-', '/privacy', '/terms', '/ai-policy', '/why-us', '/redeem']
 
-function HamburgerMenu() {
+function HamburgerMenu({ links }: { links: { href: string; label: string }[] }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -72,20 +79,23 @@ function HamburgerMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-52 bg-zinc-950 ring-1 ring-white/[0.08] rounded-2xl shadow-2xl py-2 z-50">
-          {MENU_LINKS.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setOpen(false)}
-              className="block px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="border-t border-white/[0.06] my-1" />
-          <span className="block px-5 py-2 text-[10px] text-zinc-700 font-medium">&copy; 2026 Insound</span>
-        </div>
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed right-4 top-16 w-52 max-h-[calc(100dvh-80px)] overflow-y-auto bg-zinc-950 ring-1 ring-white/[0.08] rounded-2xl shadow-2xl py-2 z-50">
+            {links.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="block px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="border-t border-white/[0.06] my-1" />
+            <span className="block px-5 py-2 text-[10px] text-zinc-700 font-medium">&copy; 2026 Insound</span>
+          </div>
+        </>
       )}
     </div>
   )
@@ -116,20 +126,18 @@ export function AppNav() {
       <nav className={`fixed top-0 z-50 w-full pt-4 px-4 transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ background: 'transparent' }}>
         <div className="mx-auto max-w-7xl rounded-full px-6 py-3 flex items-center justify-between ring-1 ring-white/[0.06]"
           style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-          <Link href="/" className="font-display text-lg font-bold text-orange-500 tracking-tight">
-            insound<span className="text-white/25">.</span>
-          </Link>
+          <InsoundLogo size="sm" />
           <div className="flex items-center gap-2">
             <BasketButton />
             <Link href="/auth"
-              className="text-zinc-400 hover:text-white text-[11px] font-bold uppercase tracking-widest px-4 py-2.5 transition-colors">
+              className="text-zinc-400 hover:text-white text-[11px] font-bold uppercase tracking-widest px-3 sm:px-4 py-2.5 transition-colors whitespace-nowrap">
               Sign In
             </Link>
             <Link href="/signup"
-              className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full transition-colors">
+              className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-3 sm:px-5 py-2.5 rounded-full transition-colors whitespace-nowrap">
               Sign Up
             </Link>
-            <HamburgerMenu />
+            <HamburgerMenu links={LOGGED_OUT_MENU_LINKS} />
           </div>
         </div>
       </nav>
@@ -143,9 +151,7 @@ export function AppNav() {
       <div className="h-[65px]" />
       <nav className={`fixed top-0 w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
-          <Link href="/" className="text-xl font-black text-orange-600 tracking-tighter flex-shrink-0 hover:text-orange-500 transition-colors">
-            insound.
-          </Link>
+          <InsoundLogo size="md" className="flex-shrink-0 leading-none" />
 
           <SearchInput className="flex-1 max-w-md hidden md:block" />
           <Link href="/search" className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
@@ -170,13 +176,13 @@ export function AppNav() {
             <NotificationBell userId={userId} />
             <BasketButton />
             <ProfileMenu />
-            <HamburgerMenu />
+            <HamburgerMenu links={LOGGED_IN_MENU_LINKS} />
           </div>
         </div>
       </nav>
 
       {/* Mobile bottom nav */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-xl flex">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-xl flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {NAV_LINKS.map(link => (
           <Link
             key={link.href}

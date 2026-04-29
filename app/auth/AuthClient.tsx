@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
+import { SocialAuthButtons, AuthDivider } from '@/app/components/ui/SocialAuthButtons'
 import { createClient } from '@/lib/supabase/client'
 
 export default function AuthClient() {
@@ -17,7 +19,8 @@ export default function AuthClient() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const [magicEmail, setMagicEmail] = useState('')
+  const magicEmail = email
+  const setMagicEmail = setEmail
   const [magicSent, setMagicSent] = useState(false)
   const [magicBusy, setMagicBusy] = useState(false)
   const [magicError, setMagicError] = useState('')
@@ -54,8 +57,13 @@ export default function AuthClient() {
         }),
       })
       if (!res.ok) {
-        const data = await res.json()
-        setMagicError(data.error || 'Failed to send magic link.')
+        const data = await res.json().catch(() => ({}))
+        if (res.status === 429) {
+          setMagicError('Too many requests — please wait a moment and try again.')
+        } else {
+          console.error('Magic link request failed:', res.status, data)
+          setMagicError("We couldn't send your magic link. Please try again in a moment, or contact support if this persists.")
+        }
       } else {
         setMagicSent(true)
       }
@@ -68,9 +76,7 @@ export default function AuthClient() {
   return (
     <div className="min-h-screen flex flex-col relative" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px)', backgroundSize: '48px 48px' }}>
       <nav className="sticky top-0 w-full z-50 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <Link href="/" className="text-2xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors font-display">
-          insound.
-        </Link>
+        <InsoundLogo size="lg" />
         <Link href="/signup" className="bg-orange-600 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg shadow-orange-600/20">
           Create Account
         </Link>
@@ -81,13 +87,14 @@ export default function AuthClient() {
 
         <div className="w-full max-w-md relative z-10">
           <div className="text-center mb-8">
-            <Link href="/" className="text-3xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors font-display">
-              insound.
-            </Link>
+            <InsoundLogo size="xl" />
             <p className="text-zinc-500 mt-2 font-medium text-sm">Welcome back.</p>
           </div>
 
           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl" style={{ boxShadow: '0 0 60px rgba(245,109,0,0.08)' }}>
+            <SocialAuthButtons redirectTo="/welcome" />
+            <AuthDivider />
+
             <div className="flex gap-1 mb-8 bg-zinc-950 p-1 rounded-xl">
               <button
                 onClick={() => setMode('magic')}
@@ -143,8 +150,23 @@ export default function AuthClient() {
                 <p className="text-sm text-zinc-400 leading-relaxed">
                   We sent a magic link to <span className="text-white font-semibold">{magicEmail.trim()}</span>.
                 </p>
-                <button onClick={() => setMagicSent(false)} className="text-orange-600 hover:text-orange-400 text-sm font-bold mt-4">
-                  Didn&apos;t get it? Send again
+                <button
+                  onClick={async () => {
+                    setMagicBusy(true)
+                    try {
+                      const res = await fetch('/api/auth/magic-link', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: magicEmail.trim(), template: 'signin', redirectTo: '/auth/callback?next=/welcome' }),
+                      })
+                      if (!res.ok) setMagicSent(false)
+                    } catch { setMagicSent(false) }
+                    setMagicBusy(false)
+                  }}
+                  disabled={magicBusy}
+                  className="text-orange-600 hover:text-orange-400 text-sm font-bold mt-4 disabled:opacity-60"
+                >
+                  {magicBusy ? 'Sending...' : "Didn't get it? Send again"}
                 </button>
               </div>
             )}
@@ -205,6 +227,27 @@ export default function AuthClient() {
                     {error}
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const trimmed = email.trim()
+                    if (!trimmed) { setError('Enter your email address first.'); return }
+                    setError('')
+                    setBusy(true)
+                    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+                      redirectTo: `${window.location.origin}/auth/callback?next=/welcome`,
+                    })
+                    setBusy(false)
+                    if (error) { setError(error.message); return }
+                    setError('')
+                    setMode('magic')
+                    setMagicEmail(trimmed)
+                    setMagicSent(true)
+                  }}
+                  className="w-full text-center text-xs text-zinc-500 hover:text-orange-500 mt-3 transition-colors"
+                >
+                  Forgot password?
+                </button>
               </form>
             )}
 

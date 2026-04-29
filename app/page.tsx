@@ -110,6 +110,15 @@ export default async function Page() {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 20)
 
+  const genreCounts = new Map<string, number>()
+  for (const r of mapped) {
+    if (r.genre) genreCounts.set(r.genre, (genreCounts.get(r.genre) || 0) + 1)
+    for (const t of r.tags) genreCounts.set(t, (genreCounts.get(t) || 0) + 1)
+  }
+  const popularSounds = [...genreCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name]) => name)
+
   return (
     <HomeClient
       releases={mapped}
@@ -117,6 +126,7 @@ export default async function Page() {
       followedArtistReleases={followedArtistReleases}
       activityItems={activityItems}
       userEmail={user?.email ?? null}
+      popularSounds={popularSounds}
     />
   )
 }

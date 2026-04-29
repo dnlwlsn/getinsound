@@ -19,6 +19,16 @@ const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://getinsound.com';
 const GRANT_TTL_DAYS = 7;
 const GRANT_MAX_USES = 5;
 
+async function getFanLabel(admin: any, userId: string | null): Promise<string> {
+  if (!userId) return 'A fan';
+  const { data } = await admin
+    .from('fan_profiles')
+    .select('username, is_public')
+    .eq('id', userId)
+    .maybeSingle();
+  return data?.is_public && data.username ? data.username : 'A fan';
+}
+
 function formatPrice(amountPence: number, currency: string): string {
   const amount = (amountPence / 100).toFixed(2)
   const symbols: Record<string, string> = { GBP: '£', USD: '$', EUR: '€' }
@@ -227,12 +237,13 @@ Deno.serve(async (req) => {
         }
 
         // Notify artist (in-app, respecting preferences)
+        const merchFanLabel = await getFanLabel(admin, userId);
         if (await shouldNotifyInApp(admin, artistId, 'merch_order')) {
           const { error: notifErr } = await admin.from('notifications').insert({
             user_id: artistId,
             type: 'merch_order',
             title: `New merch order: ${merchItem?.name || 'Unknown item'}`,
-            body: `${buyerEmail} ordered${variant ? ` (${variant})` : ''}.`,
+            body: `${merchFanLabel} ordered${variant ? ` (${variant})` : ''}.`,
             link: '/dashboard',
           });
           if (notifErr) console.error('Notification insert failed:', notifErr.message);
@@ -251,7 +262,7 @@ Deno.serve(async (req) => {
             await sendEmail(
               artistRow.email,
               `New merch order: ${itemName}`,
-              buildMerchOrderArtistEmail(itemName, buyerEmail, variantLine),
+              buildMerchOrderArtistEmail(itemName, merchFanLabel, variantLine),
             );
           }
         }
@@ -317,14 +328,10 @@ Deno.serve(async (req) => {
           return new Response('ok', { status: 200 });
         }
 
-        const allBasketItems = basketSession.items as any[];
-        for (const item of allBasketItems) {
+        const basketItems = basketSession.items as any[];
+        for (const item of basketItems) {
           if (!item.type) item.type = 'release';
         }
-        const currentArtistId = session.metadata?.artist_id;
-        const basketItems = currentArtistId
-          ? allBasketItems.filter((i: any) => i.artist_id === currentArtistId)
-          : allBasketItems;
         const refCode = basketSession.ref_code;
         const buyerEmail = (
           session.customer_details?.email ?? session.customer_email ?? ''
@@ -378,6 +385,8 @@ Deno.serve(async (req) => {
             await logWebhookError(admin, event.type, event.id, `User creation failed: ${createErr.message}`, { email: buyerEmail });
           }
         }
+
+        const basketFanLabel = await getFanLabel(admin, userId);
 
         // Distribute Stripe fee proportionally
         const totalAmount = basketItems.reduce((s: number, i: any) => {
@@ -465,7 +474,7 @@ Deno.serve(async (req) => {
                 title: isPreOrder
                   ? `New pre-order: ${releaseTitle}`
                   : `New sale: ${releaseTitle}`,
-                body: `${buyerEmail} purchased for ${saleLabel}`,
+                body: `${basketFanLabel} purchased for ${saleLabel}`,
                 link: '/dashboard',
               });
               if (notifErr) console.error('Notification insert failed:', notifErr.message);
@@ -580,7 +589,7 @@ Deno.serve(async (req) => {
                 user_id: item.artist_id,
                 type: 'merch_order',
                 title: `New merch order: ${itemName}`,
-                body: `${buyerEmail} ordered${item.variant ? ` (${item.variant})` : ''}.`,
+                body: `${basketFanLabel} ordered${item.variant ? ` (${item.variant})` : ''}.`,
                 link: '/dashboard',
               });
               if (notifErr) console.error('Notification insert failed:', notifErr.message);
@@ -596,7 +605,7 @@ Deno.serve(async (req) => {
                 await sendEmail(
                   artistRow.email,
                   `New merch order: ${itemName}`,
-                  buildMerchOrderArtistEmail(itemName, buyerEmail, item.variant ? ` (${item.variant})` : ''),
+                  buildMerchOrderArtistEmail(itemName, basketFanLabel, item.variant ? ` (${item.variant})` : ''),
                 );
               }
             }
@@ -627,19 +636,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Record referral for tracking only (no discount benefit)
-        if (userId && refCode) {
-          try {
-            await admin
-              .from('fan_profiles')
-              .update({ referred_by: refCode })
-              .eq('id', userId)
-              .is('referred_by', null);
-          } catch (e) {
-            console.error('Referral tracking failed:', (e as Error).message);
-          }
-        }
-
         // Founding fan badge
         if (userId) {
           try {
@@ -663,6 +659,57 @@ Deno.serve(async (req) => {
             }
           } catch (e) {
             console.error('Founding fan badge failed:', (e as Error).message);
+          }
+        }
+
+        // ── Create transfers to each artist's Connect account ──
+        // Group earnings by artist, then create one transfer per artist.
+        const artistTransfers = new Map<string, { stripeAccountId: string; amount: number }>();
+        for (const item of basketItems) {
+          const artistId = item.artist_id;
+          const stripeAccountId = item.stripe_account_id;
+          if (!stripeAccountId) continue;
+
+          let artistAmount: number;
+          if (item.type === 'merch') {
+            const platformPence = Math.round(item.amount_pence * STANDARD_FEE_BPS / 10000);
+            artistAmount = item.amount_pence + (item.postage_pence || 0) - platformPence;
+          } else {
+            const feeBps = item.fee_bps || STANDARD_FEE_BPS;
+            const platformPence = Math.round(item.amount_pence * feeBps / 10000);
+            artistAmount = item.amount_pence - platformPence;
+          }
+
+          const existing = artistTransfers.get(artistId);
+          if (existing) {
+            existing.amount += artistAmount;
+          } else {
+            artistTransfers.set(artistId, { stripeAccountId, amount: artistAmount });
+          }
+        }
+
+        if (chargeId) {
+          for (const [artistId, { stripeAccountId, amount }] of artistTransfers) {
+            if (amount <= 0) continue;
+            try {
+              await stripe.transfers.create({
+                amount,
+                currency: session.currency || 'gbp',
+                destination: stripeAccountId,
+                source_transaction: chargeId,
+                metadata: {
+                  basket_session_id: basketSessionId,
+                  artist_id: artistId,
+                },
+              });
+            } catch (e) {
+              console.error(`Transfer to ${stripeAccountId} failed:`, (e as Error).message);
+              await logWebhookError(admin, event.type, event.id, `Transfer failed for artist ${artistId}: ${(e as Error).message}`, {
+                artist_id: artistId,
+                stripe_account_id: stripeAccountId,
+                amount,
+              });
+            }
           }
         }
 
@@ -838,19 +885,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Record referral for tracking only (no discount benefit)
-      if (userId && refCode) {
-        try {
-          await admin
-            .from('fan_profiles')
-            .update({ referred_by: refCode })
-            .eq('id', userId)
-            .is('referred_by', null);
-        } catch (e) {
-          console.error('Referral tracking failed:', (e as Error).message);
-        }
-      }
-
       // ── Founding Artist: record first sale timestamp ──
       try {
         await admin.rpc('set_founding_artist_first_sale', {
@@ -948,6 +982,7 @@ Deno.serve(async (req) => {
       try {
         const salePence = amountPence;
         const saleLabel = formatPrice(salePence, session.metadata?.fan_currency || session.currency || 'GBP');
+        const singleFanLabel = await getFanLabel(admin, userId);
 
         // Notify artist of sale
         {
@@ -957,7 +992,7 @@ Deno.serve(async (req) => {
             title: isPreOrder
               ? `New pre-order: ${releaseTitle}`
               : `New sale: ${releaseTitle}`,
-            body: `${buyerEmail} purchased for ${saleLabel}`,
+            body: `${singleFanLabel} purchased for ${saleLabel}`,
             link: '/dashboard',
           });
           if (notifErr) console.error('Notification insert failed:', notifErr.message);
@@ -1428,7 +1463,7 @@ async function shouldNotifyEmail(admin: ReturnType<typeof createClient>, userId:
   return !pref || pref.email !== false;
 }
 
-function buildMerchOrderArtistEmail(itemName: string, buyerEmail: string, variantLine: string): string {
+function buildMerchOrderArtistEmail(itemName: string, fanLabel: string, variantLine: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1440,7 +1475,7 @@ function buildMerchOrderArtistEmail(itemName: string, buyerEmail: string, varian
           <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
         </td></tr>
         <tr><td style="color:#FAFAFA;font-size:18px;line-height:1.6;padding-bottom:32px;">
-          You have a new order for ${escapeHtml(itemName)}${variantLine} from ${escapeHtml(buyerEmail)}.
+          You have a new order for ${escapeHtml(itemName)}${variantLine} from ${escapeHtml(fanLabel)}.
         </td></tr>
         <tr><td style="padding-bottom:48px;">
           <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { useCurrency } from '../providers/CurrencyProvider'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -87,7 +88,7 @@ export function WhyUsClient() {
 
       {/* ── NAV ──────────────────────────────────────────────────── */}
       <nav className="sticky top-0 w-full z-40 flex justify-between items-center px-6 md:px-14 py-5 border-b border-zinc-900/80" style={{ background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <Link href="/" className="font-display text-2xl font-black text-orange-600 tracking-tighter hover:text-orange-500 transition-colors">insound.</Link>
+        <InsoundLogo size="lg" />
         <div className="hidden md:flex gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
           <Link href="/explore" className="hover:text-orange-500 transition-colors">Explore</Link>
           <Link href="/why-us" className="text-orange-500">Why Insound</Link>
@@ -325,7 +326,7 @@ export function WhyUsClient() {
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-12">
             <div className="text-center md:text-left">
-              <div className="font-display text-2xl font-black text-orange-600 tracking-tighter mb-2">insound.</div>
+              <InsoundLogo size="lg" className="mb-2" />
               <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest italic">The math of independence.</p>
             </div>
 

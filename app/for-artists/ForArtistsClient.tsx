@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { useCurrency } from '../providers/CurrencyProvider'
 
 /* ── Data ─────────────────────────────────────────────────────── */
@@ -77,8 +78,8 @@ const FAQ = [
   { q: 'Is there a subscription fee?', a: 'No. It costs nothing to sign up, nothing to upload, and nothing per month. We only make money when you make a sale.' },
   { q: 'What happens if I want to leave?', a: 'You can remove your music at any time. Your Stripe earnings are already in your account - we never hold them. No lock-in, no penalty.' },
   { q: 'Can I set pay what you want pricing?', a: 'Yes. Every release has a minimum price and fans can pay more if they choose. Many artists find fans voluntarily pay well above the minimum.' },
-  { q: 'How do download codes work?', a: 'Coming soon. You\'ll be able to generate unique download codes for gig merch bundles, press, or promotions. Codes will be single-use and trackable from your dashboard.' },
-  { q: 'Can I do pre-orders?', a: 'Coming soon. Pre-orders are on our roadmap - fans will be able to pay upfront and get the release on launch day.' },
+  { q: 'How do download codes work?', a: 'You can generate unique download codes from your dashboard — perfect for gig merch bundles, press, or promotions. Codes are single-use and trackable.' },
+  { q: 'Can I do pre-orders?', a: 'Yes! You can enable pre-orders on any release. Fans pay upfront and get the release on launch day.' },
 ]
 
 /* ── Component ────────────────────────────────────────────────── */
@@ -114,7 +115,7 @@ export function ForArtistsClient() {
       {/* ── NAV ──────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50">
         <div id="navInner" className="mx-4 mt-4 px-5 py-3 rounded-2xl ring-1 ring-white/[0.05] flex items-center justify-between">
-          <Link href="/" className="font-display text-lg font-bold">insound<span className="text-orange-500">.</span></Link>
+          <InsoundLogo size="sm" />
           <Link href="/" className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">← Back</Link>
         </div>
       </nav>

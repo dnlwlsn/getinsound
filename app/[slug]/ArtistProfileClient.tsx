@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { resolveAccent } from '@/lib/accent'
 import { useCurrency } from '../providers/CurrencyProvider'
@@ -210,6 +211,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       artistName: artist.name,
       artistSlug: artist.slug,
       releaseId: release.id,
+      releaseSlug: release.slug,
       releaseTitle: release.title,
       coverUrl: release.cover_url,
       position: t.position,
@@ -255,8 +257,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       {/* Banner */}
       <div className="relative h-48 md:h-64 overflow-hidden" style={artist.banner_url ? {} : { background: bannerGradient(artist.id, accent) }}>
         {artist.banner_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={artist.banner_url} alt="" role="presentation" className="w-full h-full object-cover" />
+          <Image src={artist.banner_url} fill className="object-cover" sizes="100vw" alt="" role="presentation" priority />
         )}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#09090b_100%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-insound-bg to-transparent" />
@@ -265,10 +266,9 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       <div className="max-w-5xl mx-auto px-6 md:px-12 relative z-10 -mt-20">
         {/* Artist header */}
         <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 mb-10">
-          <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-zinc-950 bg-zinc-900 shrink-0 shadow-2xl">
+          <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-zinc-950 bg-zinc-900 shrink-0 shadow-2xl">
             {artist.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={artist.avatar_url} alt={artist.name} className="w-full h-full object-cover" />
+              <Image src={artist.avatar_url} fill className="object-cover" sizes="144px" alt={artist.name} priority />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-4xl font-black text-zinc-600" style={{ background: `linear-gradient(135deg, ${accent}33, ${accent}11)` }}>
                 {artist.name.charAt(0)}
@@ -279,7 +279,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
             <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: accent }}>Artist</p>
             <div className="flex flex-col items-center sm:items-start gap-2">
               <div className="flex items-center gap-3">
-                <h1 className="text-4xl md:text-5xl font-black tracking-tight font-display text-white">
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight font-display text-white break-words" style={{ overflowWrap: 'anywhere' }}>
                   {artist.name}
                 </h1>
                 {verified && <VerifiedTick size={20} />}
@@ -287,7 +287,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
               {badges.length > 0 && <BadgeList badges={badges} />}
             </div>
             {artist.bio && (
-              <p className="text-zinc-400 mt-3 text-sm leading-relaxed max-w-lg">{artist.bio}</p>
+              <p className="text-zinc-400 mt-3 text-sm leading-relaxed max-w-lg break-words">{artist.bio}</p>
             )}
             {socialLinks && <SocialLinksRow links={socialLinks} />}
             {releases.length > 0 && (
@@ -364,10 +364,9 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
 
                       return (
                         <div key={release.id} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
-                          <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                          <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="relative w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                             {release.cover_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={release.cover_url} alt={release.title} className="w-full h-full object-cover" />
+                              <Image src={release.cover_url} fill className="object-cover" sizes="40px" alt={release.title} />
                             ) : (
                               <div className="w-full h-full" style={{ background: generateGradient(artist.id, release.id) }} />
                             )}
@@ -441,10 +440,9 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
 
                         return (
                           <div key={release.id} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
-                            <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                            <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="relative w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
                               {release.cover_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={release.cover_url} alt={release.title} className="w-full h-full object-cover" />
+                                <Image src={release.cover_url} fill className="object-cover" sizes="40px" alt={release.title} />
                               ) : (
                                 <div className="w-full h-full" style={{ background: generateGradient(artist.id, release.id) }} />
                               )}
@@ -515,10 +513,9 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                     <div key={release.id} className="bg-zinc-900/50 border border-zinc-800/80 rounded-3xl p-5 md:p-6 hover:border-zinc-700/80 transition-colors">
                       <div className="flex flex-col sm:flex-row gap-5 md:gap-6">
                         <Link href={`/release?a=${artist.slug}&r=${release.slug}`} className="shrink-0 group">
-                          <div className="w-full sm:w-40 md:w-48 aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 transition-transform group-hover:scale-[1.02]">
+                          <div className="relative w-full sm:w-40 md:w-48 aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 transition-transform group-hover:scale-[1.02]">
                             {release.cover_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={release.cover_url} alt={release.title} className="w-full h-full object-cover" />
+                              <Image src={release.cover_url} fill className="object-cover" sizes="(min-width: 768px) 192px, (min-width: 640px) 160px, 100vw" alt={release.title} />
                             ) : (
                               <div className="w-full h-full" style={{ background: generateGradient(artist.id, release.id) }} />
                             )}
@@ -662,8 +659,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                         <Link href={`/release?a=${artist.slug}&r=${release.slug}`}>
                           <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 mb-2.5 transition-transform group-hover:scale-[1.02] relative">
                             {release.cover_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={release.cover_url} alt={release.title} className="w-full h-full object-cover" />
+                              <Image src={release.cover_url} fill className="object-cover" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" alt={release.title} />
                             ) : (
                               <div className="w-full h-full" style={{ background: generateGradient(artist.id, release.id) }} />
                             )}

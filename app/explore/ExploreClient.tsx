@@ -7,7 +7,9 @@ import { useCurrency } from '../providers/CurrencyProvider'
 import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { generateGradientDataUri } from '@/lib/gradient'
-import { usePreviewPlay } from '@/lib/usePreviewPlay'
+import { ContextMenu } from '@/app/components/ui/ContextMenu'
+import { ReleaseCardSkeleton, ListItemSkeleton } from '@/app/components/ui/ReleaseSkeleton'
+import { usePlayerStore } from '@/lib/stores/player'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -44,27 +46,6 @@ function SearchIcon({ className }: { className?: string }) {
     </svg>
   )
 }
-function PlayIcon({ size = 22, playing = false }: { size?: number; playing?: boolean }) {
-  if (playing) {
-    return (
-      <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24">
-        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-      </svg>
-    )
-  }
-  return (
-    <svg width={size} height={size} fill="currentColor" viewBox="0 0 24 24" className="ml-0.5">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  )
-}
-function CheckIcon({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
-}
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -80,6 +61,54 @@ function priceGbp(r: ExploreRelease) {
   return r.price_pence / 100
 }
 
+/* ── Compact list with working play buttons ─────────────────── */
+
+function CompactList({ items, formatPrice, convertPrice, currency }: {
+  items: ExploreRelease[]
+  formatPrice: (n: number) => string
+  convertPrice: (amount: number, from: string, to: string) => number
+  currency: string
+}) {
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
+
+  return (
+    <div className="flex flex-col gap-1">
+      {items.map(r => {
+        const active = currentTrack?.releaseId === r.id
+        return (
+          <ContextMenu key={r.id} items={[
+            { label: 'Go to release', href: releaseUrl(r), icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg> },
+            { label: 'Go to artist', href: `/${r.artist_slug}`, icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg> },
+          ]}>
+            <Link href={releaseUrl(r)} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
+              <div className="relative w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
+                <Image src={coverSrc(r)} fill className="object-cover" sizes="40px" alt={r.title} />
+              </div>
+              <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">{r.title}</span>
+              <span className="hidden md:block text-[13px] text-zinc-500 truncate w-36 flex-shrink-0">{r.artist_name}</span>
+              {r.genre && (
+                <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
+                  {r.genre}
+                </span>
+              )}
+              <span className="flex-1" />
+              <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">{formatPrice(convertPrice(priceGbp(r), 'GBP', currency))}</span>
+              <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0">
+                {active && isPlaying ? (
+                  <svg width="14" height="14" fill="#000" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg>
+                ) : (
+                  <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5"><path d="M8 5v14l11-7z" /></svg>
+                )}
+              </div>
+            </Link>
+          </ContextMenu>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ── Main Component ───────────────────────────────────────────── */
 
 export default function ExploreClient({ releases, initialTag }: ExploreClientProps) {
@@ -88,13 +117,8 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
   const [currentReleaseType, setCurrentReleaseType] = useState<'albums' | 'all'>('all')
   const [currentSort, setCurrentSort] = useState('newest')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [loading, setLoading] = useState(true)
+  const [loading] = useState(false)
   const { mode: viewMode, set: setViewMode } = useViewMode()
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 400)
-    return () => clearTimeout(t)
-  }, [])
 
   /* ── Derive genres from real data ────────────────────────────── */
   const genres = useMemo(() => {
@@ -126,8 +150,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
     else if (currentSort === 'price-high') items = [...items].sort((a, b) => b.price_pence - a.price_pence)
     else if (currentSort === 'az') items = [...items].sort((a, b) => a.title.localeCompare(b.title))
     else {
-      const typeOrder: Record<string, number> = { album: 0, ep: 1, single: 2 }
-      items = [...items].sort((a, b) => (typeOrder[a.type] ?? 2) - (typeOrder[b.type] ?? 2))
+      items = [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     }
     return items
   }, [releases, currentGenre, currentReleaseType, currentSort])
@@ -140,22 +163,6 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
     setCurrentGenre(genre)
     setVisibleCount(PAGE_SIZE)
   }, [])
-
-  const { playRelease, isReleaseActive, isPlaying } = usePreviewPlay()
-
-  const handlePlay = useCallback((e: React.MouseEvent, r: ExploreRelease) => {
-    e.preventDefault()
-    e.stopPropagation()
-    playRelease({
-      id: r.id,
-      title: r.title,
-      cover_url: r.cover_url,
-      artist_id: r.artist_id,
-      artist_name: r.artist_name,
-      artist_slug: r.artist_slug,
-      accent_colour: r.accent_colour,
-    })
-  }, [playRelease])
 
   const headingText = currentGenre === 'All' ? 'All Releases' : currentGenre
 
@@ -181,8 +188,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                   href={releaseUrl(featured[0])}
                   className="sm:col-span-1 group relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto sm:h-56 bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={coverSrc(featured[0])} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="Album artwork" loading="lazy" />
+                  <Image src={coverSrc(featured[0])} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 33vw, 100vw" alt="Album artwork" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                   <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{featured[0].type}</div>
                   <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -190,13 +196,6 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                     <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{featured[0].artist_name}{featured[0].genre ? ` · ${featured[0].genre}` : ''}</p>
                     <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(priceGbp(featured[0]), 'GBP', currency))}</p>
                   </div>
-                  <button
-                    onClick={(e) => handlePlay(e, featured[0])}
-                    className="absolute inset-0 m-auto w-14 h-14 bg-orange-600 rounded-full flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label={`Play ${featured[0].title}`}
-                  >
-                    <PlayIcon size={22} playing={isReleaseActive(featured[0].id) && isPlaying} />
-                  </button>
                 </Link>
                 {/* Smaller featured */}
                 <div className="sm:col-span-2 grid grid-cols-2 gap-4">
@@ -206,21 +205,13 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                       href={releaseUrl(f)}
                       className="group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={coverSrc(f)} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="Album artwork" loading="lazy" />
+                      <Image src={coverSrc(f)} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 25vw, 50vw" alt="Album artwork" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-4">
                         <p className="font-black text-sm leading-tight">{f.title}</p>
                         <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{f.artist_name}</p>
                         <p className="text-orange-600 font-black text-xs mt-1.5">{formatPrice(convertPrice(priceGbp(f), 'GBP', currency))}</p>
                       </div>
-                      <button
-                        onClick={(e) => handlePlay(e, f)}
-                        className="absolute inset-0 m-auto w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label={`Play ${f.title}`}
-                      >
-                        <PlayIcon size={18} playing={isReleaseActive(f.id) && isPlaying} />
-                      </button>
                     </Link>
                   ))}
                 </div>
@@ -233,8 +224,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                     href={releaseUrl(f)}
                     className="group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={coverSrc(f)} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 absolute inset-0" alt="Album artwork" loading="lazy" />
+                    <Image src={coverSrc(f)} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 50vw, 100vw" alt="Album artwork" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                     <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{f.type}</div>
                     <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -242,13 +232,6 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                       <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">{f.artist_name}{f.genre ? ` · ${f.genre}` : ''}</p>
                       <p className="text-orange-600 font-black text-sm mt-2">{formatPrice(convertPrice(priceGbp(f), 'GBP', currency))}</p>
                     </div>
-                    <button
-                      onClick={(e) => handlePlay(e, f)}
-                      className="absolute inset-0 m-auto w-14 h-14 bg-orange-600 rounded-full flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label={`Play ${f.title}`}
-                    >
-                      <PlayIcon size={22} playing={isReleaseActive(f.id) && isPlaying} />
-                    </button>
                   </Link>
                 ))}
               </div>
@@ -299,98 +282,57 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
           </div>
         </div>
 
-        {/* Results header */}
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-sm font-black text-zinc-300 uppercase tracking-widest">{headingText}</h2>
-          {!loading && filtered.length > 0 && (
-            <p className="text-xs text-zinc-600 font-bold">Showing {visibleItems.length} of {filtered.length}</p>
-          )}
+        {/* Results header — sticky */}
+        <div className="sticky-section-header py-3 -mx-5 md:-mx-10 px-5 md:px-10 mb-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-zinc-300 uppercase tracking-widest">{headingText}</h2>
+            {!loading && filtered.length > 0 && (
+              <p className="text-xs text-zinc-600 font-bold">Showing {visibleItems.length} of {filtered.length}</p>
+            )}
+          </div>
         </div>
 
         {/* Skeleton loader */}
-        {loading && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-5">
-            {[0,1,2,3,4].map(i => (
-              <div key={i} className={`space-y-2 ${i >= 2 && i < 4 ? 'hidden md:block' : ''} ${i === 4 ? 'hidden lg:block' : ''}`}>
-                <div className="aspect-square rounded-2xl" style={{ background: 'linear-gradient(90deg,#27272a 25%,#3f3f46 50%,#27272a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
-                <div className="h-3 w-3/4 rounded-2xl" style={{ background: 'linear-gradient(90deg,#27272a 25%,#3f3f46 50%,#27272a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
-                <div className="h-2 w-1/2 rounded-2xl" style={{ background: 'linear-gradient(90deg,#27272a 25%,#3f3f46 50%,#27272a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
-              </div>
-            ))}
-          </div>
-        )}
+        {loading && viewMode === 'expanded' && <ReleaseCardSkeleton />}
+        {loading && viewMode === 'compact' && <ListItemSkeleton />}
 
         {/* Grid view */}
         {!loading && filtered.length > 0 && viewMode === 'expanded' && (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-5">
             {visibleItems.map(r => (
-              <div key={r.id} className="group cursor-pointer">
-                <Link href={releaseUrl(r)}>
-                  <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={coverSrc(r)} className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" loading="lazy" alt={r.title} />
-                    {r.isNew && (
-                      <span className="absolute top-2 left-2 bg-orange-600 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider z-10">New</span>
-                    )}
-                    <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                    <button
-                      onClick={(e) => handlePlay(e, r)}
-                      className="absolute inset-0 m-auto w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label={`Play ${r.title}`}
-                    >
-                      <PlayIcon size={18} playing={isReleaseActive(r.id) && isPlaying} />
-                    </button>
-                  </div>
-                </Link>
-                <Link href={releaseUrl(r)}>
-                  <h3 className="font-bold text-sm truncate">{r.title}</h3>
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider truncate mt-0.5">{r.artist_name}</p>
-                  <div className="flex items-center justify-between mt-1.5">
-                    {r.genre && <span className="text-[10px] text-zinc-700 font-bold">{r.genre}</span>}
-                    <span className="text-xs font-black text-orange-600 ml-auto">{formatPrice(convertPrice(priceGbp(r), 'GBP', currency))}</span>
-                  </div>
-                </Link>
-              </div>
+              <ContextMenu key={r.id} items={[
+                { label: 'Go to release', href: releaseUrl(r), icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg> },
+                { label: 'Go to artist', href: `/${r.artist_slug}`, icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg> },
+                { divider: true, label: '' },
+                { label: 'Share', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>, onClick: () => { navigator.clipboard?.writeText(`${window.location.origin}${releaseUrl(r)}`).catch(() => {}) } },
+              ]}>
+                <div className="group cursor-pointer">
+                  <Link href={releaseUrl(r)}>
+                    <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
+                      <Image src={coverSrc(r)} fill className="object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" alt={r.title} />
+                      {r.isNew && (
+                        <span className="absolute top-2 left-2 bg-orange-600 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider z-10">New</span>
+                      )}
+                      <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    </div>
+                  </Link>
+                  <Link href={releaseUrl(r)}>
+                    <h3 className="font-bold text-sm truncate">{r.title}</h3>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider truncate mt-0.5">{r.artist_name}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      {r.genre && <span className="text-[10px] text-zinc-700 font-bold">{r.genre}</span>}
+                      <span className="text-xs font-black text-orange-600 ml-auto">{formatPrice(convertPrice(priceGbp(r), 'GBP', currency))}</span>
+                    </div>
+                  </Link>
+                </div>
+              </ContextMenu>
             ))}
           </div>
         )}
 
         {/* List view */}
         {!loading && filtered.length > 0 && viewMode === 'compact' && (
-          <div className="flex flex-col gap-1">
-            {visibleItems.map(r => (
-              <Link key={r.id} href={releaseUrl(r)} className="group flex items-center gap-3 md:gap-4 h-14 px-3 rounded-xl hover:bg-zinc-900 transition-colors">
-                <div className="w-10 h-10 rounded shrink-0 overflow-hidden bg-zinc-900">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={coverSrc(r)} className="w-full h-full object-cover" loading="lazy" alt={r.title} />
-                </div>
-                <span className="font-semibold text-sm text-white truncate min-w-0 flex-shrink md:w-48 md:flex-shrink-0">{r.title}</span>
-                <span className="hidden md:block text-[13px] text-zinc-500 truncate w-36 flex-shrink-0">{r.artist_name}</span>
-                {r.genre && (
-                  <span className="hidden lg:inline-flex items-center bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0">
-                    {r.genre}
-                  </span>
-                )}
-                <span className="flex-1" />
-                <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">{formatPrice(convertPrice(priceGbp(r), 'GBP', currency))}</span>
-                <button
-                  onClick={(e) => handlePlay(e, r)}
-                  className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
-                  aria-label={`Play ${r.title}`}
-                >
-                  {isReleaseActive(r.id) && isPlaying ? (
-                    <svg width="14" height="14" fill="#000" viewBox="0 0 24 24">
-                      <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-                    </svg>
-                  ) : (
-                    <svg width="14" height="14" fill="#000" viewBox="0 0 24 24" className="ml-0.5">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </button>
-              </Link>
-            ))}
-          </div>
+          <CompactList items={visibleItems} formatPrice={formatPrice} convertPrice={convertPrice} currency={currency} />
         )}
 
         {/* Empty state */}
@@ -453,10 +395,6 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
         </div>
       </section>
 
-      {/* Shimmer keyframes */}
-      <style jsx global>{`
-        @keyframes shimmer { to { background-position: 200% center; } }
-      `}</style>
     </div>
   )
 }

@@ -108,6 +108,19 @@ async function ReleasePageInner({
 
   if (!release) notFound()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const isOwned = user
+    ? await supabase
+        .from('purchases')
+        .select('id')
+        .eq('buyer_user_id', user.id)
+        .eq('release_id', release.id)
+        .eq('status', 'paid')
+        .limit(1)
+        .maybeSingle()
+        .then(r => !!r.data)
+    : false
+
   const [discographyRes, supportersRes, recommendationsRes] = await Promise.all([
     supabase
       .from('releases')
@@ -120,7 +133,7 @@ async function ReleasePageInner({
 
     supabase
       .from('purchases')
-      .select('buyer_email, paid_at')
+      .select('buyer_user_id, paid_at')
       .eq('release_id', release.id)
       .eq('status', 'paid')
       .order('paid_at', { ascending: false })
@@ -161,11 +174,32 @@ async function ReleasePageInner({
     artistSlug: Array.isArray(r.artists) ? r.artists[0].slug : r.artists.slug,
   }))
 
-  const supporters = (supportersRes.data ?? []).map((p: any) => {
-    const email = p.buyer_email || ''
-    const name = email.split('@')[0] || 'A fan'
-    return { name, paidAt: p.paid_at }
-  })
+  const supporterPurchases = supportersRes.data ?? []
+  const buyerIds = supporterPurchases
+    .map((p: any) => p.buyer_user_id)
+    .filter((id: string | null): id is string => !!id)
+  const uniqueBuyerIds = [...new Set(buyerIds)]
+
+  let usernameMap: Record<string, string> = {}
+  if (uniqueBuyerIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('fan_profiles')
+      .select('id, username')
+      .in('id', uniqueBuyerIds)
+    if (profiles) {
+      usernameMap = Object.fromEntries(
+        profiles.map((p: any) => [p.id, p.username])
+      )
+    }
+  }
+
+  const supporters = supporterPurchases
+    .map((p: any) => {
+      const name = (p.buyer_user_id && usernameMap[p.buyer_user_id]) || null
+      if (!name) return null
+      return { name, paidAt: p.paid_at }
+    })
+    .filter((s: any): s is { name: string; paidAt: string | null } => s !== null)
 
   const recommendations = (recommendationsRes.data ?? []).map((r: any) => {
     const a = Array.isArray(r.artists) ? r.artists[0] : r.artists
@@ -200,7 +234,7 @@ async function ReleasePageInner({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ReleaseClient artist={artist} release={release} discography={discography} supporters={supporters} recommendations={recommendations} />
+      <ReleaseClient artist={artist} release={release} discography={discography} supporters={supporters} recommendations={recommendations} isOwned={isOwned} />
     </>
   )
 }

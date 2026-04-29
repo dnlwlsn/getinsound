@@ -169,10 +169,6 @@ export default async function DashboardPage() {
       merchOrders={merchOrders as any}
       returnAddress={artist.return_address}
       saveCounts={saveCounts}
-      referral={fanProfile ? {
-        code: fanProfile.referral_code,
-        count: fanProfile.referral_count,
-      } : undefined}
     />
   )
   } catch (e) {
