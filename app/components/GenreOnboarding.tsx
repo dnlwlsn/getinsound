@@ -46,25 +46,19 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
     check()
   }, [supabase])
 
-  const [error, setError] = useState<string | null>(null)
-
   async function handleComplete(genres: Genre[]) {
-    setError(null)
     try {
-      const res = await fetch('/api/fan-preferences', {
+      await fetch('/api/fan-preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ genres }),
       })
-      if (res.ok) {
-        setShow(false)
-        router.push(redirectTo)
-      } else {
-        setError('We couldn\'t save your preferences - please try again.')
-      }
     } catch {
-      setError('We couldn\'t save your preferences - please try again.')
+      // Best-effort — don't trap the user if this fails
     }
+    sessionStorage.setItem('insound_genre_dismissed', '1')
+    setShow(false)
+    router.push(redirectTo)
   }
 
   async function handleSkip() {
@@ -89,14 +83,5 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
 
   if (!show) return null
 
-  return (
-    <>
-      <GenreMoodBoard onComplete={handleComplete} onSkip={handleSkip} onClose={handleClose} />
-      {error && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-lg">
-          {error}
-        </div>
-      )}
-    </>
-  )
+  return <GenreMoodBoard onComplete={handleComplete} onSkip={handleSkip} onClose={handleClose} />
 }
