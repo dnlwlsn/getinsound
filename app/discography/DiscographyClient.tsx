@@ -592,7 +592,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setPricePounds(p => { const v = Math.max(2, parseFloat(p) - 1); return v.toFixed(2) })}
+                        onClick={() => setPricePounds(p => { const v = Math.max(3, parseFloat(p) - 1); return v.toFixed(2) })}
                         className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center text-lg font-bold"
                       >
                         −
@@ -619,6 +619,11 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                       {type === 'album' && ' Most albums sell between £5–£10.'}
                       {type === 'ep' && ' Most EPs sell between £3–£6.'}
                     </p>
+                    {parseFloat(pricePounds) >= 3 && (
+                      <p className="text-[10px] text-zinc-500 mt-1">
+                        You&apos;ll receive ~{formatPriceUtil(parseFloat(pricePounds) * 0.9, 'GBP')} per sale after fees
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col justify-end">
                     <label className="flex items-center gap-3 cursor-pointer py-3">

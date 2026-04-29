@@ -401,7 +401,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                             {r.title.charAt(0)}
                           </div>
                         )}
-                        <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                           {r.type}
                         </span>
                       </div>
@@ -421,7 +421,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                     {getTags(r).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {getTags(r).map(tag => (
-                          <span key={tag} className="text-[8px] text-zinc-600 font-bold uppercase tracking-wider bg-zinc-800/60 px-1.5 py-0.5 rounded-full">
+                          <span key={tag} className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider bg-zinc-800/60 px-1.5 py-0.5 rounded-full">
                             {tag}
                           </span>
                         ))}

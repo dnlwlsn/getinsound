@@ -318,10 +318,10 @@ export function BasketDrawer({ onClose }: Props) {
                                 <span className="text-[13px] font-semibold text-orange-500 shrink-0">{displayPrice}</span>
                                 <button
                                   onClick={() => remove(item)}
-                                  className="shrink-0 p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
+                                  className="shrink-0 p-2.5 text-zinc-600 hover:text-red-400 transition-colors"
                                   aria-label={`Remove ${item.releaseTitle}`}
                                 >
-                                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path d="M18 6L6 18M6 6l12 12" />
                                   </svg>
                                 </button>
@@ -628,7 +628,7 @@ function PwywInlineEditor({ releaseId, currentPence, minPence, relCurrency, onUp
           setValue(next.toFixed(2))
           onUpdate(releaseId, Math.round(next * 100))
         }}
-        className="w-5 h-5 rounded flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white text-xs font-black transition-colors"
+        className="w-8 h-8 rounded flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white text-xs font-black transition-colors"
         aria-label="Decrease price"
       >
         −
@@ -652,7 +652,7 @@ function PwywInlineEditor({ releaseId, currentPence, minPence, relCurrency, onUp
           setValue(next.toFixed(2))
           onUpdate(releaseId, Math.round(next * 100))
         }}
-        className="w-5 h-5 rounded flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white text-xs font-black transition-colors"
+        className="w-8 h-8 rounded flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white text-xs font-black transition-colors"
         aria-label="Increase price"
       >
         +

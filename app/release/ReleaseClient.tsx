@@ -384,8 +384,11 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
   discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[]
   isOwned: boolean
 }) {
+  const { currency, formatPrice, convertPrice } = useCurrency()
   const [ownedDismissed, setOwnedDismissed] = useState(false)
   const [albumColor, setAlbumColor] = useState<string | null>(null)
+  const [showStickyBuy, setShowStickyBuy] = useState(false)
+  const buyRef = useRef<HTMLDivElement>(null)
   const play = usePlayerStore(s => s.play)
   const currentTrack = usePlayerStore(s => s.currentTrack)
   const isPlaying = usePlayerStore(s => s.isPlaying)
@@ -397,6 +400,13 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
       extractDominantColor(release.cover_url).then(setAlbumColor)
     }
   }, [release.cover_url])
+
+  useEffect(() => {
+    if (!buyRef.current) return
+    const obs = new IntersectionObserver(([e]) => setShowStickyBuy(!e.isIntersecting), { threshold: 0 })
+    obs.observe(buyRef.current)
+    return () => obs.disconnect()
+  }, [])
 
   const handleToggleTrack = useCallback((track: Track, index: number) => {
     if (currentTrack?.id === track.id) {
@@ -467,10 +477,29 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
                 </button>
               </div>
             )}
-            <PriceSection release={release} accent={accent} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
+            <div ref={buyRef}>
+              <PriceSection release={release} accent={accent} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
+            </div>
 
             <div className="flex items-center gap-3 mt-4">
               <FavouriteButton releaseId={release.id} size={20} />
+              <button
+                onClick={() => {
+                  const url = window.location.href
+                  if (navigator.share) {
+                    navigator.share({ title: `${release.title} by ${artist.name}`, url })
+                  } else {
+                    navigator.clipboard.writeText(url)
+                  }
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-white transition-colors"
+                aria-label="Share"
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                </svg>
+                Share
+              </button>
               <AddToBasketButton
                 item={{
                   type: 'release',
@@ -612,6 +641,22 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
             </div>
           </div>
         </section>
+      )}
+
+      {showStickyBuy && !isOwned && (
+        <div className="fixed bottom-[60px] left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between gap-3 md:hidden">
+          <div className="min-w-0">
+            <p className="text-sm font-bold truncate">{release.title}</p>
+            <p className="text-xs text-orange-500 font-bold">{formatPrice(convertPrice(release.price_pence / 100, release.currency || 'GBP', currency))}</p>
+          </div>
+          <button
+            onClick={() => openCheckout()}
+            className="shrink-0 text-black font-black text-sm px-5 py-2.5 rounded-xl"
+            style={{ background: accent }}
+          >
+            Buy Now
+          </button>
+        </div>
       )}
     </main>
   )

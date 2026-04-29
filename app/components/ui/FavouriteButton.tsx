@@ -64,7 +64,7 @@ export function FavouriteButton({ trackId, releaseId, size = 18, className = '',
       <button
         onClick={handleClick}
         aria-label={saved ? 'Remove from saved' : 'Save for later'}
-        className={`transition-colors ${burst ? 'heart-burst' : ''} ${className}`}
+        className={`transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${burst ? 'heart-burst' : ''} ${className}`}
       >
         <svg
           width={size}

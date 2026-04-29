@@ -16,7 +16,7 @@ export function SignupClient() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [ageConfirmed, setAgeConfirmed] = useState(false)
-  const [authMethod, setAuthMethod] = useState<'magic' | 'password'>('magic')
+  const [authMethod, setAuthMethod] = useState<'magic' | 'password'>('password')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [magicSent, setMagicSent] = useState(false)
@@ -219,6 +219,7 @@ export function SignupClient() {
                     />
                     <span className="text-xs text-zinc-500 leading-snug">
                       I confirm I am at least 18 years old.
+                      <p className="text-[11px] text-zinc-600 mt-1">Required because we process payments through Stripe.</p>
                     </span>
                   </label>
 

@@ -101,7 +101,7 @@ export function ShelfCard({ href, coverUrl, title, subtitle, badge, price, class
           loading="lazy"
         />
         {badge && (
-          <span className="absolute top-2 left-2 bg-orange-600 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+          <span className="absolute top-2 left-2 bg-orange-600 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
             {badge}
           </span>
         )}

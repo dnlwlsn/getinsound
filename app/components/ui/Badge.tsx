@@ -72,7 +72,7 @@ export function Badge({ type, position, size = 'sm' }: {
       <span
         className={`inline-flex items-center gap-1 rounded-full font-bold uppercase tracking-widest ${
           size === 'xs'
-            ? 'text-[8px] px-2 py-0.5'
+            ? 'text-[10px] px-2 py-0.5'
             : 'text-[10px] px-2.5 py-1'
         }`}
         style={{ background: `${config.color}18`, color: config.color }}

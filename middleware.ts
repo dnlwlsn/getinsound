@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getCurrencyForCountry } from './app/lib/currency'
 
 const ARTIST_ROUTES = ['/dashboard']
-const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/discover', '/release', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
+const PUBLIC_ROUTES = ['/', '/auth', '/signup', '/explore', '/discover', '/release', '/search', '/faq', '/redeem', '/download', '/why-us', '/for-artists', '/for-fans', '/for-press', '/privacy', '/terms', '/ai-policy']
 const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/become-an-artist', '/api']
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30

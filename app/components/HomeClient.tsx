@@ -94,7 +94,7 @@ function ReleaseGrid({ releases, formatPrice, convertPrice, currency }: {
                 loading="lazy"
               />
               {r.isNew && (
-                <span className="absolute top-2 left-2 bg-orange-600 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="absolute top-2 left-2 bg-orange-600 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                   New
                 </span>
               )}
@@ -227,11 +227,19 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
         <section className="border-b border-zinc-900 bg-zinc-950">
           <div className="max-w-7xl mx-auto px-5 md:px-10 py-8 md:py-12">
             <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight leading-tight">
-              Music that <span className="text-orange-500">pays artists.</span>
+              Discover music. <span className="text-orange-500">Support artists directly.</span>
             </h1>
             <p className="text-zinc-400 text-sm md:text-base mt-2 max-w-lg">
-              A home for independent artists to sell music directly to fans. No monthly fee. No label required. No approval process. Just upload, set your price, and start selling.
+              Buy music directly from independent artists. No subscriptions, no algorithms — just great music you own forever. 90% goes straight to the artist.
             </p>
+            <div className="flex items-center gap-3 mt-5">
+              <Link href="/explore" className="bg-orange-600 text-black font-black text-sm px-5 py-2.5 rounded-xl hover:bg-orange-500 transition-colors">
+                Browse Music
+              </Link>
+              <Link href="/for-fans" className="text-sm font-bold text-zinc-400 hover:text-white transition-colors">
+                How it works →
+              </Link>
+            </div>
           </div>
         </section>
       )}

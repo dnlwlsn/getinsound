@@ -36,7 +36,17 @@ export function SocialProofStrip({ items }: { items: ActivityItem[] }) {
     return () => clearInterval(id)
   }, [items.length, advance])
 
-  if (items.length === 0) return null
+  if (items.length === 0) {
+    return (
+      <section className="border-b border-zinc-900">
+        <div className="max-w-7xl mx-auto px-5 md:px-10 py-4 flex items-center justify-center gap-3 min-h-[52px]">
+          <p className="text-sm text-zinc-500">
+            Independent music. Direct from artists. <span className="text-orange-500 font-bold">90% to creators.</span>
+          </p>
+        </div>
+      </section>
+    )
+  }
 
   const item = items[index]
 

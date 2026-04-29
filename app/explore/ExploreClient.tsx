@@ -94,7 +94,7 @@ function CompactList({ items, formatPrice, convertPrice, currency }: {
               )}
               <span className="flex-1" />
               <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">{formatPrice(convertPrice(priceGbp(r), 'GBP', currency))}</span>
-              <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center shrink-0">
                 {active && isPlaying ? (
                   <svg width="14" height="14" fill="#000" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg>
                 ) : (
@@ -311,7 +311,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                     <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
                       <Image src={coverSrc(r)} fill className="object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" alt={r.title} />
                       {r.isNew && (
-                        <span className="absolute top-2 left-2 bg-orange-600 text-black text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider z-10">New</span>
+                        <span className="absolute top-2 left-2 bg-orange-600 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider z-10">New</span>
                       )}
                       <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                     </div>
