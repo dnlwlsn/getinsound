@@ -31,13 +31,19 @@ export async function POST(request: Request) {
   }
 
   // Clear any old preferences, then insert new ones
-  await supabase.from('fan_preferences').delete().eq('user_id', user.id)
+  const { error: deleteErr } = await supabase.from('fan_preferences').delete().eq('user_id', user.id)
+
+  if (deleteErr) {
+    console.error('[fan-preferences] delete failed:', deleteErr.message, deleteErr.code)
+    return NextResponse.json({ error: deleteErr.message }, { status: 500 })
+  }
 
   const { error: insertErr } = await supabase
     .from('fan_preferences')
     .insert(genres.map(genre => ({ user_id: user.id, genre })))
 
   if (insertErr) {
+    console.error('[fan-preferences] insert failed:', insertErr.message, insertErr.code)
     return NextResponse.json({ error: insertErr.message }, { status: 500 })
   }
 
