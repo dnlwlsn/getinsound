@@ -154,6 +154,18 @@ Deno.serve(async (req) => {
           return new Response('ok', { status: 200 });
         }
 
+        // Store Stripe customer ID on fan profile for saved payment methods
+        const merchCustomerId = typeof session.customer === 'string'
+          ? session.customer
+          : (session.customer as Stripe.Customer | null)?.id;
+        if (userId && merchCustomerId) {
+          await admin
+            .from('fan_profiles')
+            .update({ stripe_customer_id: merchCustomerId })
+            .eq('id', userId)
+            .is('stripe_customer_id', null);
+        }
+
         // Extract shipping address from Stripe session
         const shippingDetails = session.shipping_details ?? session.customer_details;
         const shippingAddress = shippingDetails?.address
@@ -384,6 +396,18 @@ Deno.serve(async (req) => {
           } else if (createErr) {
             await logWebhookError(admin, event.type, event.id, `User creation failed: ${createErr.message}`, { email: buyerEmail });
           }
+        }
+
+        // Store Stripe customer ID on fan profile for saved payment methods
+        const basketCustomerId = typeof session.customer === 'string'
+          ? session.customer
+          : (session.customer as Stripe.Customer | null)?.id;
+        if (userId && basketCustomerId) {
+          await admin
+            .from('fan_profiles')
+            .update({ stripe_customer_id: basketCustomerId })
+            .eq('id', userId)
+            .is('stripe_customer_id', null);
         }
 
         const basketFanLabel = await getFanLabel(admin, userId);
@@ -820,8 +844,18 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Insert purchase — the link_purchases_to_new_user trigger already set buyer_user_id
-      // for new accounts, but we set it explicitly for existing accounts too.
+      // Store Stripe customer ID on fan profile for saved payment methods
+      const sessionCustomerId = typeof session.customer === 'string'
+        ? session.customer
+        : (session.customer as Stripe.Customer | null)?.id;
+      if (userId && sessionCustomerId) {
+        await admin
+          .from('fan_profiles')
+          .update({ stripe_customer_id: sessionCustomerId })
+          .eq('id', userId)
+          .is('stripe_customer_id', null);
+      }
+
       const isPreOrder = session.metadata?.pre_order === 'true';
       const preOrderReleaseDate = session.metadata?.release_date ?? null;
 

@@ -1,6 +1,7 @@
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { STANDARD_FEE_BPS, SHIPPING_COUNTRIES } from '../_shared/constants.ts';
+import { resolveStripeCustomer } from '../_shared/stripe-customer.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-06-20',
@@ -83,6 +84,24 @@ Deno.serve(async (req) => {
       return json({ error: 'This artist has not finished setting up payouts yet.' }, 400);
     }
 
+    let stripeCustomerId: string | null = null;
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const userClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { authorization: authHeader } } },
+      );
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user?.email) {
+        try {
+          stripeCustomerId = await resolveStripeCustomer(stripe, admin, user.id, user.email);
+        } catch (e) {
+          console.error('Stripe customer resolution failed:', (e as Error).message);
+        }
+      }
+    }
+
     const itemAmount = merch.price;
     const postageAmount = merch.postage;
     const applicationFee = Math.round((itemAmount * STANDARD_FEE_BPS) / 10000);
@@ -95,6 +114,7 @@ Deno.serve(async (req) => {
       mode: 'payment',
       ui_mode: 'embedded',
       redirect_on_completion: 'never',
+      ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
       line_items: [
         {
           quantity: 1,

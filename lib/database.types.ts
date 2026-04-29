@@ -528,6 +528,7 @@ export type Database = {
           show_collection: boolean
           show_purchase_amounts: boolean
           show_wall: boolean
+          stripe_customer_id: string | null
           username: string | null
         }
         Insert: {
@@ -550,6 +551,7 @@ export type Database = {
           show_collection?: boolean
           show_purchase_amounts?: boolean
           show_wall?: boolean
+          stripe_customer_id?: string | null
           username?: string | null
         }
         Update: {
@@ -572,6 +574,7 @@ export type Database = {
           show_collection?: boolean
           show_purchase_amounts?: boolean
           show_wall?: boolean
+          stripe_customer_id?: string | null
           username?: string | null
         }
         Relationships: []

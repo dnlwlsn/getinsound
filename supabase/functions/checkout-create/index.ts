@@ -6,6 +6,7 @@
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { STANDARD_FEE_BPS, FOUNDING_ARTIST_FEE_BPS } from '../_shared/constants.ts';
+import { resolveStripeCustomer } from '../_shared/stripe-customer.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-06-20',
@@ -81,6 +82,7 @@ Deno.serve(async (req) => {
     }
 
     // Check auth header for logged-in user to prevent duplicate purchases
+    let stripeCustomerId: string | null = null;
     const authHeader = req.headers.get('authorization');
     if (authHeader) {
       const userClient = createClient(
@@ -99,6 +101,13 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (existing) {
           return json({ error: 'You already own this release.' }, 409);
+        }
+        if (user.email) {
+          try {
+            stripeCustomerId = await resolveStripeCustomer(stripe, admin, user.id, user.email);
+          } catch (e) {
+            console.error('Stripe customer resolution failed:', (e as Error).message);
+          }
         }
       }
     }
@@ -139,6 +148,7 @@ Deno.serve(async (req) => {
       mode: 'payment',
       ui_mode: 'embedded',
       redirect_on_completion: 'never',
+      ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
       line_items: [
         {
           quantity: 1,

@@ -1,6 +1,7 @@
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { STANDARD_FEE_BPS, FOUNDING_ARTIST_FEE_BPS, SHIPPING_COUNTRIES } from '../_shared/constants.ts';
+import { resolveStripeCustomer } from '../_shared/stripe-customer.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-06-20',
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
     );
 
     // Check for duplicate release purchases by authenticated user
+    let stripeCustomerId: string | null = null;
     const authHeader = req.headers.get('authorization');
     if (authHeader) {
       const anonClient = createClient(
@@ -83,6 +85,13 @@ Deno.serve(async (req) => {
           if (owned && owned.length > 0) {
             const ownedIds = owned.map((p: any) => p.release_id);
             return json({ error: 'You already own some of these releases', owned_ids: ownedIds }, 400);
+          }
+        }
+        if (user.email) {
+          try {
+            stripeCustomerId = await resolveStripeCustomer(stripe, admin, user.id, user.email);
+          } catch (e) {
+            console.error('Stripe customer resolution failed:', (e as Error).message);
           }
         }
       }
@@ -334,6 +343,7 @@ Deno.serve(async (req) => {
       mode: 'payment',
       ui_mode: 'embedded',
       redirect_on_completion: 'never',
+      ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
       line_items: lineItems,
       metadata: {
         type: 'basket',

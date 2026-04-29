@@ -10,6 +10,7 @@ import { useCurrency } from '@/app/providers/CurrencyProvider'
 import { calculateMerchFees } from '@/app/lib/fees'
 import { loadStripe } from '@stripe/stripe-js'
 import { useBasketStore, type MerchBasketItem } from '@/lib/stores/basket'
+import { createClient } from '@/lib/supabase/client'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -119,27 +120,39 @@ export default function MerchItemClient({ merch, artist, canCheckout, userId }: 
     setError(null)
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/checkout-merch-create`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            merch_id: merch.id,
-            variant: selectedVariant === '__none__' ? undefined : selectedVariant,
-            fan_currency: currency,
-            fan_locale: fanRegion,
-            fan_id: userId,
-            origin: window.location.origin,
-          }),
-        }
-      )
+      const requestBody = {
+        merch_id: merch.id,
+        variant: selectedVariant === '__none__' ? undefined : selectedVariant,
+        fan_currency: currency,
+        fan_locale: fanRegion,
+        fan_id: userId,
+        origin: window.location.origin,
+      }
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create checkout')
+      let data: any
+      if (userId) {
+        const supabase = createClient()
+        const res = await supabase.functions.invoke('checkout-merch-create', { body: requestBody })
+        if (res.error) throw res.error
+        data = res.data
+      } else {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/checkout-merch-create`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify(requestBody),
+          }
+        )
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || 'Failed to create checkout')
+        }
+        data = await res.json()
+      }
 
       setCheckoutClientSecret(data.client_secret)
     } catch (err) {
