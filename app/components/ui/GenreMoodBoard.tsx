@@ -11,9 +11,10 @@ const MAX_SELECTIONS = 5
 interface GenreMoodBoardProps {
   onComplete: (genres: Genre[]) => void | Promise<void>
   onSkip: () => void | Promise<void>
+  onClose?: () => void
 }
 
-export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
+export function GenreMoodBoard({ onComplete, onSkip, onClose }: GenreMoodBoardProps) {
   const [selected, setSelected] = useState<Set<Sound>>(new Set())
   const [saving, setSaving] = useState(false)
 
@@ -52,6 +53,19 @@ export function GenreMoodBoard({ onComplete, onSkip }: GenreMoodBoardProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950">
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-5 right-5 text-zinc-500 hover:text-white transition-colors z-10"
+          aria-label="Close"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
       <div className="w-full max-w-2xl px-6 py-12 flex flex-col items-center">
         {/* Header */}
         <h1 className="font-display font-bold text-2xl sm:text-3xl text-white text-center mb-2">

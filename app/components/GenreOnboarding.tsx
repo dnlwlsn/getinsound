@@ -20,22 +20,16 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Check if fan already has preferences or skipped
-      const { data: profile } = await supabase
-        .from('fan_profiles')
-        .select('preferences_skipped')
-        .eq('id', user.id)
-        .maybeSingle()
+      // Already dismissed this session
+      if (sessionStorage.getItem('insound_genre_dismissed')) return
 
-      if (profile) return // already completed or skipped
-
-      // Check if fan already has genre selections
+      // Check if fan already has genre selections or skipped
       const { count } = await supabase
         .from('fan_preferences')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
 
-      if (count && count > 0) return // already has preferences
+      if (count && count > 0) return
 
       // Check if they've made at least one purchase
       const { count: purchaseCount } = await supabase
@@ -76,27 +70,28 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
   async function handleSkip() {
     setError(null)
     try {
-      const res = await fetch('/api/fan-preferences', {
+      await fetch('/api/fan-preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skip: true }),
       })
-      if (res.ok) {
-        setShow(false)
-        router.push(redirectTo)
-      } else {
-        setError('We couldn\'t save your preferences - please try again.')
-      }
     } catch {
-      setError('We couldn\'t save your preferences - please try again.')
+      // Best-effort — don't trap the user if this fails
     }
+    setShow(false)
+    router.push(redirectTo)
+  }
+
+  function handleClose() {
+    sessionStorage.setItem('insound_genre_dismissed', '1')
+    setShow(false)
   }
 
   if (!show) return null
 
   return (
     <>
-      <GenreMoodBoard onComplete={handleComplete} onSkip={handleSkip} />
+      <GenreMoodBoard onComplete={handleComplete} onSkip={handleSkip} onClose={handleClose} />
       {error && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-lg">
           {error}

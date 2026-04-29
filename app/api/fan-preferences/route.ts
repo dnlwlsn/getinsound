@@ -18,19 +18,6 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { genres, skip } = body as { genres?: string[]; skip?: boolean }
 
-  // Upsert fan_profiles row
-  const { error: profileErr } = await supabase
-    .from('fan_profiles')
-    .upsert({
-      id: user.id,
-      preferences_skipped: skip === true,
-    }, { onConflict: 'id' })
-
-  if (profileErr) {
-    return NextResponse.json({ error: profileErr.message }, { status: 500 })
-  }
-
-  // If skipping, we're done
   if (skip) {
     return NextResponse.json({ ok: true })
   }
