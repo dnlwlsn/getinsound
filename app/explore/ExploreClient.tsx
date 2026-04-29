@@ -309,7 +309,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
 
         {/* Skeleton loader */}
         {loading && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-5">
             {[0,1,2,3,4].map(i => (
               <div key={i} className={`space-y-2 ${i >= 2 && i < 4 ? 'hidden md:block' : ''} ${i === 4 ? 'hidden lg:block' : ''}`}>
                 <div className="aspect-square rounded-2xl" style={{ background: 'linear-gradient(90deg,#27272a 25%,#3f3f46 50%,#27272a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
@@ -322,7 +322,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
 
         {/* Grid view */}
         {!loading && filtered.length > 0 && viewMode === 'expanded' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-5">
             {visibleItems.map(r => (
               <div key={r.id} className="group cursor-pointer">
                 <Link href={releaseUrl(r)}>

@@ -48,19 +48,22 @@ export function PlayerBar() {
   // Fetch signed URL when track changes
   useEffect(() => {
     if (!currentTrack) return
-    if (fetchingRef.current === currentTrack.id) return
-    fetchingRef.current = currentTrack.id
+    const trackId = currentTrack.id
+    const ac = new AbortController()
+    fetchingRef.current = trackId
 
-    fetch(`/api/stream?trackId=${currentTrack.id}`)
+    fetch(`/api/stream?trackId=${trackId}`, { signal: ac.signal })
       .then(r => r.json())
       .then(data => {
         if (data.url) {
           setAudioUrl(data.url, data.isPreview, data.previewDuration ?? null)
         }
       })
-      .catch(() => {
-        fetchingRef.current = null
+      .catch(err => {
+        if (err.name !== 'AbortError') fetchingRef.current = null
       })
+
+    return () => ac.abort()
   }, [currentTrack, setAudioUrl])
 
   // Apply artist accent colour

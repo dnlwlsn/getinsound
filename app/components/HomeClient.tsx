@@ -181,7 +181,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
               </div>
             </div>
           </Link>
-          <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {releases.slice(1, 5).map(f => (
               <Link
                 key={f.id}
