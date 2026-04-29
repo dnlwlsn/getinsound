@@ -27,13 +27,15 @@ const LOGGED_OUT_MENU_LINKS = [
 ]
 
 const LOGGED_IN_MENU_LINKS = [
-  { href: '/explore', label: 'Explore' },
-  { href: '/discover', label: 'For You' },
-  { href: '/library', label: 'My Collection' },
+  { href: '/settings', label: 'Settings' },
+  { href: '/for-artists', label: 'For Artists' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms' },
 ]
 
-const HIDE_NAV_ROUTES = ['/signup', '/auth', '/welcome', '/become-an-artist', '/faq']
-const HIDE_NAV_PREFIXES = ['/for-', '/privacy', '/terms', '/ai-policy', '/why-us', '/redeem']
+const HIDE_NAV_ROUTES = ['/signup', '/auth', '/welcome', '/become-an-artist']
+const HIDE_NAV_PREFIXES = ['/for-', '/why-us', '/redeem']
 
 function HamburgerMenu({ links }: { links: { href: string; label: string }[] }) {
   const [open, setOpen] = useState(false)
