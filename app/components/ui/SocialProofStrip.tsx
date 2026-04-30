@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export interface ActivityItem {
   type: 'purchase' | 'follow'
@@ -57,12 +58,9 @@ export function SocialProofStrip({ items }: { items: ActivityItem[] }) {
           className={`flex items-center gap-3 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
         >
           {item.type === 'purchase' && item.cover_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.cover_url}
-              alt=""
-              className="w-8 h-8 rounded object-cover ring-1 ring-white/[0.06]"
-            />
+            <div className="relative w-8 h-8 rounded overflow-hidden ring-1 ring-white/[0.06]">
+              <Image src={item.cover_url} fill className="object-cover" sizes="32px" alt="" />
+            </div>
           )}
           <p className="text-sm text-zinc-400">
             {item.type === 'purchase' ? (

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
 import { usePlayerStore } from '@/lib/stores/player'
 import { setAccentVar, resolveAccent } from '@/lib/accent'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
@@ -32,6 +34,7 @@ export function PlayerBar() {
   const playLoggedRef = useRef<string | null>(null)
   const [queueOpen, setQueueOpen] = useState(false)
   const [isBuffering, setIsBuffering] = useState(false)
+  const [previewEndedMsg, setPreviewEndedMsg] = useState(false)
 
   // Log play count helper (fires once per track play)
   const logPlay = useCallback((trackId: string, preview: boolean) => {
@@ -161,11 +164,11 @@ export function PlayerBar() {
     }
   }, [currentTime, duration, currentTrack, previewDuration, isPreview])
 
-  // Enforce preview duration limit — stop playback and advance to next track
+  // Enforce preview duration limit — stop playback and show buy prompt
   const previewEnforcedRef = useRef(false)
   useEffect(() => {
-    // Reset enforcement flag when track changes
     previewEnforcedRef.current = false
+    setPreviewEndedMsg(false)
   }, [currentTrack?.id])
 
   // Animation loop for time updates
@@ -190,6 +193,8 @@ export function PlayerBar() {
           previewEnforcedRef.current = true
           if (trackId) logPlay(trackId, true)
           audio.pause()
+          setPreviewEndedMsg(true)
+          setTimeout(() => setPreviewEndedMsg(false), 6000)
           next()
         }
       }
@@ -388,11 +393,9 @@ export function PlayerBar() {
             {/* Track info */}
             <div className="flex items-center gap-3 w-56 min-w-0">
               {currentTrack.coverUrl ? (
-                <img
-                  src={currentTrack.coverUrl}
-                  alt={`${currentTrack.title} by ${currentTrack.artistName}`}
-                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                />
+                <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                  <Image src={currentTrack.coverUrl} fill className="object-cover" sizes="48px" alt={`${currentTrack.title} by ${currentTrack.artistName}`} />
+                </div>
               ) : (
                 <div
                   className="w-12 h-12 rounded-lg flex-shrink-0"
@@ -565,6 +568,22 @@ export function PlayerBar() {
         </div>
       </div>
 
+      {/* Preview ended prompt */}
+      {previewEndedMsg && currentTrack && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-zinc-700 rounded-full px-5 py-2.5 flex items-center gap-3 shadow-xl animate-[fade-in_0.2s_ease]">
+          <span className="text-sm text-zinc-300">Preview ended</span>
+          <Link
+            href={`/release?a=${currentTrack.artistSlug}&r=${currentTrack.releaseSlug}`}
+            className="text-sm font-bold text-orange-500 hover:text-orange-400 transition-colors whitespace-nowrap"
+          >
+            Buy the full track
+          </Link>
+          <button onClick={() => setPreviewEndedMsg(false)} className="text-zinc-500 hover:text-white transition-colors ml-1" aria-label="Dismiss">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      )}
+
       {/* Queue panel */}
       <QueuePanel open={queueOpen} onClose={() => setQueueOpen(false)} />
 
@@ -598,21 +617,24 @@ export function PlayerBar() {
               onTouchMove={handleSwipeMove}
               onTouchEnd={handleSwipeEnd}
             >
-              <button
-                onClick={handleHandleClick}
-                className="w-full flex justify-center mb-4"
-                aria-label="Collapse player"
-              >
+              <div className="flex items-center justify-center gap-3 mb-4">
                 <div className="w-8 h-1 rounded-full bg-zinc-700" />
-              </button>
+                <button
+                  onClick={handleHandleClick}
+                  className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center"
+                  aria-label="Collapse player"
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-zinc-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
 
               <div className="flex flex-col items-center gap-4">
                 {currentTrack.coverUrl ? (
-                  <img
-                    src={currentTrack.coverUrl}
-                    alt={`${currentTrack.title} by ${currentTrack.artistName}`}
-                    className="w-48 h-48 rounded-2xl object-cover"
-                  />
+                  <div className="relative w-48 h-48 rounded-2xl overflow-hidden">
+                    <Image src={currentTrack.coverUrl} fill className="object-cover" sizes="192px" alt={`${currentTrack.title} by ${currentTrack.artistName}`} />
+                  </div>
                 ) : (
                   <div
                     className="w-48 h-48 rounded-2xl"
@@ -723,11 +745,9 @@ export function PlayerBar() {
               className="w-full flex items-center gap-3 px-3 py-2.5 cursor-pointer"
             >
               {currentTrack.coverUrl ? (
-                <img
-                  src={currentTrack.coverUrl}
-                  alt={`${currentTrack.title} by ${currentTrack.artistName}`}
-                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                />
+                <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                  <Image src={currentTrack.coverUrl} fill className="object-cover" sizes="40px" alt={`${currentTrack.title} by ${currentTrack.artistName}`} />
+                </div>
               ) : (
                 <div
                   className="w-10 h-10 rounded-lg flex-shrink-0"

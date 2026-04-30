@@ -8,11 +8,9 @@ import dynamic from 'next/dynamic'
 import { resolveAccent } from '@/lib/accent'
 import { useCurrency } from '@/app/providers/CurrencyProvider'
 import { calculateMerchFees } from '@/app/lib/fees'
-import { loadStripe } from '@stripe/stripe-js'
 import { useBasketStore, type MerchBasketItem } from '@/lib/stores/basket'
 import { createClient } from '@/lib/supabase/client'
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+import { stripePromise } from '@/lib/stripe'
 
 const StripeCheckoutEmbed = dynamic(
   () => import('@stripe/react-stripe-js').then(mod => {

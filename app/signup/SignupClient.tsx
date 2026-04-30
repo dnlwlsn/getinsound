@@ -21,7 +21,7 @@ export function SignupClient() {
   const [error, setError] = useState('')
   const [magicSent, setMagicSent] = useState(false)
   const intent = searchParams.get('intent')
-  const redirectTo = intent === 'artist' ? '/become-an-artist' : '/welcome'
+  const redirectTo = intent === 'artist' ? '/become-an-artist' : '/'
 
   useEffect(() => {
     if (searchParams.get('error') === 'auth') {

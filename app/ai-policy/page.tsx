@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Footer } from '@/app/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'AI Content Policy | Insound',
@@ -85,21 +86,7 @@ export default function AiPolicyPage() {
         </div>
       </div>
 
-      <footer className="border-t border-zinc-900/80 py-16">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col items-center gap-6">
-          <Image src="/insound_logo_orange.svg" alt="insound." width={80} height={32} className="h-8 w-auto" />
-          <div className="flex flex-wrap justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-            <Link href="/" className="hover:text-orange-500 transition-colors">Home</Link>
-            <Link href="/for-artists" className="hover:text-orange-500 transition-colors">Artists</Link>
-            <Link href="/for-fans" className="hover:text-orange-500 transition-colors">Fans</Link>
-            <Link href="/for-press" className="hover:text-orange-500 transition-colors">Press</Link>
-            <Link href="/privacy" className="hover:text-orange-500 transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-orange-500 transition-colors">Terms</Link>
-            <Link href="/ai-policy" className="text-orange-500">AI Policy</Link>
-          </div>
-          <p className="text-zinc-700 text-[11px] font-medium">&copy; 2026 Insound</p>
-        </div>
-      </footer>
+      <Footer />
     </main>
   )
 }

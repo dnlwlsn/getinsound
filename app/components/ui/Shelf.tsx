@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface ShelfProps {
   title: string
@@ -70,7 +71,7 @@ export function Shelf({ title, subtitle, seeAllHref, children, pulse }: ShelfPro
       </div>
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto px-5 md:px-10 pb-2 shelf-scroll snap-x snap-mandatory"
+        className="flex gap-4 overflow-x-auto px-5 md:px-10 pb-2 shelf-scroll snap-x snap-mandatory max-w-7xl mx-auto"
         style={{ scrollPaddingLeft: '1.25rem' }}
       >
         {children}
@@ -93,12 +94,12 @@ export function ShelfCard({ href, coverUrl, title, subtitle, badge, price, class
   return (
     <Link href={href} className={`flex-shrink-0 snap-start group w-[160px] sm:w-[180px] ${className}`}>
       <div className="aspect-square rounded-2xl overflow-hidden mb-3 ring-1 ring-white/[0.06] relative">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={coverUrl}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          sizes="180px"
           alt={`${title} by ${subtitle}`}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
         />
         {badge && (
           <span className="absolute top-2 left-2 bg-orange-600 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">

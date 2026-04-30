@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 export default function AuthTransferPage() {
   const searchParams = useSearchParams()
   const code = searchParams.get('code')
-  const next = searchParams.get('next') || '/welcome'
+  const next = searchParams.get('next') || '/'
   const [status, setStatus] = useState<'checking' | 'browser-ok' | 'pwa-prompt' | 'transferring' | 'done' | 'error'>('checking')
   const attempted = useRef(false)
 

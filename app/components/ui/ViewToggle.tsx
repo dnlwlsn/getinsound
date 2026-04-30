@@ -5,6 +5,7 @@ import type { ViewMode } from '@/lib/useViewMode'
 interface Props {
   mode: ViewMode
   onToggle: (mode: ViewMode) => void
+  showPlaylist?: boolean
 }
 
 function GridIcon({ active }: { active: boolean }) {
@@ -43,7 +44,7 @@ function PlaylistIcon({ active }: { active: boolean }) {
   )
 }
 
-export function ViewToggle({ mode, onToggle }: Props) {
+export function ViewToggle({ mode, onToggle, showPlaylist = false }: Props) {
   return (
     <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
       <button
@@ -62,14 +63,16 @@ export function ViewToggle({ mode, onToggle }: Props) {
       >
         <ListIcon active={mode === 'compact'} />
       </button>
-      <button
-        onClick={() => onToggle('playlist')}
-        className="p-1.5 rounded-lg transition-colors"
-        style={{ background: mode === 'playlist' ? 'rgba(245,109,0,0.12)' : 'transparent' }}
-        aria-label="Playlist view"
-      >
-        <PlaylistIcon active={mode === 'playlist'} />
-      </button>
+      {showPlaylist && (
+        <button
+          onClick={() => onToggle('playlist')}
+          className="p-1.5 rounded-lg transition-colors"
+          style={{ background: mode === 'playlist' ? 'rgba(245,109,0,0.12)' : 'transparent' }}
+          aria-label="Playlist view"
+        >
+          <PlaylistIcon active={mode === 'playlist'} />
+        </button>
+      )}
     </div>
   )
 }

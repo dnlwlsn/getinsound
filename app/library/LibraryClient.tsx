@@ -15,6 +15,7 @@ import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { getTrackingUrl } from '@/lib/carriers'
 import { zipSync } from 'fflate'
 import { NotificationOptIn } from '@/app/components/pwa/NotificationOptIn'
+import { useToast } from '@/app/providers/ToastProvider'
 
 type SortOption = 'newest' | 'oldest' | 'title' | 'artist'
 type TrackSortOption = 'purchased' | 'artist' | 'title'
@@ -76,9 +77,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
   const [dateRange, setDateRange] = useState<DateRange>('all')
   const [sort, setSort] = useState<SortOption>('newest')
   const [downloadModal, setDownloadModal] = useState<LibraryRelease | null>(null)
-  const [toastText, setToastText] = useState('')
-  const [toastVisible, setToastVisible] = useState(false)
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showToast = useToast()
   const [expandedReleases, setExpandedReleases] = useState<Set<string>>(new Set())
 
   const [trackSearch, setTrackSearch] = useState('')
@@ -240,13 +239,6 @@ export default function LibraryClient({ releases, error, userId, favourites = []
   const releasesOwned = releases.length
   const uniqueArtistCount = uniqueArtists.length
 
-  const showToast = useCallback((msg: string) => {
-    setToastText(msg)
-    setToastVisible(true)
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToastVisible(false), 2500)
-  }, [])
-
   const buildQueue = useCallback((release: LibraryRelease): PlayerTrack[] => {
     return release.tracks.map((t) => ({
       id: t.id,
@@ -343,7 +335,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
   }
 
   return (
-    <div className="min-h-screen font-display pb-24">
+    <div className="min-h-screen font-display pb-40">
 
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         {/* Header + Stats */}
@@ -411,6 +403,11 @@ export default function LibraryClient({ releases, error, userId, favourites = []
 
         {tab === 'orders' && (
           <div className="space-y-4">
+            <div className="flex justify-end">
+              <Link href="/orders" className="text-[10px] font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                View all orders →
+              </Link>
+            </div>
             {merchOrders.map(o => {
               const merchData = Array.isArray(o.merch) ? o.merch[0] : o.merch
               const artistData = Array.isArray(o.artists) ? o.artists[0] : o.artists
@@ -509,7 +506,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
                 <option value="artist">By Artist</option>
               </select>
             )}
-            <ViewToggle mode={viewMode} onToggle={setViewMode} />
+            <ViewToggle mode={viewMode} onToggle={setViewMode} showPlaylist />
           </div>
         </div>
 
@@ -714,13 +711,6 @@ export default function LibraryClient({ releases, error, userId, favourites = []
         />
       )}
 
-      <div
-        className={`fixed bottom-20 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 ${
-          toastVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-        }`}
-      >
-        {toastText}
-      </div>
       <NotificationOptIn show={releases.length > 0} />
     </div>
   )
@@ -988,15 +978,7 @@ function ReleaseRowCompact({
   )
 }
 
-/* ── Format Selector Modal ───────────────────────────────────── */
-
-type AudioFormat = 'wav' | 'flac' | 'mp3'
-
-const FORMAT_LABELS: Record<AudioFormat, string> = {
-  wav: 'WAV - Original Quality',
-  flac: 'FLAC - Lossless Compressed',
-  mp3: 'MP3 - 320kbps',
-}
+/* ── Download Modal ─────────────────────────────────────────── */
 
 function FormatSelectorModal({
   release,
@@ -1007,14 +989,11 @@ function FormatSelectorModal({
   onClose: () => void
   showToast: (msg: string) => void
 }) {
-  const stored = typeof window !== 'undefined' ? localStorage.getItem('insound_dl_format') : null
-  const [format, setFormat] = useState<AudioFormat>((stored as AudioFormat) ?? 'wav')
   const [downloading, setDownloading] = useState(false)
   const isAlbum = release.tracks.length > 1
 
   const handleDownload = async () => {
     setDownloading(true)
-    localStorage.setItem('insound_dl_format', format)
 
     try {
       if (isAlbum) {
@@ -1022,12 +1001,12 @@ function FormatSelectorModal({
         for (const track of release.tracks) {
           const streamRes = await fetch(`/api/stream?trackId=${track.id}`)
           if (!streamRes.ok) continue
-          const { url } = await streamRes.json()
+          const { url, format: ext } = await streamRes.json()
           if (!url) continue
           const audioRes = await fetch(url)
           if (!audioRes.ok) continue
           const buf = await audioRes.arrayBuffer()
-          const filename = `${String(track.position).padStart(2, '0')} - ${track.title}.${format}`
+          const filename = `${String(track.position).padStart(2, '0')} - ${track.title}.${ext || 'wav'}`
           files[filename] = new Uint8Array(buf)
         }
         const zipped = zipSync(files)
@@ -1044,12 +1023,12 @@ function FormatSelectorModal({
         for (const track of release.tracks) {
           const res = await fetch(`/api/stream?trackId=${track.id}`)
           if (!res.ok) continue
-          const { url } = await res.json()
+          const { url, format: ext } = await res.json()
           if (!url) continue
 
           const a = document.createElement('a')
           a.href = url
-          a.download = `${String(track.position).padStart(2, '0')} - ${track.title}.${format}`
+          a.download = `${String(track.position).padStart(2, '0')} - ${track.title}.${ext || 'wav'}`
           a.target = '_blank'
           document.body.appendChild(a)
           a.click()
@@ -1062,7 +1041,7 @@ function FormatSelectorModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           releaseId: release.releaseId,
-          format,
+          format: 'original',
           trackCount: release.tracks.length,
         }),
       }).catch(() => {})
@@ -1093,21 +1072,9 @@ function FormatSelectorModal({
           {isAlbum && <span className="text-zinc-600"> &middot; Downloads as ZIP</span>}
         </p>
 
-        <div className="space-y-2 mb-6">
-          {(['wav', 'flac', 'mp3'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFormat(f)}
-              className={`w-full text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
-                format === f
-                  ? 'border-orange-600 bg-orange-600/10 text-white'
-                  : 'border-zinc-800 text-zinc-400 hover:border-zinc-700'
-              }`}
-            >
-              {FORMAT_LABELS[f]}
-            </button>
-          ))}
-        </div>
+        <p className="text-sm text-zinc-400 mb-6">
+          Files are served in the original format uploaded by the artist.
+        </p>
 
         <div className="flex gap-3">
           <button

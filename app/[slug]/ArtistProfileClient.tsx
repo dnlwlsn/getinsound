@@ -19,6 +19,7 @@ import { useBasketStore } from '@/lib/stores/basket'
 import { FollowButton } from '@/app/components/ui/FollowButton'
 import { ReportModal } from '@/app/components/ui/ReportModal'
 import { WallPostCard } from '@/app/[slug]/components/WallPost'
+import { useToast } from '@/app/providers/ToastProvider'
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -177,6 +178,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
   const pause = usePlayerStore(s => s.pause)
   const resume = usePlayerStore(s => s.resume)
   const { mode: viewMode, set: setViewMode } = useViewMode()
+  const showToast = useToast()
   const [showReport, setShowReport] = useState(false)
   const { addMany, has: basketHas } = useBasketStore()
   const [addedAllCount, setAddedAllCount] = useState<number | null>(null)
@@ -239,18 +241,9 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       try { await navigator.share({ title: artist.name, url }) } catch {}
     } else {
       await navigator.clipboard.writeText(url)
-      const toast = document.getElementById('artist-toast')
-      if (toast) {
-        toast.textContent = 'Link copied!'
-        toast.style.opacity = '1'
-        toast.style.transform = 'translateX(-50%) translateY(0)'
-        setTimeout(() => {
-          toast.style.opacity = '0'
-          toast.style.transform = 'translateX(-50%) translateY(1rem)'
-        }, 2000)
-      }
+      showToast('Link copied!')
     }
-  }, [artist.name])
+  }, [artist.name, showToast])
 
   return (
     <main className="flex-1 relative min-h-screen" style={{ '--artist-accent': accent } as React.CSSProperties}>
@@ -323,7 +316,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
 
         {/* Releases */}
         {releases.length > 0 ? (
-          <section className="pb-32">
+          <section className="pb-40">
             <div className="flex items-center justify-between mb-8">
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Discography</p>
               <div className="flex items-center gap-3">
@@ -683,27 +676,20 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
             </>}
           </section>
         ) : (
-          <div className="text-center py-24 pb-32">
+          <div className="text-center py-24 pb-40">
             <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-zinc-600">
                 <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
               </svg>
             </div>
             <p className="text-zinc-500 text-sm font-bold mb-1">No releases yet</p>
-            <p className="text-zinc-600 text-xs mb-4">Check back soon.</p>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-400 text-sm font-bold transition-colors"
-            >
-              Upload your first release
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-7-7l7 7-7 7" /></svg>
-            </Link>
+            <p className="text-zinc-600 text-xs">Check back soon — this artist hasn&apos;t published any music yet.</p>
           </div>
         )}
       </div>
 
       {merch.length > 0 && (
-        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-32">
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-40">
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-8">Merch</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {merch.map((item) => {
@@ -729,7 +715,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       )}
 
       {posts.length > 0 && (
-        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-32">
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-40">
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-8">Updates</p>
           <div className="space-y-4 max-w-2xl">
             {posts.map((post) => (
@@ -750,11 +736,6 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
         </div>
       )}
 
-      {/* Toast */}
-      <div
-        id="artist-toast"
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 opacity-0 translate-y-4 pointer-events-none"
-      />
 
       {showReport && (
         <ReportModal

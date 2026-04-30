@@ -7,10 +7,9 @@ import { createClient } from '@/lib/supabase/client'
 import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
 import Image from 'next/image'
+import { stripePromise } from '@/lib/stripe'
 
 type Stage = 'review' | 'checkout' | 'preparing' | 'consent' | 'download' | 'confirmed' | 'error'
-
-const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 interface Props {
   onClose: () => void
@@ -140,16 +139,8 @@ export function BasketDrawer({ onClose }: Props) {
     setMerchOrderNames(merchNames)
 
     try {
-      if (!(window as any).Stripe) {
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement('script')
-          s.src = 'https://js.stripe.com/v3/'
-          s.onload = () => resolve()
-          s.onerror = () => reject(new Error('Failed to load payment system.'))
-          document.head.appendChild(s)
-        })
-      }
-      const stripe = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY)
+      const stripe = await stripePromise
+      if (!stripe) throw new Error('Failed to load payment system.')
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
       const requestBody = {

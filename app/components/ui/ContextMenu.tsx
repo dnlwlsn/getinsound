@@ -14,9 +14,10 @@ interface MenuItem {
 interface ContextMenuProps {
   items: MenuItem[]
   children: React.ReactNode
+  className?: string
 }
 
-export function ContextMenu({ items, children }: ContextMenuProps) {
+export function ContextMenu({ items, children, className }: ContextMenuProps) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -61,6 +62,7 @@ export function ContextMenu({ items, children }: ContextMenuProps) {
     <>
       <div
         ref={wrapRef}
+        className={className}
         onContextMenu={handleContextMenu}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}

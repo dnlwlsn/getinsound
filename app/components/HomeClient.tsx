@@ -84,14 +84,14 @@ function ReleaseGrid({ releases, formatPrice, convertPrice, currency }: {
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
       {releases.map(r => (
         <ContextMenu key={r.id} items={releaseContextItems(r)}>
-          <Link href={releaseUrl(r)} className="group">
+          <Link href={releaseUrl(r)} className="group flex flex-col h-full">
             <div className="aspect-square rounded-2xl overflow-hidden mb-3 ring-1 ring-white/[0.06] relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={coverSrc(r)}
                 alt={`${r.title} by ${r.artist_name}`}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                loading="lazy"
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
               />
               {r.isNew && (
                 <span className="absolute top-2 left-2 bg-orange-600 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -101,16 +101,8 @@ function ReleaseGrid({ releases, formatPrice, convertPrice, currency }: {
             </div>
             <p className="font-display font-bold text-sm text-white truncate">{r.title}</p>
             <p className="text-xs text-zinc-500 truncate mt-0.5">{r.artist_name}</p>
-            {r.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {r.tags.slice(0, 2).map(tag => (
-                  <span key={tag} className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-600 bg-zinc-800/60 rounded-full">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            <span className="inline-block mt-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 rounded-full">
+            <div className="flex-1" />
+            <span className="inline-block mt-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-orange-600/[0.08] ring-1 ring-orange-600/[0.15] text-orange-400 rounded-full self-start">
               {formatPrice(convertPrice(r.price_pence / 100, 'GBP', currency))}
             </span>
           </Link>
@@ -134,7 +126,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
-            <span className="text-sm font-black uppercase tracking-widest text-zinc-400">Just Added</span>
+            <span className="text-sm font-black uppercase tracking-widest text-zinc-400">Featured</span>
           </div>
           <Link href="/explore" className="text-[10px] font-black text-zinc-600 hover:text-orange-500 uppercase tracking-widest transition-colors">
             See all
@@ -143,7 +135,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link
             href={releaseUrl(releases[0])}
-            className="sm:col-span-1 group relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto sm:h-56 bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
+            className="sm:col-span-1 sm:row-span-2 group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
           >
             <Image src={coverSrc(releases[0])} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 33vw, 100vw" alt="" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
@@ -217,10 +209,8 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
       .slice(0, 4)
   }, [releases])
 
-  const newReleases = useMemo(() => releases.filter(r => r.isNew).slice(0, 12), [releases])
-
   return (
-    <div className="pb-24 font-display">
+    <div className="pb-40 font-display">
 
       {/* Sign-up banner for signed-out users */}
       {!isLoggedIn && (
@@ -233,11 +223,11 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
               Buy music directly from independent artists. No subscriptions, no algorithms — just great music you own forever. 90% goes straight to the artist.
             </p>
             <div className="flex items-center gap-3 mt-5">
-              <Link href="/explore" className="bg-orange-600 text-black font-black text-sm px-5 py-2.5 rounded-xl hover:bg-orange-500 transition-colors">
-                Browse Music
+              <Link href="/signup" className="bg-orange-600 text-black font-black text-sm px-5 py-2.5 rounded-xl hover:bg-orange-500 transition-colors">
+                Sign Up Free
               </Link>
-              <Link href="/for-fans" className="text-sm font-bold text-zinc-400 hover:text-white transition-colors">
-                How it works →
+              <Link href="/explore" className="text-sm font-bold text-zinc-400 hover:text-white transition-colors">
+                Browse Music →
               </Link>
             </div>
           </div>
@@ -266,7 +256,7 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
         <section className="border-b border-zinc-900">
           <Shelf title="New from artists you follow" pulse>
             {followedArtistReleases.slice(0, 12).map(r => (
-              <ContextMenu key={r.id} items={releaseContextItems(r)}>
+              <ContextMenu key={r.id} items={releaseContextItems(r)} className="flex-shrink-0">
                 <ShelfCard
                   href={releaseUrl(r)}
                   coverUrl={coverSrc(r)}
@@ -287,32 +277,12 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
       {/* Featured hero */}
       <FeaturedHero releases={featured} formatPrice={formatPrice} convertPrice={convertPrice} currency={currency} />
 
-      {/* New releases shelf */}
-      {newReleases.length > 0 && (
-        <section className="border-b border-zinc-900">
-          <Shelf title="New Releases" seeAllHref="/explore" pulse>
-            {newReleases.map(r => (
-              <ContextMenu key={r.id} items={releaseContextItems(r)}>
-                <ShelfCard
-                  href={releaseUrl(r)}
-                  coverUrl={coverSrc(r)}
-                  title={r.title}
-                  subtitle={r.artist_name}
-                  badge="New"
-                  price={formatPrice(convertPrice(r.price_pence / 100, 'GBP', currency))}
-                />
-              </ContextMenu>
-            ))}
-          </Shelf>
-        </section>
-      )}
-
       {/* Genre shelves — horizontal rows per genre */}
       {genreGroups.map(([genre, items]) => (
         <section key={genre} className="border-b border-zinc-900">
           <Shelf title={genre} seeAllHref={`/explore?tag=${encodeURIComponent(genre)}`}>
             {items.slice(0, 12).map(r => (
-              <ContextMenu key={r.id} items={releaseContextItems(r)}>
+              <ContextMenu key={r.id} items={releaseContextItems(r)} className="flex-shrink-0">
                 <ShelfCard
                   href={releaseUrl(r)}
                   coverUrl={coverSrc(r)}

@@ -8,6 +8,7 @@ import { useViewMode } from '@/lib/useViewMode'
 import { ViewToggle } from '@/app/components/ui/ViewToggle'
 import { Badge } from '@/app/components/ui/Badge'
 import { FavouriteButton } from '@/app/components/ui/FavouriteButton'
+import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
 import { GenrePromptCard } from '@/app/components/ui/GenrePromptCard'
 import { usePlayerStore } from '@/lib/stores/player'
 
@@ -125,7 +126,7 @@ function DiscoverPlayButton({ releaseId, title }: { releaseId: string; title: st
   const active = currentTrack?.releaseId === releaseId
   return (
     <Link
-      href={`/release?r=${releaseId}`}
+      href={`/release?r=${releaseId}&autoplay=true`}
       className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
       aria-label={`Play ${title}`}
     >
@@ -219,19 +220,20 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
   }, [recommendations])
 
   return (
-    <div className="min-h-screen font-display">
+    <div className="min-h-screen font-display pb-40">
       {/* ── SECTION 1: INSOUND SELECTS ────────────────────────── */}
       {featuredArtist && featured && (
         <section className="relative overflow-hidden border-b border-zinc-900">
           {/* Background */}
           <div className="absolute inset-0">
             {featuredArtist.avatar_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={featuredArtist.avatar_url}
+                fill
+                className="object-cover opacity-20 blur-2xl scale-110"
+                sizes="100vw"
                 alt=""
                 role="presentation"
-                className="w-full h-full object-cover opacity-20 blur-2xl scale-110"
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-insound-bg/60 via-insound-bg/80 to-insound-bg" />
@@ -250,11 +252,12 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
               <div className="w-full md:w-80 flex-shrink-0">
                 <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
                   {featuredArtist.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={featuredArtist.avatar_url}
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 768px) 320px, 100vw"
                       alt={featuredArtist.name}
-                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div
@@ -389,11 +392,11 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                     <Link href={`/release?a=${artist.slug}&r=${r.slug}`}>
                       <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
                         {r.cover_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <Image
                             src={r.cover_url}
-                            className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
-                            loading="lazy"
+                            fill
+                            className="object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
+                            sizes="(min-width: 1024px) 16vw, (min-width: 768px) 25vw, 50vw"
                             alt={r.title}
                           />
                         ) : (
@@ -404,6 +407,24 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                         <span className="absolute top-2 left-2 bg-orange-600/90 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                           {r.type}
                         </span>
+                        <div className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 sm:transition-opacity">
+                          <AddToBasketButton
+                            item={{
+                              type: 'release',
+                              releaseId: r.id,
+                              releaseTitle: r.title,
+                              releaseSlug: r.slug,
+                              artistId: artist.id,
+                              artistName: artist.name,
+                              artistSlug: artist.slug,
+                              coverUrl: r.cover_url,
+                              pricePence: r.price_pence,
+                              currency: 'GBP',
+                              accentColour: artist.accent_colour,
+                            }}
+                            size={18}
+                          />
+                        </div>
                       </div>
                     </Link>
                     <div className="flex items-center justify-between">
@@ -606,15 +627,16 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                     className="flex items-center gap-3 mb-4 group"
                   >
                     <div
-                      className="w-12 h-12 rounded-full overflow-hidden border-2 flex-shrink-0 bg-zinc-800"
+                      className="relative w-12 h-12 rounded-full overflow-hidden border-2 flex-shrink-0 bg-zinc-800"
                       style={{ borderColor: chain.recommender.accent_colour ?? '#F56D00' }}
                     >
                       {chain.recommender.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={chain.recommender.avatar_url}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
                           alt={chain.recommender.name}
-                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-sm font-black text-zinc-600">

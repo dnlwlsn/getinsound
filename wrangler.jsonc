@@ -13,7 +13,7 @@
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://rvsfriqjobwuzzfdiyxg.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_m2T7SpX_nYsK9i9CC3aDDw_SFeOtEUg",
-    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51TM4GsGkY3otnyNsltYWVo9N1xWEzKEUa8B4XjPlmSnP5VLCKAnkTebfHM8QOkmLTxyxxhNKQ4iJ9karlBfo5jEv007Ts2uEgI",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_live_51TM4GjGvrYI07xfFSeq3nksEaElBH52NJG14WAYg7X5cf3pLUytzuedinJ4Sdrn5fxKOsR45kE7ssCeI66XkZCQv00aENYo3Wt",
     "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "BAuPXjrPiFVGjRNsC1Le0C40FkcuyK2VtKqFXpP_iTPk-6JdQvoUB2OZK8k5tbay-ljtTkcOCg42xpTaLOT0Dsw",
     "NEXT_PUBLIC_SITE_URL": "https://getinsound.com"
   }

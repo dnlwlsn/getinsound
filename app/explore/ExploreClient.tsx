@@ -10,6 +10,7 @@ import { generateGradientDataUri } from '@/lib/gradient'
 import { ContextMenu } from '@/app/components/ui/ContextMenu'
 import { ReleaseCardSkeleton, ListItemSkeleton } from '@/app/components/ui/ReleaseSkeleton'
 import { usePlayerStore } from '@/lib/stores/player'
+import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -120,10 +121,13 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
   const [loading] = useState(false)
   const { mode: viewMode, set: setViewMode } = useViewMode()
 
-  /* ── Derive genres from real data ────────────────────────────── */
+  /* ── Derive genres + tags from real data ─────────────────────── */
   const genres = useMemo(() => {
     const set = new Set<string>()
-    releases.forEach(r => { if (r.genre) set.add(r.genre) })
+    releases.forEach(r => {
+      if (r.genre) set.add(r.genre)
+      r.tags.forEach(t => set.add(t))
+    })
     return ['All', ...Array.from(set).sort()]
   }, [releases])
 
@@ -131,7 +135,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
   const genreCounts = useMemo(() => {
     const counts: Record<string, number> = { All: releases.length }
     genres.forEach(g => {
-      if (g !== 'All') counts[g] = releases.filter(r => r.genre === g).length
+      if (g !== 'All') counts[g] = releases.filter(r => r.genre === g || r.tags.includes(g)).length
     })
     return counts
   }, [releases, genres])
@@ -142,7 +146,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
   /* ── Filtering & sorting ──────────────────────────────────── */
   const filtered = useMemo(() => {
     let items = releases.filter(r => {
-      const matchesGenre = currentGenre === 'All' || r.genre === currentGenre
+      const matchesGenre = currentGenre === 'All' || r.genre === currentGenre || r.tags.includes(currentGenre)
       const matchesType = currentReleaseType === 'all' || r.type === 'album' || r.type === 'ep'
       return matchesGenre && matchesType
     })
@@ -168,10 +172,10 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
 
   /* ── Render ───────────────────────────────────────────────── */
   return (
-    <div className="pb-24 font-display">
+    <div className="pb-40 font-display">
 
-      {/* FEATURED HERO */}
-      {featured.length > 0 && (
+      {/* FEATURED HERO — hide when filtering by genre/tag */}
+      {featured.length > 0 && currentGenre === 'All' && (
         <section className="border-b border-zinc-900 bg-zinc-950">
           <div className="max-w-7xl mx-auto px-5 md:px-10 py-10">
             <div className="flex items-center justify-between mb-6">
@@ -186,9 +190,9 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                 {/* Large featured */}
                 <Link
                   href={releaseUrl(featured[0])}
-                  className="sm:col-span-1 group relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto sm:h-56 bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
+                  className="sm:col-span-1 sm:row-span-2 group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
                 >
-                  <Image src={coverSrc(featured[0])} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 33vw, 100vw" alt="Album artwork" />
+                  <Image src={coverSrc(featured[0])} fill className="object-cover opacity-80 group-hover:opacity-95 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 33vw, 100vw" alt="Album artwork" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                   <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{featured[0].type}</div>
                   <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -205,7 +209,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                       href={releaseUrl(f)}
                       className="group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
                     >
-                      <Image src={coverSrc(f)} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 25vw, 50vw" alt="Album artwork" />
+                      <Image src={coverSrc(f)} fill className="object-cover opacity-80 group-hover:opacity-95 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 25vw, 50vw" alt="Album artwork" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-4">
                         <p className="font-black text-sm leading-tight">{f.title}</p>
@@ -224,7 +228,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                     href={releaseUrl(f)}
                     className="group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
                   >
-                    <Image src={coverSrc(f)} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 50vw, 100vw" alt="Album artwork" />
+                    <Image src={coverSrc(f)} fill className="object-cover opacity-80 group-hover:opacity-95 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 50vw, 100vw" alt="Album artwork" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                     <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{f.type}</div>
                     <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -244,20 +248,23 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
       <main className="max-w-7xl mx-auto px-5 md:px-10 py-8">
         {/* Filters + Sort */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-            {genres.map(g => (
-              <button
-                key={g}
-                onClick={() => setGenre(g)}
-                className={`px-4 py-2 rounded-full font-bold text-xs flex-shrink-0 transition-all ${
-                  currentGenre === g
-                    ? 'bg-orange-600 text-black'
-                    : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-200'
-                }`}
-              >
-                {g} <span className="opacity-60 ml-1">{genreCounts[g]}</span>
-              </button>
-            ))}
+          <div className="relative flex-1 min-w-0">
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+              {genres.map(g => (
+                <button
+                  key={g}
+                  onClick={() => setGenre(g)}
+                  className={`px-4 py-2 rounded-full font-bold text-xs flex-shrink-0 transition-all ${
+                    currentGenre === g
+                      ? 'bg-orange-600 text-black'
+                      : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-200'
+                  }`}
+                >
+                  {g} <span className="opacity-60 ml-1">{genreCounts[g]}</span>
+                </button>
+              ))}
+            </div>
+            <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-black to-transparent pointer-events-none sm:hidden" />
           </div>
           <div className="flex gap-2 flex-shrink-0 items-center">
             <select
@@ -309,11 +316,29 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
                 <div className="group cursor-pointer">
                   <Link href={releaseUrl(r)}>
                     <div className="aspect-square rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition-all mb-3 relative bg-zinc-900">
-                      <Image src={coverSrc(r)} fill className="object-cover opacity-75 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" alt={r.title} />
+                      <Image src={coverSrc(r)} fill className="object-cover opacity-90 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" alt={r.title} />
                       {r.isNew && (
                         <span className="absolute top-2 left-2 bg-orange-600 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider z-10">New</span>
                       )}
                       <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      <div className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 sm:transition-opacity">
+                        <AddToBasketButton
+                          item={{
+                            type: 'release',
+                            releaseId: r.id,
+                            releaseTitle: r.title,
+                            releaseSlug: r.slug,
+                            artistId: r.artist_id,
+                            artistName: r.artist_name,
+                            artistSlug: r.artist_slug,
+                            coverUrl: r.cover_url,
+                            pricePence: r.price_pence,
+                            currency: 'GBP',
+                            accentColour: r.accent_colour,
+                          }}
+                          size={18}
+                        />
+                      </div>
                     </div>
                   </Link>
                   <Link href={releaseUrl(r)}>

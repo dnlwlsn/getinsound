@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 
 const SIGNED_URL_EXPIRY = 60 * 60 // 1 hour
+
+function getAdminClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
 
 /** GET /api/stream?trackId=xxx — returns a signed URL for audio playback */
 export async function GET(request: Request) {
@@ -81,9 +89,21 @@ export async function GET(request: Request) {
     })
   }
 
-  // No dedicated preview available — do not expose the full master file
-  if (track.audio_path) {
-    return NextResponse.json({ error: 'Preview not available' }, { status: 404 })
+  // No dedicated preview clip — serve a short-lived signed URL from masters
+  // and let the client enforce the 30-second preview cutoff
+  if (track.audio_path && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = getAdminClient()
+    const { data: signed, error: signErr } = await admin.storage
+      .from('masters')
+      .createSignedUrl(track.audio_path, 5 * 60)
+
+    if (!signErr && signed) {
+      return NextResponse.json({
+        url: signed.signedUrl,
+        isPreview: true,
+        previewDuration: 30,
+      })
+    }
   }
 
   return NextResponse.json({ error: 'No audio available' }, { status: 404 })

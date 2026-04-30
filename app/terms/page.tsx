@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Footer } from '@/app/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'Terms of Service | Insound',
@@ -314,9 +315,7 @@ export default function TermsPage() {
         </div>
       </div>
 
-      <footer className="border-t border-zinc-900 py-10 text-center">
-        <p className="text-zinc-700 text-xs">&copy; 2026 Insound &nbsp;&middot;&nbsp; <Link href="/privacy" className="hover:text-zinc-500 transition-colors">Privacy</Link> &nbsp;&middot;&nbsp; <Link href="/ai-policy" className="hover:text-zinc-500 transition-colors">AI Policy</Link> &nbsp;&middot;&nbsp; <Link href="/" className="hover:text-zinc-500 transition-colors">Home</Link></p>
-      </footer>
+      <Footer />
     </main>
   )
 }

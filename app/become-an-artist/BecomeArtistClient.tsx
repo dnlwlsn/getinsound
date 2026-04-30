@@ -39,6 +39,8 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
   const [step, setStep] = useState(1)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [slugError, setSlugError] = useState('')
+  const [slugChecking, setSlugChecking] = useState(false)
 
   function handleArtistNameChange(value: string) {
     setArtistName(value)
@@ -192,15 +194,42 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
                   </div>
                   <p className="text-[10px] text-zinc-600 mt-1.5">Lowercase letters, numbers and hyphens only.</p>
                 </div>
+                {slugError && (
+                  <div className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3">
+                    {slugError}
+                  </div>
+                )}
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!artistName.trim()) { setError('Artist name is required.'); return }
+                    const trimmedSlug = slug.trim().toLowerCase()
+                    if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(trimmedSlug)) {
+                      setSlugError('URL must be 3-40 characters: lowercase letters, numbers, hyphens.')
+                      return
+                    }
+                    if (RESERVED_SLUGS.has(trimmedSlug)) {
+                      setSlugError(`"${trimmedSlug}" is reserved. Try another.`)
+                      return
+                    }
+                    setSlugChecking(true)
+                    setSlugError('')
+                    const { data: existing } = await supabase
+                      .from('artists')
+                      .select('id')
+                      .eq('slug', trimmedSlug)
+                      .maybeSingle()
+                    setSlugChecking(false)
+                    if (existing) {
+                      setSlugError(`"${trimmedSlug}" is already taken. Try another.`)
+                      return
+                    }
                     setError('')
                     setStep(2)
                   }}
-                  className="w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider"
+                  disabled={slugChecking}
+                  className="w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Continue →
+                  {slugChecking ? 'Checking...' : 'Continue →'}
                 </button>
               </div>
             )}

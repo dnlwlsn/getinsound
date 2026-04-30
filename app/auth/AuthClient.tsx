@@ -24,6 +24,7 @@ export default function AuthClient() {
   const [magicSent, setMagicSent] = useState(false)
   const [magicBusy, setMagicBusy] = useState(false)
   const [magicError, setMagicError] = useState('')
+  const [resetSent, setResetSent] = useState(false)
 
   async function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -35,7 +36,7 @@ export default function AuthClient() {
         password,
       })
       if (error) throw error
-      router.push('/welcome')
+      router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed.')
       setBusy(false)
@@ -53,7 +54,7 @@ export default function AuthClient() {
         body: JSON.stringify({
           email: magicEmail.trim(),
           template: 'signin',
-          redirectTo: '/auth/callback?next=/welcome',
+          redirectTo: '/auth/callback?next=/',
         }),
       })
       if (!res.ok) {
@@ -92,7 +93,7 @@ export default function AuthClient() {
           </div>
 
           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl" style={{ boxShadow: '0 0 60px rgba(245,109,0,0.08)' }}>
-            <SocialAuthButtons redirectTo="/welcome" />
+            <SocialAuthButtons redirectTo="/" />
             <AuthDivider />
 
             <div className="flex gap-1 mb-8 bg-zinc-950 p-1 rounded-xl">
@@ -157,7 +158,7 @@ export default function AuthClient() {
                       const res = await fetch('/api/auth/magic-link', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: magicEmail.trim(), template: 'signin', redirectTo: '/auth/callback?next=/welcome' }),
+                        body: JSON.stringify({ email: magicEmail.trim(), template: 'signin', redirectTo: '/auth/callback?next=/' }),
                       })
                       if (!res.ok) setMagicSent(false)
                     } catch { setMagicSent(false) }
@@ -171,7 +172,7 @@ export default function AuthClient() {
               </div>
             )}
 
-            {mode === 'password' && (
+            {mode === 'password' && !resetSent && (
               <form onSubmit={handlePasswordLogin} className="space-y-5">
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Email Address</label>
@@ -235,20 +236,38 @@ export default function AuthClient() {
                     setError('')
                     setBusy(true)
                     const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-                      redirectTo: `${window.location.origin}/auth/callback?next=/welcome`,
+                      redirectTo: `${window.location.origin}/auth/callback?next=/`,
                     })
                     setBusy(false)
                     if (error) { setError(error.message); return }
                     setError('')
-                    setMode('magic')
-                    setMagicEmail(trimmed)
-                    setMagicSent(true)
+                    setResetSent(true)
                   }}
                   className="w-full text-center text-xs text-zinc-500 hover:text-orange-500 mt-3 transition-colors"
                 >
                   Forgot password?
                 </button>
               </form>
+            )}
+
+            {mode === 'password' && resetSent && (
+              <div className="text-center py-4">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" className="text-orange-600" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-black text-white mb-2 font-display">Check your inbox</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  We sent a password reset link to <span className="text-white font-semibold">{email.trim()}</span>.
+                </p>
+                <button
+                  onClick={() => setResetSent(false)}
+                  className="text-orange-600 hover:text-orange-400 text-sm font-bold mt-4"
+                >
+                  ← Back to sign in
+                </button>
+              </div>
             )}
 
             <div className="mt-6 pt-5 border-t border-zinc-800 text-center">

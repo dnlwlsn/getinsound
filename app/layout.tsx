@@ -5,6 +5,7 @@ import { PlayerBar } from './components/PlayerBar'
 import { AppNav } from './components/ui/AppNav'
 import { VerificationBanner } from './components/ui/VerificationBanner'
 import { CurrencyProvider } from './providers/CurrencyProvider'
+import { ToastProvider } from './providers/ToastProvider'
 import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistration'
 import { InstallBanner } from './components/pwa/InstallBanner'
 import { CookieBanner } from './components/ui/CookieBanner'
@@ -64,9 +65,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-orange-600 focus:text-black focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">Skip to content</a>
         <CurrencyProvider initialLocale={initialLocale} initialCurrency={initialCurrency}>
-          <AppNav />
-          <VerificationBanner />
-          <main id="main-content">{children}</main>
+          <ToastProvider>
+            <AppNav />
+            <VerificationBanner />
+            <main id="main-content">{children}</main>
+          </ToastProvider>
         </CurrencyProvider>
         <PlayerBar />
         <GlobalShortcuts />

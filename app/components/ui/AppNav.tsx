@@ -28,6 +28,7 @@ const LOGGED_OUT_MENU_LINKS = [
 
 const LOGGED_IN_MENU_LINKS = [
   { href: '/settings', label: 'Settings' },
+  { href: '/orders', label: 'Orders' },
   { href: '/for-artists', label: 'For Artists' },
   { href: '/faq', label: 'FAQ' },
   { href: '/privacy', label: 'Privacy' },
@@ -118,7 +119,20 @@ export function AppNav() {
 
   const navHidden = useScrollDirection()
 
-  if (!loaded) return null
+  if (!loaded) {
+    return (
+      <>
+        <nav className="fixed top-0 z-50 w-full pt-4 px-4" style={{ background: 'transparent' }}>
+          <div className="mx-auto max-w-7xl rounded-full px-6 py-3 flex items-center justify-between ring-1 ring-white/[0.06]"
+            style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+            <InsoundLogo size="sm" />
+            <div className="w-20" />
+          </div>
+        </nav>
+        <div className="h-[72px]" />
+      </>
+    )
+  }
   if (HIDE_NAV_ROUTES.some(r => pathname === r)) return null
   if (HIDE_NAV_PREFIXES.some(p => pathname.startsWith(p))) return null
 
@@ -159,7 +173,7 @@ export function AppNav() {
 
   return (
     <>
-      <div className="h-[65px]" />
+      <div className="h-[72px]" />
       <nav className={`fixed top-0 w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
           <InsoundLogo size="md" className="flex-shrink-0 leading-none" />
@@ -211,7 +225,7 @@ export function AppNav() {
             {link.href === '/library' && (
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/></svg>
             )}
-            <span className="text-[9px] font-black uppercase tracking-wider">{link.label}</span>
+            <span className="text-[10px] font-black uppercase tracking-wider">{link.label}</span>
           </Link>
         ))}
       </nav>

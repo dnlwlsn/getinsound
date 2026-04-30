@@ -5,7 +5,8 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Responsive
 type EarningsHistory = { month: string; earnings: number; sales: number }[]
 type ReleaseBreakdown = { releaseTitle: string; earnings: number; sales: number }[]
 
-export function AnalyticsCharts({ earningsHistory, releaseBreakdown }: { earningsHistory: EarningsHistory; releaseBreakdown: ReleaseBreakdown }) {
+export function AnalyticsCharts({ earningsHistory, releaseBreakdown, currency = 'GBP' }: { earningsHistory: EarningsHistory; releaseBreakdown: ReleaseBreakdown; currency?: string }) {
+  const sym = { GBP: '£', USD: '$', EUR: '€' }[currency] || currency + ' '
   const hasEarnings = earningsHistory.some(d => d.earnings > 0 || d.sales > 0)
   const hasReleases = releaseBreakdown.some(d => d.earnings > 0)
 
@@ -26,11 +27,11 @@ export function AnalyticsCharts({ earningsHistory, releaseBreakdown }: { earning
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} tickFormatter={v => `£${v}`} width={45} />
+              <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} tickFormatter={v => `${sym}${v}`} width={45} />
               <Tooltip
                 contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: 8, fontSize: 12 }}
                 labelStyle={{ color: '#a1a1aa' }}
-                formatter={(value) => [`£${Number(value).toFixed(2)}`, 'Earnings']}
+                formatter={(value) => [`${sym}${Number(value).toFixed(2)}`, 'Earnings']}
               />
               <Area type="monotone" dataKey="earnings" stroke="#F56D00" strokeWidth={2} fill="url(#earnGrad)" />
             </AreaChart>
@@ -45,11 +46,11 @@ export function AnalyticsCharts({ earningsHistory, releaseBreakdown }: { earning
             <BarChart data={releaseBreakdown} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
               <XAxis dataKey="releaseTitle" tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} tickFormatter={v => `£${v}`} width={45} />
+              <YAxis tick={{ fontSize: 10, fill: '#71717a' }} axisLine={false} tickLine={false} tickFormatter={v => `${sym}${v}`} width={45} />
               <Tooltip
                 contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: 8, fontSize: 12 }}
                 labelStyle={{ color: '#a1a1aa' }}
-                formatter={(value) => [`£${Number(value).toFixed(2)}`, 'Earnings']}
+                formatter={(value) => [`${sym}${Number(value).toFixed(2)}`, 'Earnings']}
               />
               <Bar dataKey="earnings" fill="#F56D00" radius={[4, 4, 0, 0]} />
             </BarChart>

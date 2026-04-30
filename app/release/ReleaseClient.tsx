@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import Script from 'next/script'
+import { useSearchParams } from 'next/navigation'
+import { stripePromise } from '@/lib/stripe'
 import { calculateFeesPence } from '@/app/lib/fees'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -72,7 +73,6 @@ interface Recommendation { id: string; slug: string; title: string; cover_url: s
 
 type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'preorder-confirmed' | 'error'
 
-const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 export default function ReleaseClient({ artist, release, discography, supporters, recommendations, isOwned = false }: { artist: Artist; release: Release; discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[]; isOwned?: boolean }) {
   // Set accent colour CSS variable
@@ -118,16 +118,8 @@ export default function ReleaseClient({ artist, release, discography, supporters
     document.body.style.overflow = 'hidden'
 
     try {
-      if (!(window as any).Stripe) {
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement('script')
-          s.src = 'https://js.stripe.com/v3/'
-          s.onload = () => resolve()
-          s.onerror = () => reject(new Error('Failed to load payment system.'))
-          document.head.appendChild(s)
-        })
-      }
-      const stripe = (window as any).Stripe(STRIPE_PUBLISHABLE_KEY)
+      const stripe = await stripePromise as any
+      if (!stripe) throw new Error('Failed to load payment system.')
       const supabase = createClient()
       const { data, error } = await supabase.functions.invoke('checkout-create', {
         body: {
@@ -148,6 +140,9 @@ export default function ReleaseClient({ artist, release, discography, supporters
       if (!data?.client_secret) throw new Error('No checkout session returned')
 
       sessionIdRef.current = data.session_id
+      supabase.functions.invoke('record-digital-consent', {
+        body: { session_id: data.session_id },
+      }).catch(() => {})
       const embedded = await stripe.initEmbeddedCheckout({
         clientSecret: data.client_secret,
         onComplete: () => {
@@ -180,8 +175,7 @@ export default function ReleaseClient({ artist, release, discography, supporters
         if (data && data.release) {
           setDownloadTitle(data.release.title)
           setDownloadTracks(data.tracks)
-          setDigitalConsent(false)
-          setStage('consent')
+          setStage('download')
           return
         }
         let body: any = null
@@ -217,9 +211,6 @@ export default function ReleaseClient({ artist, release, discography, supporters
 
   return (
     <>
-      {/* Preload Stripe.js so the buy button is instant */}
-      <Script src="https://js.stripe.com/v3/" strategy="afterInteractive" />
-
       <ReleasePageContent
         artist={artist}
         release={release}
@@ -234,8 +225,6 @@ export default function ReleaseClient({ artist, release, discography, supporters
         isOwned={isOwned}
       />
 
-      {/* Toast */}
-      <div id="toast" className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-3 rounded-full text-sm font-bold shadow-xl z-[300] transition-all duration-300 opacity-0 translate-y-4" />
 
       {/* Checkout / Download Panel — slides from right */}
       {modalOpen && (
@@ -388,8 +377,10 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
   const [ownedDismissed, setOwnedDismissed] = useState(false)
   const [albumColor, setAlbumColor] = useState<string | null>(null)
   const [showStickyBuy, setShowStickyBuy] = useState(false)
+  const [pwywAmountPence, setPwywAmountPence] = useState<number | undefined>(undefined)
   const buyRef = useRef<HTMLDivElement>(null)
   const play = usePlayerStore(s => s.play)
+  const hasActivePlayer = usePlayerStore(s => !!s.currentTrack)
   const currentTrack = usePlayerStore(s => s.currentTrack)
   const isPlaying = usePlayerStore(s => s.isPlaying)
   const pause = usePlayerStore(s => s.pause)
@@ -430,6 +421,14 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
     }
   }, [currentTrack, isPlaying, pause, resume, play, tracks, artist, release])
 
+  const searchParams = useSearchParams()
+  const autoplayDone = useRef(false)
+  useEffect(() => {
+    if (autoplayDone.current || searchParams.get('autoplay') !== 'true' || tracks.length === 0) return
+    autoplayDone.current = true
+    handleToggleTrack(tracks[0], 0)
+  }, [searchParams, tracks, handleToggleTrack])
+
   const formatDuration = (sec: number) => {
     const m = Math.floor(sec / 60)
     const s = Math.floor(sec % 60)
@@ -437,7 +436,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
   }
 
   return (
-    <main className="flex-1 relative pb-36">
+    <main className="flex-1 relative pb-40">
       <div
         className="absolute inset-0 pointer-events-none album-color-wash"
         style={{ background: `radial-gradient(ellipse at top, ${hexToRgba(albumColor || accent, 0.12)}, transparent 60%)` }}
@@ -446,7 +445,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
       <article className="max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-14">
         <div className="flex flex-col sm:flex-row gap-8 md:gap-10 items-start">
           {/* Cover — constrained size */}
-          <div className="w-40 mx-auto sm:mx-0 sm:w-56 md:w-64 shrink-0">
+          <div className="w-full max-w-[280px] mx-auto sm:mx-0 sm:w-56 md:w-64 shrink-0">
             <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl">
               <Image src={coverSrc} fill className="object-cover" sizes="(min-width: 768px) 256px, (min-width: 640px) 224px, 160px" alt={`${release.title} cover art`} priority />
             </div>
@@ -478,7 +477,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
               </div>
             )}
             <div ref={buyRef}>
-              <PriceSection release={release} accent={accent} onBuy={(customAmountPence) => openCheckout(customAmountPence)} />
+              <PriceSection release={release} accent={accent} onBuy={(customAmountPence) => openCheckout(customAmountPence)} onAmountChange={setPwywAmountPence} />
             </div>
 
             <div className="flex items-center gap-3 mt-4">
@@ -644,13 +643,13 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
       )}
 
       {showStickyBuy && !isOwned && (
-        <div className="fixed bottom-[60px] left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between gap-3 md:hidden">
+        <div className={`fixed ${hasActivePlayer ? 'bottom-[124px]' : 'bottom-[60px]'} left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between gap-3 md:hidden`}>
           <div className="min-w-0">
             <p className="text-sm font-bold truncate">{release.title}</p>
             <p className="text-xs text-orange-500 font-bold">{formatPrice(convertPrice(release.price_pence / 100, release.currency || 'GBP', currency))}</p>
           </div>
           <button
-            onClick={() => openCheckout()}
+            onClick={() => openCheckout(pwywAmountPence)}
             className="shrink-0 text-black font-black text-sm px-5 py-2.5 rounded-xl"
             style={{ background: accent }}
           >
@@ -664,7 +663,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
 
 /* ── Price section with PWYW support ──────────────────────────── */
 
-function PriceSection({ release, accent, onBuy }: { release: Release; accent: string; onBuy: (customAmountPence?: number) => void }) {
+function PriceSection({ release, accent, onBuy, onAmountChange }: { release: Release; accent: string; onBuy: (customAmountPence?: number) => void; onAmountChange?: (pence: number | undefined) => void }) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const relCurrency = release.currency || 'GBP'
 
@@ -677,6 +676,10 @@ function PriceSection({ release, accent, onBuy }: { release: Release; accent: st
 
   const amountPence = Math.round(parseFloat(customAmount || '0') * 100)
   const isValid = amountPence >= minPence
+
+  useEffect(() => {
+    onAmountChange?.(release.pwyw_enabled && isValid ? amountPence : undefined)
+  }, [amountPence, isValid, release.pwyw_enabled, onAmountChange])
   const fees = calculateFeesPence(amountPence)
   const artistGetsAmount = convertPrice(Math.max(0, fees.artistReceived) / 100, relCurrency, currency)
   const insoundFeeAmount = convertPrice(fees.insoundFee / 100, relCurrency, currency)
@@ -705,6 +708,9 @@ function PriceSection({ release, accent, onBuy }: { release: Release; accent: st
               >
                 −
               </button>
+              <span className="text-3xl font-black" style={{ color: accent }}>
+                {(0).toLocaleString('en', { style: 'currency', currency: relCurrency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(/\d/g, '').trim()}
+              </span>
               <input
                 type="text"
                 inputMode="decimal"

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 
-export function SocialAuthButtons({ redirectTo = '/welcome' }: { redirectTo?: string }) {
+export function SocialAuthButtons({ redirectTo = '/' }: { redirectTo?: string }) {
   const [loading, setLoading] = useState(false)
 
   async function handleOAuth() {

@@ -23,7 +23,7 @@ const StripeEmbeddedOnboarding = dynamic(() => import('./StripeEmbeddedOnboardin
 
 // ── Types ──────────────────────────────────────────────────────
 type Artist = { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; banner_url: string | null; accent_colour: string | null; social_links: SocialLinks | null }
-type Account = { id: string; email: string; stripe_account_id: string | null; stripe_onboarded: boolean }
+type Account = { id: string; email: string; stripe_account_id: string | null; stripe_onboarded: boolean; default_currency?: string }
 type Track = { id: string; title: string; position: number; preview_plays: number; full_plays: number }
 type Release = {
   id: string; slug: string; title: string; type: string; cover_url: string | null
@@ -76,10 +76,12 @@ type Props = {
   releaseBreakdown?: { releaseTitle: string; earnings: number; sales: number }[]
 }
 
-function pence(n: number) { return formatPriceUtil(n / 100, 'GBP') }
+let _dashCurrency = 'GBP'
+function pence(n: number) { return formatPriceUtil(n / 100, _dashCurrency) }
 
 // ── Component ──────────────────────────────────────────────────
 export function DashboardClient({ artist, account, releases, stats, fans, codesByRelease, fanUsername, fanIsPublic, milestone, merchItems = [], merchOrders = [], returnAddress, saveCounts = {}, earningsHistory = [], releaseBreakdown = [] }: Props) {
+  _dashCurrency = account.default_currency || 'GBP'
   const supabase = createClient()
   const [rels, setRels] = useState(releases)
   const [payouts, setPayouts] = useState<any[] | null>(null)
@@ -676,7 +678,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
       </aside>
 
       {/* ── Main ────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-auto pb-20 md:pb-0">
+      <main className="flex-1 overflow-auto pb-40 md:pb-0">
         <div className="max-w-5xl mx-auto p-8 md:p-12">
 
           {/* Header */}
@@ -754,7 +756,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
             <StatBox label="Plays" value={String(stats.totalPreviewPlays + stats.totalFullPlays)} sub={`${stats.totalPreviewPlays} preview · ${stats.totalFullPlays} full`} />
             <StatBox label="Unique Fans" value={String(stats.uniqueFans)} />
           </div>
-          <AnalyticsCharts earningsHistory={earningsHistory} releaseBreakdown={releaseBreakdown} />
+          <AnalyticsCharts earningsHistory={earningsHistory} releaseBreakdown={releaseBreakdown} currency={account.default_currency || 'GBP'} />
           {stats.avgPaidPence > 0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-10">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">PWYW Insight</p>
