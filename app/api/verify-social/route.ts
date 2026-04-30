@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { SOCIAL_PLATFORMS, type SocialPlatform, type SocialLinks } from '@/lib/verification'
-
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req.headers)
+  const ipHash = await hashIp(ip)
+  const limited = await checkRateLimit(ipHash, 'social_verify', 10, 1)
+  if (limited) return limited
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -44,6 +49,10 @@ export async function POST(req: NextRequest) {
     hostname.startsWith('100.64.') ||
     hostname === '0.0.0.0' ||
     hostname === '[::1]' ||
+    hostname.startsWith('[::ffff:') ||
+    hostname.startsWith('[fe80:') ||
+    hostname.startsWith('[fd') ||
+    hostname.startsWith('[fc') ||
     hostname.startsWith('fc') ||
     hostname.startsWith('fd') ||
     hostname.includes('internal') ||

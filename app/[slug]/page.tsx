@@ -201,7 +201,7 @@ export default async function ProfilePage({ params }: Props) {
         />
         <FanProfileClient
           fan={fan as any}
-          purchases={visiblePurchases as any}
+          purchases={(fan.show_purchase_amounts ? visiblePurchases : visiblePurchases.map(({ amount_pence: _, fan_currency: __, ...rest }) => rest)) as any}
           pinned={pinned as any}
           badges={badges}
           wallPosts={wallPosts}

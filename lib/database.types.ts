@@ -56,6 +56,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_cache: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       artist_accounts: {
         Row: {
           country: string | null
@@ -193,6 +211,9 @@ export type Database = {
           default_currency: string
           first_year_zero_fees: boolean
           first_year_zero_fees_start: string | null
+          founding_artist: boolean
+          founding_artist_confirmed_at: string | null
+          founding_artist_first_sale_at: string | null
           id: string
           milestone_first_sale: boolean
           milestone_first_sale_at: string | null
@@ -214,6 +235,9 @@ export type Database = {
           default_currency?: string
           first_year_zero_fees?: boolean
           first_year_zero_fees_start?: string | null
+          founding_artist?: boolean
+          founding_artist_confirmed_at?: string | null
+          founding_artist_first_sale_at?: string | null
           id: string
           milestone_first_sale?: boolean
           milestone_first_sale_at?: string | null
@@ -235,6 +259,9 @@ export type Database = {
           default_currency?: string
           first_year_zero_fees?: boolean
           first_year_zero_fees_start?: string | null
+          founding_artist?: boolean
+          founding_artist_confirmed_at?: string | null
+          founding_artist_first_sale_at?: string | null
           id?: string
           milestone_first_sale?: boolean
           milestone_first_sale_at?: string | null
@@ -246,6 +273,57 @@ export type Database = {
           slug?: string
           social_links?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      auth_transfer_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      basket_sessions: {
+        Row: {
+          created_at: string
+          fan_currency: string
+          id: string
+          items: Json
+          ref_code: string | null
+        }
+        Insert: {
+          created_at?: string
+          fan_currency?: string
+          id?: string
+          items: Json
+          ref_code?: string | null
+        }
+        Update: {
+          created_at?: string
+          fan_currency?: string
+          id?: string
+          items?: Json
+          ref_code?: string | null
         }
         Relationships: []
       }
@@ -382,7 +460,7 @@ export type Database = {
           {
             foreignKeyName: "download_grants_purchase_id_fkey"
             columns: ["purchase_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "purchases"
             referencedColumns: ["id"]
           },
@@ -506,6 +584,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fan_preferences: {
+        Row: {
+          created_at: string
+          genre: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          genre: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          genre?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       fan_profiles: {
         Row: {
@@ -679,6 +778,27 @@ export type Database = {
           },
         ]
       }
+      founding_artist_programme: {
+        Row: {
+          filled_count: number
+          id: number
+          paused: boolean
+          total_spots: number
+        }
+        Insert: {
+          filled_count?: number
+          id?: number
+          paused?: boolean
+          total_spots?: number
+        }
+        Update: {
+          filled_count?: number
+          id?: number
+          paused?: boolean
+          total_spots?: number
+        }
+        Relationships: []
+      }
       merch: {
         Row: {
           artist_id: string
@@ -737,6 +857,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      newsletter_subscribers: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       notification_preferences: {
         Row: {
@@ -959,6 +1103,66 @@ export type Database = {
             columns: ["related_purchase_id"]
             isOneToOne: false
             referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_reports: {
+        Row: {
+          admin_notes: string | null
+          category: Database["public"]["Enums"]["report_category"]
+          created_at: string
+          details: string | null
+          id: string
+          reported_artist_id: string | null
+          reported_fan_id: string | null
+          reported_profile_type: string
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          admin_notes?: string | null
+          category: Database["public"]["Enums"]["report_category"]
+          created_at?: string
+          details?: string | null
+          id?: string
+          reported_artist_id?: string | null
+          reported_fan_id?: string | null
+          reported_profile_type: string
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: Database["public"]["Enums"]["report_category"]
+          created_at?: string
+          details?: string | null
+          id?: string
+          reported_artist_id?: string | null
+          reported_fan_id?: string | null
+          reported_profile_type?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_reports_reported_artist_id_fkey"
+            columns: ["reported_artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_reports_reported_fan_id_fkey"
+            columns: ["reported_fan_id"]
+            isOneToOne: false
+            referencedRelation: "fan_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1337,6 +1541,45 @@ export type Database = {
           },
         ]
       }
+      user_feedback: {
+        Row: {
+          admin_notes: string | null
+          category: Database["public"]["Enums"]["feedback_category"]
+          created_at: string
+          id: string
+          message: string
+          page_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["feedback_status"]
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          category: Database["public"]["Enums"]["feedback_category"]
+          created_at?: string
+          id?: string
+          message: string
+          page_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["feedback_status"]
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: Database["public"]["Enums"]["feedback_category"]
+          created_at?: string
+          id?: string
+          message?: string
+          page_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["feedback_status"]
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_sessions: {
         Row: {
           city: string | null
@@ -1501,6 +1744,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      confirm_founding_artist: { Args: { artist_id: string }; Returns: boolean }
       count_distinct_purchasers: { Args: never; Returns: number }
       decrement_merch_stock: { Args: { merch_id: string }; Returns: boolean }
       get_artist_zero_fees: {
@@ -1510,11 +1754,18 @@ export type Database = {
           zero_fees: boolean
         }[]
       }
+      get_founding_artist_fee: {
+        Args: { p_artist_id: string }
+        Returns: {
+          first_sale_at: string
+          is_founding: boolean
+        }[]
+      }
       get_user_id_by_email: { Args: { lookup_email: string }; Returns: string }
       get_waitlist_count: { Args: never; Returns: number }
-      increment_download_grant_usage: {
-        Args: { grant_id: string }
-        Returns: undefined
+      increment_download_grant: {
+        Args: { p_grant_id: string }
+        Returns: boolean
       }
       increment_play_count: {
         Args: { is_preview: boolean; track_id: string }
@@ -1527,6 +1778,10 @@ export type Database = {
       record_referral: {
         Args: { new_user_id: string; referrer_code: string }
         Returns: boolean
+      }
+      save_fan_preferences: {
+        Args: { p_genres: string[]; p_user_id: string }
+        Returns: undefined
       }
       search_artists: {
         Args: { max_results?: number; query: string }
@@ -1586,6 +1841,14 @@ export type Database = {
           type: string
         }[]
       }
+      set_fan_preferences: {
+        Args: { p_genres: string[]; p_user_id: string }
+        Returns: undefined
+      }
+      set_founding_artist_first_sale: {
+        Args: { p_artist_id: string; p_sale_at: string }
+        Returns: undefined
+      }
       set_zero_fees_start: { Args: { artist_id: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
@@ -1602,6 +1865,8 @@ export type Database = {
       verify_session: { Args: { p_session_id: string }; Returns: undefined }
     }
     Enums: {
+      feedback_category: "bug" | "feature_request" | "general"
+      feedback_status: "new" | "noted" | "done" | "dismissed"
       payout_status: "paid" | "failed" | "canceled"
       rate_limit_action:
         | "magic_link"
@@ -1610,6 +1875,18 @@ export type Database = {
         | "redeem_code"
         | "social_verify"
         | "email_change"
+      report_category:
+        | "dmca_copyright"
+        | "ai_generated_music"
+        | "impersonation"
+        | "harassment_hate_speech"
+        | "spam_scam"
+        | "inappropriate_content"
+        | "underage_user"
+        | "stolen_artwork"
+        | "misleading_info"
+        | "other"
+      report_status: "open" | "resolved" | "dismissed"
       suspicious_flag_type:
         | "high_chargeback_rate"
         | "chargeback_volume"
@@ -1742,6 +2019,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      feedback_category: ["bug", "feature_request", "general"],
+      feedback_status: ["new", "noted", "done", "dismissed"],
       payout_status: ["paid", "failed", "canceled"],
       rate_limit_action: [
         "magic_link",
@@ -1751,6 +2030,19 @@ export const Constants = {
         "social_verify",
         "email_change",
       ],
+      report_category: [
+        "dmca_copyright",
+        "ai_generated_music",
+        "impersonation",
+        "harassment_hate_speech",
+        "spam_scam",
+        "inappropriate_content",
+        "underage_user",
+        "stolen_artwork",
+        "misleading_info",
+        "other",
+      ],
+      report_status: ["open", "resolved", "dismissed"],
       suspicious_flag_type: [
         "high_chargeback_rate",
         "chargeback_volume",

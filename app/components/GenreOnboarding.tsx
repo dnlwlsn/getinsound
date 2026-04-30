@@ -71,7 +71,6 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
     sessionStorage.setItem('insound_genre_dismissed', '1')
     localStorage.setItem('insound_genre_done', '1')
     setShow(false)
-    router.push(redirectTo)
   }
 
   async function handleSkip() {
@@ -86,7 +85,6 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
       // Best-effort — don't trap the user if this fails
     }
     setShow(false)
-    router.push(redirectTo)
   }
 
   function handleClose() {

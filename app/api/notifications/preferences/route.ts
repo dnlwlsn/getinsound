@@ -37,8 +37,8 @@ export async function PUT(request: NextRequest) {
     .map(p => ({
       user_id: user.id,
       type: p.type,
-      in_app: p.in_app,
-      email: p.email,
+      in_app: p.in_app === true,
+      email: p.email === true,
     }))
 
   const { error } = await supabase

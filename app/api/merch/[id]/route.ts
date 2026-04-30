@@ -34,6 +34,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if ('stock' in updates && (typeof updates.stock !== 'number' || updates.stock < 0)) {
     return NextResponse.json({ error: 'Stock cannot be negative' }, { status: 400 })
   }
+  const validCurrencies = ['GBP', 'USD', 'EUR', 'CAD', 'AUD']
+  if ('currency' in updates && (typeof updates.currency !== 'string' || !validCurrencies.includes((updates.currency as string).toUpperCase()))) {
+    return NextResponse.json({ error: `Currency must be one of: ${validCurrencies.join(', ')}` }, { status: 400 })
+  }
+  const supabaseStoragePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`
+  if ('photos' in updates && Array.isArray(updates.photos)) {
+    if ((updates.photos as string[]).some(url => typeof url !== 'string' || !url.startsWith(supabaseStoragePrefix))) {
+      return NextResponse.json({ error: 'Invalid photo URL' }, { status: 400 })
+    }
+  }
 
   const { error } = await supabase
     .from('merch')

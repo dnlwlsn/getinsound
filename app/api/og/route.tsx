@@ -7,7 +7,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const title = searchParams.get('title') || 'Insound'
   const artist = searchParams.get('artist') || ''
-  const cover = searchParams.get('cover') || ''
+  const rawCover = searchParams.get('cover') || ''
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const cover = rawCover.startsWith(`${supabaseUrl}/storage/`) ? rawCover : ''
   const type = searchParams.get('type') || 'release'
 
   return new ImageResponse(

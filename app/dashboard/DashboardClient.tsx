@@ -147,11 +147,24 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     const name = editName.trim()
     if (!name) return
     setProfileSaving(true)
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    const { error } = await supabase.from('artists').update({ name, slug, bio: editBio.trim() || null }).eq('id', artist.id)
+    const newSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    if (newSlug.length < 3) {
+      setProfileSaving(false)
+      return
+    }
+    const updates: Record<string, unknown> = { name, bio: editBio.trim() || null }
+    if (newSlug !== artist.slug) {
+      const { data: existing } = await supabase.from('artists').select('id').eq('slug', newSlug).neq('id', artist.id).maybeSingle()
+      if (existing) {
+        setProfileSaving(false)
+        return
+      }
+      updates.slug = newSlug
+    }
+    const { error } = await supabase.from('artists').update(updates).eq('id', artist.id)
     if (!error) {
       artist.name = name
-      artist.slug = slug
+      if (updates.slug) artist.slug = newSlug
       artist.bio = editBio.trim() || null
       setEditingProfile(false)
     }
@@ -204,7 +217,10 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   async function saveRelease(updated: { title: string; description: string; genre: string; price_pence: number; coverFile?: File; tracks: { id: string; title: string; position: number }[] }) {
     if (!editingRelease) return
     const releaseId = editingRelease.id
-    const newSlug = slugify(updated.title)
+    const titleChanged = updated.title.trim() !== editingRelease.title
+    const newSlug = titleChanged && !editingRelease.published
+      ? slugify(updated.title)
+      : editingRelease.slug
 
     if (updated.coverFile) {
       const ext = updated.coverFile.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -661,6 +677,26 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         </div>
       </aside>
 
+      {/* ── Mobile nav ──────────────────────────────────────── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 flex justify-around py-2 safe-area-pb">
+        <a href="/dashboard" className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-orange-500">
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>
+          <span className="text-[10px] font-bold">Dashboard</span>
+        </a>
+        <a href="/discography" className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-zinc-500">
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2zm12-3c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2z" /></svg>
+          <span className="text-[10px] font-bold">Music</span>
+        </a>
+        <a href="/sales" className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-zinc-500">
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" /></svg>
+          <span className="text-[10px] font-bold">Sales</span>
+        </a>
+        <a href={`/${artist.slug}`} className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-zinc-500">
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span className="text-[10px] font-bold">Profile</span>
+        </a>
+      </div>
+
       {/* ── Main ────────────────────────────────────────────── */}
       <main className="flex-1 overflow-auto pb-40 md:pb-0">
         <div className="max-w-5xl mx-auto p-8 md:p-12">
@@ -696,8 +732,9 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                 + Upload Track
               </Link>
             ) : (
-              <span className="bg-zinc-700 text-zinc-500 cursor-not-allowed font-bold px-7 py-3.5 rounded-xl text-sm uppercase tracking-wider flex items-center gap-2 shrink-0" title="Set up payouts first">
+              <span className="bg-zinc-700 text-zinc-500 cursor-not-allowed font-bold px-7 py-3.5 rounded-xl text-sm uppercase tracking-wider flex flex-col items-center gap-1 shrink-0">
                 + Upload Track
+                <span className="text-[10px] normal-case tracking-normal text-zinc-500">Set up payouts first</span>
               </span>
             )}
           </header>

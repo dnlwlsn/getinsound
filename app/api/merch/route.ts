@@ -38,6 +38,10 @@ export async function POST(req: NextRequest) {
   if (typeof stock !== 'number' || stock < 0 || !Number.isInteger(stock)) {
     return NextResponse.json({ error: 'Stock must be a non-negative integer' }, { status: 400 })
   }
+  const validCurrencies = ['GBP', 'USD', 'EUR', 'CAD', 'AUD']
+  if (typeof currency !== 'string' || !validCurrencies.includes(currency.toUpperCase())) {
+    return NextResponse.json({ error: `Currency must be one of: ${validCurrencies.join(', ')}` }, { status: 400 })
+  }
 
   const { data: merch, error } = await supabase
     .from('merch')

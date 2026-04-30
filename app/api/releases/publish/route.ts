@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createNotificationBatch } from '@/lib/notifications'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req.headers)
+  const ipHash = await hashIp(ip)
+  const limited = await checkRateLimit(ipHash, 'general', 5, 1)
+  if (limited) return limited
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -91,22 +97,34 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const { data: buyers } = await supabase
-      .from('purchases')
-      .select('buyer_user_id')
-      .eq('artist_id', user.id)
-      .eq('status', 'paid')
-      .not('buyer_user_id', 'is', null)
+    const [buyersRes, followersRes] = await Promise.all([
+      supabase
+        .from('purchases')
+        .select('buyer_user_id')
+        .eq('artist_id', user.id)
+        .eq('status', 'paid')
+        .not('buyer_user_id', 'is', null),
+      supabase
+        .from('fan_follows')
+        .select('user_id')
+        .eq('artist_id', user.id),
+    ])
 
-    if (buyers && buyers.length > 0 && artist) {
-      const uniqueIds = [...new Set(buyers.map(b => b.buyer_user_id as string))]
-      await createNotificationBatch({
-        supabase,
-        userIds: uniqueIds,
-        type: 'new_release',
-        title: `${artist.name} released "${release.title}"`,
-        link: `/${artist.slug}`,
-      })
+    if (artist) {
+      const allIds = new Set<string>()
+      buyersRes.data?.forEach(b => { if (b.buyer_user_id) allIds.add(b.buyer_user_id as string) })
+      followersRes.data?.forEach(f => { if (f.user_id) allIds.add(f.user_id) })
+      allIds.delete(user.id)
+
+      if (allIds.size > 0) {
+        await createNotificationBatch({
+          supabase,
+          userIds: [...allIds],
+          type: 'new_release',
+          title: `${artist.name} released "${release.title}"`,
+          link: `/${artist.slug}`,
+        })
+      }
     }
   }
 

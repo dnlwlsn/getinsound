@@ -26,11 +26,15 @@ export async function POST(req: NextRequest) {
   if (!validTypes.includes(post_type)) {
     return NextResponse.json({ error: 'Invalid post_type' }, { status: 400 })
   }
-  if (!content || content.length > 1000) {
+  if (!content?.trim() || content.length > 1000) {
     return NextResponse.json({ error: 'Content required (max 1000 chars)' }, { status: 400 })
   }
   if ((post_type === 'photo' || post_type === 'demo' || post_type === 'voice_note') && !media_url) {
     return NextResponse.json({ error: 'Media URL required for this post type' }, { status: 400 })
+  }
+  const supabaseStoragePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`
+  if (media_url && !media_url.startsWith(supabaseStoragePrefix)) {
+    return NextResponse.json({ error: 'Invalid media URL' }, { status: 400 })
   }
 
   const { data: artist } = await supabase

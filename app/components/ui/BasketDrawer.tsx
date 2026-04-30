@@ -104,8 +104,7 @@ export function BasketDrawer({ onClose }: Props) {
     const embedded = await stripe.initEmbeddedCheckout({
       clientSecret,
       onComplete: () => {
-        setStage('confirmed')
-        clear()
+        pollForDownloads(sessionId)
       },
     })
     embeddedCheckoutRef.current = embedded

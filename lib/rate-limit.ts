@@ -28,7 +28,11 @@ export async function checkRateLimit(
 }
 
 export function getClientIp(headers: Headers): string {
-  return headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  return (
+    headers.get('cf-connecting-ip') ||
+    headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'unknown'
+  )
 }
 
 export async function hashIp(ip: string): Promise<string> {
