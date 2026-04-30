@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Subject and body required' }, { status: 400 })
   }
 
-  const to = test_email || user.email!
+  const to = user.email!
   const html = buildBroadcastHtml(body_markdown)
   const result = await sendEmail(to, `[TEST] ${subject}`, html)
 

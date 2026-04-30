@@ -321,13 +321,12 @@ Deno.serve(async (req) => {
           return new Response('ok', { status: 200 });
         }
 
-        // Idempotency
-        const { data: existingBasketPurchase } = await admin
-          .from('purchases')
-          .select('id')
-          .eq('stripe_checkout_id', session.id)
-          .maybeSingle();
-        if (existingBasketPurchase) return new Response('ok', { status: 200 });
+        // Idempotency — check both purchases and orders for merch-only baskets
+        const [{ data: existingBasketPurchase }, { data: existingBasketOrder }] = await Promise.all([
+          admin.from('purchases').select('id').eq('stripe_checkout_id', session.id).maybeSingle(),
+          admin.from('orders').select('id').eq('stripe_checkout_id', session.id).maybeSingle(),
+        ]);
+        if (existingBasketPurchase || existingBasketOrder) return new Response('ok', { status: 200 });
 
         const { data: basketSession } = await admin
           .from('basket_sessions')
@@ -722,25 +721,49 @@ Deno.serve(async (req) => {
 
         for (const [artistId, { stripeAccountId, amount }] of artistTransfers) {
           if (amount <= 0) continue;
-          try {
-            await stripe.transfers.create({
-              amount,
-              currency: session.currency || 'gbp',
-              destination: stripeAccountId,
-              source_transaction: chargeId,
-              metadata: {
-                basket_session_id: basketSessionId,
-                artist_id: artistId,
-              },
-            }, {
-              idempotencyKey: `basket_${basketSessionId}_${artistId}`,
-            });
-          } catch (e) {
-            console.error(`Transfer to ${stripeAccountId} failed:`, (e as Error).message);
-            await logWebhookError(admin, event.type, event.id, `Transfer failed for artist ${artistId}: ${(e as Error).message}`, {
+
+          const MAX_RETRIES = 3;
+          let transferSuccess = false;
+
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              await stripe.transfers.create({
+                amount,
+                currency: session.currency || 'gbp',
+                destination: stripeAccountId,
+                source_transaction: chargeId,
+                metadata: {
+                  basket_session_id: basketSessionId,
+                  artist_id: artistId,
+                },
+              }, {
+                idempotencyKey: `basket_${basketSessionId}_${artistId}`,
+              });
+              transferSuccess = true;
+              break;
+            } catch (e) {
+              const errMsg = (e as Error).message;
+              console.error(`Transfer to ${stripeAccountId} attempt ${attempt}/${MAX_RETRIES} failed:`, errMsg);
+
+              if (attempt < MAX_RETRIES) {
+                // Exponential backoff: 1s, 2s, 4s
+                const delayMs = Math.pow(2, attempt - 1) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+              }
+            }
+          }
+
+          if (!transferSuccess) {
+            console.error(`Transfer to ${stripeAccountId} failed after ${MAX_RETRIES} attempts — logging for manual retry`);
+            await logWebhookError(admin, event.type, event.id, `Transfer failed for artist ${artistId} after ${MAX_RETRIES} retries`, {
+              basket_session_id: basketSessionId,
               artist_id: artistId,
               stripe_account_id: stripeAccountId,
+              stripe_checkout_id: session.id,
               amount,
+              currency: session.currency || 'gbp',
+              charge_id: chargeId,
+              retries_exhausted: true,
             });
           }
         }

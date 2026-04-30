@@ -18,24 +18,27 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
   useEffect(() => {
     async function check() {
       if (sessionStorage.getItem('insound_genre_dismissed')) return
+      if (localStorage.getItem('insound_genre_done')) return
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Check if fan already has genre selections or skipped
-      const { count } = await supabase
-        .from('fan_preferences')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
+      const [{ count }, { count: purchaseCount }] = await Promise.all([
+        supabase
+          .from('fan_preferences')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('purchases')
+          .select('*', { count: 'exact', head: true })
+          .eq('buyer_user_id', user.id)
+          .eq('status', 'paid'),
+      ])
 
-      if (count && count > 0) return
-
-      // Check if they've made at least one purchase
-      const { count: purchaseCount } = await supabase
-        .from('purchases')
-        .select('*', { count: 'exact', head: true })
-        .eq('buyer_user_id', user.id)
-        .eq('status', 'paid')
+      if (count && count > 0) {
+        localStorage.setItem('insound_genre_done', '1')
+        return
+      }
 
       if (!purchaseCount || purchaseCount === 0) return
 
@@ -66,6 +69,7 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
       return
     }
     sessionStorage.setItem('insound_genre_dismissed', '1')
+    localStorage.setItem('insound_genre_done', '1')
     setShow(false)
     router.push(redirectTo)
   }

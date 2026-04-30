@@ -91,7 +91,7 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
         })
         if (error) throw error
         setBusy(false)
-        router.push('/')
+        router.push(redirectTo)
         return
       }
     } catch (err) {

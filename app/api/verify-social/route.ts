@@ -34,18 +34,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid URL protocol' }, { status: 400 })
   }
   const hostname = parsedUrl.hostname
-  if (hostname === 'localhost' || hostname.startsWith('127.') || hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.') || hostname === '0.0.0.0' || hostname.includes('internal') || hostname.endsWith('.local')) {
+  if (
+    hostname === 'localhost' ||
+    hostname.startsWith('127.') ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('172.') ||
+    hostname.startsWith('169.254.') ||
+    hostname.startsWith('100.64.') ||
+    hostname === '0.0.0.0' ||
+    hostname === '[::1]' ||
+    hostname.startsWith('fc') ||
+    hostname.startsWith('fd') ||
+    hostname.includes('internal') ||
+    hostname.endsWith('.local')
+  ) {
     return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
   }
 
   let exists = false
   try {
-    const res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(5000) })
-    exists = res.ok || res.status === 405 || res.status === 403
+    const res = await fetch(url, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(5000) })
+    exists = res.ok || res.status === 405 || res.status === 403 || (res.status >= 300 && res.status < 400)
   } catch {
     try {
-      const res = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(5000) })
-      exists = res.ok
+      const res = await fetch(url, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(5000) })
+      exists = res.ok || (res.status >= 300 && res.status < 400)
     } catch {
       exists = false
     }

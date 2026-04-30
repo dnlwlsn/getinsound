@@ -162,3 +162,99 @@ export async function GET(req: NextRequest) {
     ran_at: new Date().toISOString(),
   })
 }
+
+export async function POST(req: NextRequest) {
+  const user = await requireAdminApi()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const body = await req.json().catch(() => null)
+  const basketSessionId = body?.basket_session_id as string | undefined
+  if (!basketSessionId) {
+    return NextResponse.json({ error: 'basket_session_id is required' }, { status: 400 })
+  }
+
+  const admin = getAdminClient()
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2024-06-20' as Stripe.LatestApiVersion,
+  })
+
+  // Find failed transfer errors for this basket
+  const { data: errors, error: fetchErr } = await admin
+    .from('webhook_errors')
+    .select('id, error, payload')
+    .like('error', 'Transfer failed%')
+    .filter('payload->>basket_session_id', 'eq', basketSessionId)
+    .filter('payload->>retries_exhausted', 'eq', 'true')
+
+  if (fetchErr) {
+    return NextResponse.json({ error: fetchErr.message }, { status: 500 })
+  }
+
+  if (!errors || errors.length === 0) {
+    return NextResponse.json({ message: 'No failed transfers found for this basket', retried: 0 })
+  }
+
+  const results: Array<{
+    artist_id: string
+    status: 'success' | 'failed'
+    error?: string
+  }> = []
+
+  for (const err of errors) {
+    const payload = err.payload as {
+      artist_id: string
+      stripe_account_id: string
+      amount: number
+      currency: string
+      charge_id: string
+      stripe_checkout_id: string
+      basket_session_id: string
+    } | null
+
+    if (!payload?.stripe_account_id || !payload?.amount || !payload?.charge_id) {
+      results.push({
+        artist_id: payload?.artist_id || 'unknown',
+        status: 'failed',
+        error: 'Incomplete payload — cannot retry automatically',
+      })
+      continue
+    }
+
+    try {
+      await stripe.transfers.create({
+        amount: payload.amount,
+        currency: payload.currency || 'gbp',
+        destination: payload.stripe_account_id,
+        source_transaction: payload.charge_id,
+        metadata: {
+          basket_session_id: payload.basket_session_id,
+          artist_id: payload.artist_id,
+          retried: 'true',
+        },
+      }, {
+        idempotencyKey: `basket_${payload.basket_session_id}_${payload.artist_id}_retry`,
+      })
+
+      // Mark the error as resolved
+      await admin
+        .from('webhook_errors')
+        .update({ error: `[RESOLVED] ${err.error}` })
+        .eq('id', err.id)
+
+      results.push({ artist_id: payload.artist_id, status: 'success' })
+    } catch (e) {
+      results.push({
+        artist_id: payload.artist_id,
+        status: 'failed',
+        error: (e as Error).message,
+      })
+    }
+  }
+
+  return NextResponse.json({
+    basket_session_id: basketSessionId,
+    retried: results.length,
+    results,
+    ran_at: new Date().toISOString(),
+  })
+}

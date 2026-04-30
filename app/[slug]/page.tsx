@@ -84,6 +84,10 @@ export default async function ProfilePage({ params }: Props) {
   const { slug: rawSlug } = await params
   const slug = decodeURIComponent(rawSlug)
 
+  if (!slug.startsWith('@') && !/^[a-z0-9][a-z0-9-]{0,48}[a-z0-9]$/.test(slug) && !/^[a-z0-9]$/.test(slug)) {
+    notFound()
+  }
+
   // ── Fan profile (/@username) ──────────────────────────────────
   if (slug.startsWith('@')) {
     const username = slug.slice(1)

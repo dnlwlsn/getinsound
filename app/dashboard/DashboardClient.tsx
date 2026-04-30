@@ -344,51 +344,35 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
 
   // ── Artist avatar upload ────────────────────────────────────
   async function handleArtistAvatarUpload(file: File) {
-    const { data: existing } = await supabase.storage.from('avatars').list(artist.id)
-    if (existing?.length) {
-      await supabase.storage.from('avatars').remove(existing.map(f => `${artist.id}/${f.name}`))
-    }
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const path = `${artist.id}/avatar.${ext}`
-    const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-    if (uploadErr) throw new Error(uploadErr.message)
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    const url = `${publicUrl}?t=${Date.now()}`
-    await supabase.from('artists').update({ avatar_url: url }).eq('id', artist.id)
-    setArtistAvatarUrl(url)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('bucket', 'avatars')
+    const res = await fetch('/api/uploads/image', { method: 'POST', body: form })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Upload failed')
+    setArtistAvatarUrl(data.url)
   }
 
   async function handleArtistAvatarRemove() {
-    const { data: existing } = await supabase.storage.from('avatars').list(artist.id)
-    if (existing?.length) {
-      await supabase.storage.from('avatars').remove(existing.map(f => `${artist.id}/${f.name}`))
-    }
-    await supabase.from('artists').update({ avatar_url: null }).eq('id', artist.id)
+    const res = await fetch('/api/uploads/image?bucket=avatars', { method: 'DELETE' })
+    if (!res.ok) { const data = await res.json(); throw new Error(data.error || 'Remove failed') }
     setArtistAvatarUrl(null)
   }
 
   // ── Artist banner upload ───────────────────────────────────
   async function handleBannerUpload(file: File) {
-    const { data: existing } = await supabase.storage.from('banners').list(artist.id)
-    if (existing?.length) {
-      await supabase.storage.from('banners').remove(existing.map(f => `${artist.id}/${f.name}`))
-    }
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const path = `${artist.id}/banner.${ext}`
-    const { error: uploadErr } = await supabase.storage.from('banners').upload(path, file, { upsert: true })
-    if (uploadErr) throw new Error(uploadErr.message)
-    const { data: { publicUrl } } = supabase.storage.from('banners').getPublicUrl(path)
-    const url = `${publicUrl}?t=${Date.now()}`
-    await supabase.from('artists').update({ banner_url: url }).eq('id', artist.id)
-    setArtistBannerUrl(url)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('bucket', 'banners')
+    const res = await fetch('/api/uploads/image', { method: 'POST', body: form })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Upload failed')
+    setArtistBannerUrl(data.url)
   }
 
   async function handleBannerRemove() {
-    const { data: existing } = await supabase.storage.from('banners').list(artist.id)
-    if (existing?.length) {
-      await supabase.storage.from('banners').remove(existing.map(f => `${artist.id}/${f.name}`))
-    }
-    await supabase.from('artists').update({ banner_url: null }).eq('id', artist.id)
+    const res = await fetch('/api/uploads/image?bucket=banners', { method: 'DELETE' })
+    if (!res.ok) { const data = await res.json(); throw new Error(data.error || 'Remove failed') }
     setArtistBannerUrl(null)
   }
 

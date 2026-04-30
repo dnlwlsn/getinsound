@@ -41,6 +41,16 @@ export async function POST(req: NextRequest) {
     if (!trackCount || trackCount === 0) {
       return NextResponse.json({ error: 'Upload at least one track before publishing.' }, { status: 400 })
     }
+
+    const { data: releaseData } = await supabase
+      .from('releases')
+      .select('price_pence, pwyw_enabled')
+      .eq('id', release_id)
+      .single()
+
+    if (releaseData && !releaseData.pwyw_enabled && (releaseData.price_pence == null || releaseData.price_pence < 300)) {
+      return NextResponse.json({ error: 'Price must be at least 300 (e.g. £3.00). Enable "name your price" for flexible pricing.' }, { status: 400 })
+    }
   }
 
   const { error: updateErr } = await supabase
@@ -51,7 +61,7 @@ export async function POST(req: NextRequest) {
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 
   if (published) {
-    // Check Founding Artist eligibility: Stripe verified + first published release
+    // Check Founding Artist eligibility: Stripe verified + no existing badge
     try {
       const { data: account } = await supabase
         .from('artist_accounts')
@@ -60,17 +70,20 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       if (account?.stripe_verified) {
-        const { data: artistRow } = await supabase
-          .from('artists')
-          .select('founding_artist')
-          .eq('id', user.id)
-          .single()
+        const { data: existingBadge } = await supabase
+          .from('fan_badges')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('badge_type', 'founding_artist')
+          .maybeSingle()
 
-        if (artistRow && !artistRow.founding_artist) {
+        if (!existingBadge) {
           await supabase.rpc('confirm_founding_artist', { artist_id: user.id })
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Founding artist check failed:', err)
+    }
 
     const { data: artist } = await supabase
       .from('artists')

@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
       if (release.pwyw_enabled && reqItem.custom_amount != null) {
         const minimum = release.pwyw_minimum_pence ?? release.price_pence;
         const maxAmount = release.price_pence * 50;
-        if (reqItem.custom_amount >= minimum && reqItem.custom_amount >= release.price_pence) {
+        if (reqItem.custom_amount >= minimum) {
           unitAmount = Math.min(reqItem.custom_amount, maxAmount);
         }
       }
@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
       if (release.pwyw_enabled && reqItem.custom_amount != null) {
         const minimum = release.pwyw_minimum_pence ?? release.price_pence;
         const maxAmount = release.price_pence * 50;
-        if (reqItem.custom_amount >= minimum && reqItem.custom_amount >= release.price_pence) {
+        if (reqItem.custom_amount >= minimum) {
           unitAmount = Math.min(reqItem.custom_amount, maxAmount);
         }
       }

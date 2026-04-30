@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 const VALID_CATEGORIES = ['bug', 'feature_request', 'general'] as const
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req.headers)
+  const ipHash = await hashIp(ip)
+  const limited = await checkRateLimit(ipHash, 'general', 10, 1)
+  if (limited) return limited
+
   const body = await req.json()
   const { category, message, pageUrl } = body
 

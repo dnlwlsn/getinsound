@@ -30,12 +30,16 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid preferences' }, { status: 400 })
   }
 
-  const rows = preferences.map(p => ({
-    user_id: user.id,
-    type: p.type,
-    in_app: p.in_app,
-    email: p.email,
-  }))
+  const VALID_TYPES = ['new_release', 'new_follower', 'artist_post', 'purchase', 'order_update', 'milestone', 'system']
+
+  const rows = preferences
+    .filter(p => VALID_TYPES.includes(p.type))
+    .map(p => ({
+      user_id: user.id,
+      type: p.type,
+      in_app: p.in_app,
+      email: p.email,
+    }))
 
   const { error } = await supabase
     .from('notification_preferences')

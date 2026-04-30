@@ -643,7 +643,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
       )}
 
       {showStickyBuy && !isOwned && (
-        <div className={`fixed ${hasActivePlayer ? 'bottom-[124px]' : 'bottom-[60px]'} left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between gap-3 md:hidden`}>
+        <div className="fixed left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between gap-3 md:hidden" style={{ bottom: hasActivePlayer ? 'calc(124px + env(safe-area-inset-bottom))' : 'calc(60px + env(safe-area-inset-bottom))' }}>
           <div className="min-w-0">
             <p className="text-sm font-bold truncate">{release.title}</p>
             <p className="text-xs text-orange-500 font-bold">{formatPrice(convertPrice(release.price_pence / 100, release.currency || 'GBP', currency))}</p>

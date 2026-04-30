@@ -37,12 +37,21 @@ function itemKey(item: BasketItem): string {
   return `release:${item.releaseId}`
 }
 
+export interface PriceChange {
+  item: BasketItem
+  oldPricePence: number
+  newPricePence: number
+  oldPostagePence?: number
+  newPostagePence?: number
+}
+
 interface BasketState {
   items: BasketItem[]
   add: (item: BasketItem) => void
   addMany: (newItems: BasketItem[]) => number
   remove: (item: BasketItem) => void
   updateCustomAmount: (releaseId: string, amountPence: number) => void
+  applyPriceChanges: (changes: PriceChange[]) => void
   clear: () => void
   has: (item: BasketItem) => boolean
   itemsTotal: () => number
@@ -87,6 +96,33 @@ export const useBasketStore = create<BasketState>()(
               ? { ...i, customAmountPence: amountPence }
               : i
           ),
+        })
+      },
+
+      applyPriceChanges: (changes: PriceChange[]) => {
+        const changeMap = new Map(changes.map(c => [itemKey(c.item), c]))
+        set({
+          items: get().items.map(i => {
+            const change = changeMap.get(itemKey(i))
+            if (!change) return i
+            if (i.type === 'release') {
+              const updated: ReleaseBasketItem = { ...i, pricePence: change.newPricePence }
+              // If custom amount was exactly the old price, update it too
+              if (updated.customAmountPence === change.oldPricePence) {
+                updated.customAmountPence = change.newPricePence
+              }
+              // If custom amount is now below new minimum for PWYW, bump it
+              if (updated.pwyw && updated.customAmountPence !== undefined) {
+                const min = updated.pwywMinimumPence ?? updated.pricePence
+                if (updated.customAmountPence < min) updated.customAmountPence = min
+              }
+              return updated
+            }
+            if (i.type === 'merch') {
+              return { ...i, pricePence: change.newPricePence, postagePence: change.newPostagePence ?? i.postagePence }
+            }
+            return i
+          }),
         })
       },
 

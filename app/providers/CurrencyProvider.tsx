@@ -54,10 +54,17 @@ export function CurrencyProvider({ children, initialLocale, initialCurrency }: P
   }, [locale, currency])
 
   useEffect(() => {
+    const cached = localStorage.getItem('insound_exchange_rates')
+    if (cached) {
+      try { setExchangeRates(JSON.parse(cached)) } catch {}
+    }
     fetch('/api/exchange-rates')
       .then(r => r.json())
       .then(data => {
-        if (data.rates) setExchangeRates(data.rates)
+        if (data.rates) {
+          setExchangeRates(data.rates)
+          localStorage.setItem('insound_exchange_rates', JSON.stringify(data.rates))
+        }
       })
       .catch(() => {})
   }, [])

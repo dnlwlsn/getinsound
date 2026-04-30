@@ -232,7 +232,7 @@ async function ReleasePageInner({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <ReleaseClient artist={artist} release={release} discography={discography} supporters={supporters} recommendations={recommendations} isOwned={isOwned} />
     </>

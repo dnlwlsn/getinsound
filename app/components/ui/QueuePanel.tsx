@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Image from 'next/image'
 import { usePlayerStore } from '@/lib/stores/player'
 import { resolveAccent } from '@/lib/accent'
@@ -12,6 +13,15 @@ interface Props {
 export function QueuePanel({ open, onClose }: Props) {
   const { queue, queueIndex, currentTrack } = usePlayerStore()
   const accent = resolveAccent(currentTrack?.accentColour)
+
+  useEffect(() => {
+    if (!open) return
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [open, onClose])
 
   if (!open) return null
 

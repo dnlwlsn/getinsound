@@ -54,5 +54,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     link: '/dashboard/orders',
   })
 
-  return NextResponse.json({ ok: true, return_address: artist?.return_address ?? null })
+  return NextResponse.json({ ok: true, has_return_address: !!artist?.return_address })
 }

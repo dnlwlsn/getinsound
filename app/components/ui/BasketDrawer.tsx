@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useRef, useState } from 'react'
-import { useBasketStore, type BasketItem } from '@/lib/stores/basket'
+import { useBasketStore, type BasketItem, type PriceChange } from '@/lib/stores/basket'
 import { useCurrency } from '@/app/providers/CurrencyProvider'
 import { createClient } from '@/lib/supabase/client'
 import { calculateFeesPence } from '@/app/lib/fees'
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function BasketDrawer({ onClose }: Props) {
-  const { items, remove, updateCustomAmount, clear, total, itemsTotal, postageTotal, hasMerch } = useBasketStore()
+  const { items, remove, updateCustomAmount, applyPriceChanges, clear, total, itemsTotal, postageTotal, hasMerch } = useBasketStore()
   const { currency, formatPrice, convertPrice } = useCurrency()
   const [stage, setStage] = useState<Stage>('review')
   const [errorTitle, setErrorTitle] = useState('')
@@ -372,7 +372,7 @@ export function BasketDrawer({ onClose }: Props) {
                   </div>
                 ))}
 
-                <BasketSummary items={items} itemsTotal={itemsTotal} postageTotal={postageTotal} total={total} hasMerch={hasMerch} openCheckout={openCheckout} />
+                <BasketSummary items={items} itemsTotal={itemsTotal} postageTotal={postageTotal} total={total} hasMerch={hasMerch} openCheckout={openCheckout} applyPriceChanges={applyPriceChanges} />
               </>
             )}
           </div>
@@ -495,15 +495,18 @@ export function BasketDrawer({ onClose }: Props) {
 
 /* ── Basket summary with fee breakdown ───────────────────────── */
 
-function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openCheckout }: {
+function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openCheckout, applyPriceChanges }: {
   items: BasketItem[]
   itemsTotal: () => number
   postageTotal: () => number
   total: () => number
   hasMerch: () => boolean
   openCheckout: () => void
+  applyPriceChanges: (changes: PriceChange[]) => void
 }) {
   const { currency, formatPrice, convertPrice } = useCurrency()
+  const [checking, setChecking] = useState(false)
+  const [priceChanges, setPriceChanges] = useState<PriceChange[] | null>(null)
 
   const feeCurrency = items[0]?.currency || 'GBP'
   const convertedSubtotal = items.reduce((sum, i) => {
@@ -521,6 +524,62 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
 
   const uniqueArtists = [...new Set(items.map(i => i.artistName))]
   const artistLabel = uniqueArtists.length === 1 ? `To ${uniqueArtists[0]}` : `To ${uniqueArtists.length} artists`
+
+  const handleCheckout = useCallback(async () => {
+    setChecking(true)
+    setPriceChanges(null)
+    try {
+      const supabase = createClient()
+      const releaseIds = items.filter(i => i.type === 'release').map(i => (i as any).releaseId as string)
+      const merchIds = items.filter(i => i.type === 'merch').map(i => (i as any).merchId as string)
+
+      const [relRes, merchRes] = await Promise.all([
+        releaseIds.length > 0
+          ? supabase.from('releases').select('id, price_pence, pwyw_minimum_pence').in('id', releaseIds)
+          : Promise.resolve({ data: [] as any[] }),
+        merchIds.length > 0
+          ? supabase.from('merch').select('id, price, postage').in('id', merchIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ])
+
+      const relMap = new Map((relRes.data || []).map((r: any) => [r.id, r]))
+      const merchMap = new Map((merchRes.data || []).map((m: any) => [m.id, m]))
+
+      const changes: PriceChange[] = []
+      for (const item of items) {
+        if (item.type === 'release') {
+          const db = relMap.get(item.releaseId)
+          if (db && db.price_pence !== item.pricePence) {
+            changes.push({ item, oldPricePence: item.pricePence, newPricePence: db.price_pence })
+          }
+        } else if (item.type === 'merch') {
+          const db = merchMap.get(item.merchId)
+          if (db && (db.price !== item.pricePence || db.postage !== item.postagePence)) {
+            changes.push({ item, oldPricePence: item.pricePence, newPricePence: db.price, oldPostagePence: item.postagePence, newPostagePence: db.postage })
+          }
+        }
+      }
+
+      if (changes.length > 0) {
+        setPriceChanges(changes)
+      } else {
+        openCheckout()
+      }
+    } catch {
+      // If the price check fails, proceed anyway — server will re-validate
+      openCheckout()
+    } finally {
+      setChecking(false)
+    }
+  }, [items, openCheckout])
+
+  const acceptPriceChanges = useCallback(() => {
+    if (priceChanges) {
+      applyPriceChanges(priceChanges)
+      setPriceChanges(null)
+      openCheckout()
+    }
+  }, [priceChanges, applyPriceChanges, openCheckout])
 
   return (
     <div className="border-t border-zinc-800 pt-4 mt-4">
@@ -566,19 +625,65 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
         </div>
       </div>
 
+      {/* Price change warning */}
+      {priceChanges && priceChanges.length > 0 && (
+        <div className="bg-amber-950/40 border border-amber-700/50 rounded-xl px-4 py-3 mb-4">
+          <p className="text-[11px] font-black uppercase tracking-widest text-amber-500 mb-2">Prices updated</p>
+          <p className="text-[12px] text-amber-200/80 mb-2">Some prices have changed since you added these items:</p>
+          <ul className="space-y-1 mb-3">
+            {priceChanges.map((c, i) => {
+              const name = c.item.type === 'release' ? (c.item as any).releaseTitle : (c.item as any).merchName
+              const oldDisplay = formatPrice(convertPrice(c.oldPricePence / 100, c.item.currency, currency))
+              const newDisplay = formatPrice(convertPrice(c.newPricePence / 100, c.item.currency, currency))
+              return (
+                <li key={i} className="text-[12px] text-zinc-300">
+                  <span className="font-semibold">{name}</span>{' '}
+                  <span className="line-through text-zinc-500">{oldDisplay}</span>{' '}
+                  <span className="text-amber-400 font-bold">{newDisplay}</span>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="flex gap-2">
+            <button
+              onClick={acceptPriceChanges}
+              className="flex-1 bg-amber-600 hover:bg-amber-500 text-black font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors"
+            >
+              Accept &amp; continue
+            </button>
+            <button
+              onClick={() => setPriceChanges(null)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {hasMerch() && (
         <p className="text-[11px] text-zinc-500 font-medium mb-3">Shipping address collected at checkout.</p>
       )}
 
       <button
-        onClick={openCheckout}
-        className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+        onClick={handleCheckout}
+        disabled={checking}
+        className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-orange-600/50 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
       >
-        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" />
-          <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
-        </svg>
-        Checkout
+        {checking ? (
+          <>
+            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+            Checking prices...
+          </>
+        ) : (
+          <>
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" />
+              <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+            </svg>
+            Checkout
+          </>
+        )}
       </button>
       <p className="text-center text-[10px] text-zinc-600 mt-3">
         No account needed — just enter your email at checkout.

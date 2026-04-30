@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 const SIGNED_URL_EXPIRY = 60 * 60 // 1 hour
 
@@ -14,6 +14,11 @@ function getAdminClient() {
 
 /** GET /api/stream?trackId=xxx — returns a signed URL for audio playback */
 export async function GET(request: Request) {
+  const ip = getClientIp(request.headers)
+  const ipHash = await hashIp(ip)
+  const limited = await checkRateLimit(ipHash, 'general', 120, 1)
+  if (limited) return limited
+
   const { searchParams } = new URL(request.url)
   const trackId = searchParams.get('trackId')
 
@@ -89,18 +94,22 @@ export async function GET(request: Request) {
     })
   }
 
-  // No dedicated preview clip — serve a short-lived signed URL from masters as preview
+  // No preview clip available — refuse to serve the full master to non-purchasers
+  if (!hasFullAccess) {
+    return NextResponse.json({ error: 'No preview available' }, { status: 404 })
+  }
+
+  // Full-access user but preview_path is missing — serve from masters
   if (track.audio_path) {
     const admin = getAdminClient()
     const { data: signed, error: signErr } = await admin.storage
       .from('masters')
-      .createSignedUrl(track.audio_path, hasFullAccess ? SIGNED_URL_EXPIRY : 120)
+      .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)
 
     if (!signErr && signed) {
       return NextResponse.json({
         url: signed.signedUrl,
-        isPreview: !hasFullAccess,
-        ...(hasFullAccess ? {} : { previewDuration: 30 }),
+        isPreview: false,
       })
     }
   }

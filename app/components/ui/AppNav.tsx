@@ -35,8 +35,8 @@ const LOGGED_IN_MENU_LINKS = [
   { href: '/terms', label: 'Terms' },
 ]
 
-const HIDE_NAV_ROUTES = ['/signup', '/auth', '/welcome', '/become-an-artist']
-const HIDE_NAV_PREFIXES = ['/for-', '/why-us', '/redeem']
+const HIDE_NAV_ROUTES = ['/signup', '/auth', '/welcome', '/become-an-artist', '/dashboard', '/sales', '/discography']
+const HIDE_NAV_PREFIXES = ['/for-', '/why-us', '/redeem', '/dashboard/']
 
 function HamburgerMenu({ links }: { links: { href: string; label: string }[] }) {
   const [open, setOpen] = useState(false)
@@ -103,7 +103,7 @@ function HamburgerMenu({ links }: { links: { href: string; label: string }[] }) 
               </Link>
             ))}
             <div className="border-t border-white/[0.06] my-1" />
-            <span className="block px-5 py-2 text-[10px] text-zinc-700 font-medium">&copy; 2026 Insound</span>
+            <span className="block px-5 py-2 text-[10px] text-zinc-700 font-medium">&copy; {new Date().getFullYear()} Insound</span>
           </div>
         </>
       )}
@@ -174,7 +174,7 @@ export function AppNav() {
   return (
     <>
       <div className="h-[72px]" />
-      <nav className={`fixed top-0 w-full z-40 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+      <nav className={`fixed top-0 w-full z-50 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
           <InsoundLogo size="md" className="flex-shrink-0 leading-none" />
 

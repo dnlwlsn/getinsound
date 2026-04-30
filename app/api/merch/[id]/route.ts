@@ -18,6 +18,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
   }
 
+  if ('name' in updates && (typeof updates.name !== 'string' || updates.name.length > 200)) {
+    return NextResponse.json({ error: 'Name must be a string (max 200 chars)' }, { status: 400 })
+  }
+  if ('description' in updates && (typeof updates.description !== 'string' || updates.description.length > 5000)) {
+    return NextResponse.json({ error: 'Description must be a string (max 5000 chars)' }, { status: 400 })
+  }
+
   if ('price' in updates && (typeof updates.price !== 'number' || updates.price < 300 || updates.price > 10_000_000)) {
     return NextResponse.json({ error: 'Price must be between 300 and 10,000,000 (in pence/cents)' }, { status: 400 })
   }

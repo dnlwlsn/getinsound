@@ -75,56 +75,30 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
     setError('')
 
     try {
-      const { data: existing } = await supabase
-        .from('artists')
-        .select('id')
-        .eq('slug', trimmedSlug)
-        .maybeSingle()
-
-      if (existing) {
-        setError(`"${trimmedSlug}" is already taken. Try another.`)
-        setStep(1)
-        setBusy(false)
-        return
-      }
-
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      const { error: artistErr } = await supabase
-        .from('artists')
-        .insert({
-          id: user.id,
+      const res = await fetch('/api/artists/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           slug: trimmedSlug,
           name: artistName.trim(),
           bio: bio.trim() || null,
           accent_colour: accent,
-        })
-      if (artistErr) throw artistErr
-
-      const { error: accountErr } = await supabase
-        .from('artist_accounts')
-        .insert({
-          id: user.id,
           email: userEmail,
-          self_attest_independent: true,
-          independence_confirmed: true,
-          independence_confirmed_at: new Date().toISOString(),
-        })
-      if (accountErr) {
-        await supabase.from('artists').delete().eq('id', user.id)
-        throw accountErr
-      }
+        }),
+      })
 
-      await supabase
-        .from('fan_profiles')
-        .update({ has_seen_welcome: true })
-        .eq('id', user.id)
+      const data = await res.json()
+
+      if (!res.ok) {
+        if (res.status === 409 || data.error?.includes('taken') || data.error?.includes('reserved')) {
+          setStep(1)
+        }
+        throw new Error(data.error || 'Registration failed')
+      }
 
       // Award founding_artist badge if eligible (waitlist position ≤ 50)
       try {
-        const res = await fetch('/api/badges/founding-artist', { method: 'POST' })
-        if (!res.ok) { /* badge check failed, non-critical */ }
+        await fetch('/api/badges/founding-artist', { method: 'POST' })
       } catch {}
 
       router.push('/dashboard')

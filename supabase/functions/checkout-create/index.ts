@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     if (release.pwyw_enabled && customAmount != null) {
       const minimum = release.pwyw_minimum_pence ?? release.price_pence;
       const maxAmount = release.price_pence * 50;
-      if (customAmount >= minimum && customAmount >= release.price_pence) {
+      if (customAmount >= minimum) {
         unitAmount = Math.min(customAmount, maxAmount);
       }
     }
@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
     // Always charge in the artist's currency to avoid FX undercharging
     const chargeCurrency = (release.currency || 'GBP').toLowerCase();
 
+    const idempotencyKey = `checkout_${releaseId}_${stripeCustomerId || fanCurrency || 'guest'}_${Math.floor(Date.now() / 300000)}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',
@@ -184,7 +185,7 @@ Deno.serve(async (req) => {
         ...(refCode ? { ref_code: refCode } : {}),
         ...(release.preorder_enabled ? { pre_order: 'true', release_date: release.release_date } : {}),
       },
-    });
+    }, { idempotencyKey });
 
     return json({ client_secret: session.client_secret, session_id: session.id });
   } catch (err) {

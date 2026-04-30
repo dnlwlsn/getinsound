@@ -54,9 +54,9 @@ export default async function Page() {
   let followedArtistReleases: typeof mapped = []
   if (user) {
     const { data: follows } = await supabase
-      .from('follows')
+      .from('fan_follows')
       .select('artist_id')
-      .eq('fan_id', user.id)
+      .eq('user_id', user.id)
 
     const followedIds = (follows ?? []).map((f: any) => f.artist_id)
     if (followedIds.length > 0) {

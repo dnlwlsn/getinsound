@@ -23,6 +23,12 @@ export async function POST(req: NextRequest) {
   if (!name || !description || !price || !currency || postage == null || stock == null) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
+  if (typeof name !== 'string' || name.length > 200) {
+    return NextResponse.json({ error: 'Name must be a string (max 200 chars)' }, { status: 400 })
+  }
+  if (typeof description !== 'string' || description.length > 5000) {
+    return NextResponse.json({ error: 'Description must be a string (max 5000 chars)' }, { status: 400 })
+  }
   if (typeof price !== 'number' || price < 300 || price > 10000000) {
     return NextResponse.json({ error: 'Price must be between 300 and 10000000 (smallest currency unit)' }, { status: 400 })
   }
