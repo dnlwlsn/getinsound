@@ -58,13 +58,13 @@ export default async function MerchItemPage({ params }: Props) {
   const artist = Array.isArray(merch.artists) ? merch.artists[0] : merch.artists
   if (artist.slug !== slug) notFound()
 
-  const { data: account } = await supabase
-    .from('artist_accounts')
-    .select('stripe_onboarded, country')
-    .eq('id', merch.artist_id)
-    .maybeSingle()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const [{ data: account }, { data: { user } }] = await Promise.all([
+    supabase.from('artist_accounts')
+      .select('stripe_onboarded, country')
+      .eq('id', merch.artist_id)
+      .maybeSingle(),
+    supabase.auth.getUser(),
+  ])
 
   return (
     <MerchItemClient

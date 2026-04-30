@@ -99,7 +99,7 @@ export default async function ProfilePage({ params }: Props) {
 
     if (!fan.is_public && !isOwner) notFound()
 
-    const [purchasesRes, pinnedRes, badgesRes, prefsRes] = await Promise.all([
+    const [purchasesRes, pinnedRes, badgesRes, prefsRes, hiddenRes, followsRes] = await Promise.all([
       supabase.from('purchases')
         .select('id, amount_pence, paid_at, releases (id, slug, title, type, cover_url, price_pence), artists (slug, name, accent_colour)')
         .eq('buyer_user_id', fan.id)
@@ -117,6 +117,12 @@ export default async function ProfilePage({ params }: Props) {
         .select('genre')
         .eq('user_id', fan.id)
         .limit(1),
+      isOwner
+        ? Promise.resolve({ data: null })
+        : supabase.from('fan_hidden_purchases').select('purchase_id').eq('user_id', fan.id),
+      supabase.from('fan_follows')
+        .select('artist_id')
+        .eq('user_id', fan.id),
     ])
 
     const purchases = purchasesRes.data || []
@@ -125,21 +131,12 @@ export default async function ProfilePage({ params }: Props) {
     const favouriteGenre = prefsRes.data?.[0]?.genre ?? null
 
     let visiblePurchases = purchases
-    if (!isOwner) {
-      const { data: hidden } = await supabase
-        .from('fan_hidden_purchases')
-        .select('purchase_id')
-        .eq('user_id', fan.id)
-      const hiddenIds = new Set((hidden || []).map(h => h.purchase_id))
+    if (!isOwner && hiddenRes.data) {
+      const hiddenIds = new Set(hiddenRes.data.map((h: any) => h.purchase_id))
       visiblePurchases = purchases.filter(p => !hiddenIds.has(p.id))
     }
 
-    const { data: followedArtistIds } = await supabase
-      .from('fan_follows')
-      .select('artist_id')
-      .eq('user_id', fan.id)
-
-    const uniqueArtistIds = [...new Set((followedArtistIds || []).map(f => f.artist_id))]
+    const uniqueArtistIds = [...new Set((followsRes.data || []).map((f: any) => f.artist_id))]
 
     let wallPosts: Array<{
       id: string

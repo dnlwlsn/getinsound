@@ -26,19 +26,16 @@ export default async function ProfileSettingsPage() {
     }
   }
 
-  // Fetch purchases for the "hide specific purchases" list
-  const { data: purchases } = await supabase
-    .from('purchases')
-    .select('id, amount_pence, paid_at, releases (title, type), artists (name)')
-    .eq('buyer_user_id', user.id)
-    .eq('status', 'paid')
-    .order('paid_at', { ascending: false })
-
-  // Fetch currently hidden purchases
-  const { data: hidden } = await supabase
-    .from('fan_hidden_purchases')
-    .select('purchase_id')
-    .eq('user_id', user.id)
+  const [{ data: purchases }, { data: hidden }] = await Promise.all([
+    supabase.from('purchases')
+      .select('id, amount_pence, paid_at, releases (title, type), artists (name)')
+      .eq('buyer_user_id', user.id)
+      .eq('status', 'paid')
+      .order('paid_at', { ascending: false }),
+    supabase.from('fan_hidden_purchases')
+      .select('purchase_id')
+      .eq('user_id', user.id),
+  ])
 
   const hiddenIds = new Set((hidden || []).map(h => h.purchase_id))
 

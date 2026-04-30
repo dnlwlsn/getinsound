@@ -18,17 +18,16 @@ export default async function DiscographyPage() {
 
   if (!artist) redirect('/auth')
 
-  const { data: account } = await supabase
-    .from('artist_accounts')
-    .select('stripe_onboarded')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const { data: releases } = await supabase
-    .from('releases')
-    .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, created_at, tracks(id, title, position, duration_sec, audio_path, preview_path)')
-    .eq('artist_id', user.id)
-    .order('created_at', { ascending: false })
+  const [{ data: account }, { data: releases }] = await Promise.all([
+    supabase.from('artist_accounts')
+      .select('stripe_onboarded')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase.from('releases')
+      .select('id, slug, title, type, cover_url, price_pence, published, pwyw_enabled, pwyw_minimum_pence, preorder_enabled, release_date, visibility, created_at, tracks(id, title, position, duration_sec, audio_path, preview_path)')
+      .eq('artist_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
 
   return (
     <DiscographyClient
