@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
         const itemPrice = merchItem?.price ?? 0;
         const postagePaid = merchItem?.postage ?? 0;
-        const platformPence = Math.round(itemPrice * 0.1);
+        const platformPence = Math.round(itemPrice * STANDARD_FEE_BPS / 10000);
 
         // Stripe fee
         let stripeFeePence = 0;

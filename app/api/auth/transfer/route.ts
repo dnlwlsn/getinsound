@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const tokenHash = linkData.properties.hashed_token
 
-  const response = NextResponse.json({ ok: true })
+  const response = NextResponse.json({ ok: true, token_hash: tokenHash })
 
   const session = await createSession(userId, req.headers)
   if (session) setSessionCookie(response, session.sessionId)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
@@ -61,9 +62,9 @@ export function CookieBanner() {
     >
       <p className="text-[13px] leading-relaxed text-zinc-400">
         We use cookies to remember your preferences and improve your experience.{' '}
-        <a href="/privacy" className="text-white underline underline-offset-2 hover:text-orange-600">
+        <Link href="/privacy" className="text-white underline underline-offset-2 hover:text-orange-600">
           Privacy policy
-        </a>
+        </Link>
       </p>
 
       {managing && (
@@ -115,12 +116,22 @@ export function CookieBanner() {
               Accept
             </button>
             <button
-              onClick={() => setManaging(true)}
+              onClick={() => {
+                setCookie('insound_consent', 'essential-only', 365)
+                setMounted(false)
+                setTimeout(() => setVisible(false), 300)
+              }}
               className="inline-flex items-center justify-center rounded-full bg-transparent
                 ring-1 ring-white/[0.12] px-5 py-2
                 text-[10px] font-black uppercase tracking-widest text-white
                 hover:ring-white/[0.25] hover:bg-white/[0.04] active:scale-[0.98]
                 transition-all duration-150"
+            >
+              Decline
+            </button>
+            <button
+              onClick={() => setManaging(true)}
+              className="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors"
             >
               Manage
             </button>

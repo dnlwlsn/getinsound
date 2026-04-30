@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { SUPPORTED_CURRENCIES } from '@/app/lib/currency'
+
+const VALID_CODES = new Set(SUPPORTED_CURRENCIES.map(c => c.code))
 
 export async function GET() {
   const supabase = await createClient()
@@ -24,8 +27,8 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { display_currency, locale } = body
 
-  if (!display_currency) {
-    return NextResponse.json({ error: 'display_currency required' }, { status: 400 })
+  if (!display_currency || !VALID_CODES.has(display_currency)) {
+    return NextResponse.json({ error: 'Invalid or unsupported currency' }, { status: 400 })
   }
 
   const { error } = await supabase

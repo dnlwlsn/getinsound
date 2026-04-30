@@ -43,7 +43,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     let refund: Stripe.Refund
     try {
-      refund = await stripe.refunds.create({ payment_intent: order.stripe_payment_intent_id })
+      refund = await stripe.refunds.create({
+        payment_intent: order.stripe_payment_intent_id,
+      }, { idempotencyKey: `problem_notrack_${id}` })
     } catch (err) {
       return NextResponse.json({ error: (err as Error).message }, { status: 500 })
     }
@@ -126,7 +128,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     let refund: Stripe.Refund
     try {
-      refund = await stripe.refunds.create({ payment_intent: order.stripe_payment_intent_id })
+      refund = await stripe.refunds.create({
+        payment_intent: order.stripe_payment_intent_id,
+      }, { idempotencyKey: `problem_exception_${id}` })
     } catch (err) {
       return NextResponse.json({ error: (err as Error).message }, { status: 500 })
     }

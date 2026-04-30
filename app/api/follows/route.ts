@@ -16,6 +16,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 })
   }
 
+  const { count: artistExists } = await supabase
+    .from('artists')
+    .select('*', { count: 'exact', head: true })
+    .eq('id', body.artist_id)
+
+  if (!artistExists) {
+    return NextResponse.json({ error: 'Artist not found' }, { status: 404 })
+  }
+
   const { error } = await supabase
     .from('fan_follows')
     .insert({ user_id: user.id, artist_id: body.artist_id })

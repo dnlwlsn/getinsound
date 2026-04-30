@@ -56,7 +56,7 @@ export function InstallBanner() {
   }
 
   return (
-    <div className="fixed bottom-24 sm:bottom-24 left-0 right-0 z-50 px-4 animate-in slide-in-from-bottom-4">
+    <div className="fixed bottom-44 sm:bottom-24 left-0 right-0 z-50 px-4 animate-in slide-in-from-bottom-4">
       <div className="max-w-screen-xl mx-auto">
         <div className="bg-zinc-900 border border-white/[0.08] rounded-2xl p-4 flex items-center gap-4 shadow-2xl">
           {/* Waveform icon */}

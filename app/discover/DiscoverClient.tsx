@@ -120,13 +120,13 @@ function formatDuration(sec: number | null): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function DiscoverPlayButton({ releaseId, title }: { releaseId: string; title: string }) {
+function DiscoverPlayButton({ releaseId, releaseSlug, artistSlug, title }: { releaseId: string; releaseSlug: string; artistSlug: string; title: string }) {
   const currentTrack = usePlayerStore(s => s.currentTrack)
   const isPlaying = usePlayerStore(s => s.isPlaying)
   const active = currentTrack?.releaseId === releaseId
   return (
     <Link
-      href={`/release?r=${releaseId}&autoplay=true`}
+      href={`/release?a=${artistSlug}&r=${releaseSlug}&autoplay=true`}
       className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center shrink-0 hover:bg-orange-500 transition-colors"
       aria-label={`Play ${title}`}
     >
@@ -525,7 +525,7 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
                         {price(r.price_pence)}
                       </span>
                       <FavouriteButton releaseId={r.id} size={16} />
-                      <DiscoverPlayButton releaseId={r.id} title={r.title} />
+                      <DiscoverPlayButton releaseId={r.id} releaseSlug={r.slug} artistSlug={artist.slug} title={r.title} />
                     </div>
 
                     {isMultiTrack && (

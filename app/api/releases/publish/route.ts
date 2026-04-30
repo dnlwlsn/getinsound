@@ -31,6 +31,16 @@ export async function POST(req: NextRequest) {
     if (!account?.stripe_onboarded) {
       return NextResponse.json({ error: 'Connect your Stripe account before publishing. Go to Dashboard → Stripe Connect to get started.' }, { status: 403 })
     }
+
+    const { count: trackCount } = await supabase
+      .from('tracks')
+      .select('*', { count: 'exact', head: true })
+      .eq('release_id', release_id)
+      .not('audio_path', 'is', null)
+
+    if (!trackCount || trackCount === 0) {
+      return NextResponse.json({ error: 'Upload at least one track before publishing.' }, { status: 400 })
+    }
   }
 
   const { error: updateErr } = await supabase

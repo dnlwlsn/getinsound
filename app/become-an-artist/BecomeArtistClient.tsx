@@ -111,7 +111,10 @@ export function BecomeArtistClient({ userEmail }: { userEmail: string }) {
           independence_confirmed: true,
           independence_confirmed_at: new Date().toISOString(),
         })
-      if (accountErr) throw accountErr
+      if (accountErr) {
+        await supabase.from('artists').delete().eq('id', user.id)
+        throw accountErr
+      }
 
       await supabase
         .from('fan_profiles')

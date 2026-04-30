@@ -345,7 +345,7 @@ export function ForArtistsClient() {
           <p className="text-zinc-400 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
             Sign up and start selling. You keep 90% - we absorb all processing fees.
           </p>
-          <Link href="/signup?intent=artist"
+          <Link href="/auth?mode=signup&intent=artist"
             className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-8 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25">
             Start selling your music →
           </Link>
@@ -367,11 +367,14 @@ function FaqAccordion({ question, answer }: { question: string; answer: string }
     if (!bodyRef.current) return
     if (!open) {
       setHeight(bodyRef.current.scrollHeight)
+      setOpen(true)
     } else {
       setHeight(bodyRef.current.scrollHeight)
-      requestAnimationFrame(() => setHeight(0))
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setHeight(0))
+      })
+      setOpen(false)
     }
-    setOpen(!open)
   }
 
   return (

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { requireFreshAuth } from '@/lib/fresh-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/email/send'
@@ -8,11 +7,6 @@ import { sendEmail } from '@/lib/email/send'
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
-
-function getAdminClient() { return createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-) }
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -38,7 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'New email is the same as current' }, { status: 400 })
   }
 
-  const { error } = await getAdminClient().auth.admin.updateUserById(user.id, { email })
+  const { error } = await supabase.auth.updateUser({ email })
   if (error) {
     console.error('Email change failed:', error.message)
     return NextResponse.json({ error: 'Failed to update email' }, { status: 500 })

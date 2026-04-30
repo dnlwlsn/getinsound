@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function BecomeArtistPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/signup?intent=artist')
+  if (!user) redirect('/auth?mode=signup&intent=artist')
 
   if (!user.email_confirmed_at) {
     redirect('/explore?verify=artist')
@@ -26,6 +26,8 @@ export default async function BecomeArtistPage() {
       .eq('id', user.id)
       .maybeSingle()
     if (account) redirect('/dashboard')
+    // Orphaned artists row with no artist_accounts — clean up so user can retry
+    await supabase.from('artists').delete().eq('id', user.id)
   }
 
   return <BecomeArtistClient userEmail={user.email ?? ''} />

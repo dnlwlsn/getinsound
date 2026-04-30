@@ -40,6 +40,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Return existing active grant if one exists
+  const { data: existingGrant } = await getAdminClient()
+    .from('download_grants')
+    .select('token')
+    .eq('purchase_id', purchase_id)
+    .gt('expires_at', new Date().toISOString())
+    .lt('used_count', 5)
+    .maybeSingle()
+
+  if (existingGrant) {
+    return NextResponse.json({ ok: true })
+  }
+
   // Create a new download grant (7 days, 5 uses)
   const token = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()

@@ -89,19 +89,17 @@ export async function GET(request: Request) {
     })
   }
 
-  // No dedicated preview clip — serve a short-lived signed URL from masters
-  // and let the client enforce the 30-second preview cutoff
-  if (track.audio_path && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  // No dedicated preview clip — only serve the master if user has full access
+  if (hasFullAccess && track.audio_path) {
     const admin = getAdminClient()
     const { data: signed, error: signErr } = await admin.storage
       .from('masters')
-      .createSignedUrl(track.audio_path, 5 * 60)
+      .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)
 
     if (!signErr && signed) {
       return NextResponse.json({
         url: signed.signedUrl,
-        isPreview: true,
-        previewDuration: 30,
+        isPreview: false,
       })
     }
   }

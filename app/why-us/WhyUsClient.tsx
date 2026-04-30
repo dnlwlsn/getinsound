@@ -198,7 +198,7 @@ export function WhyUsClient() {
 
       {/* ── CTA ──────────────────────────────────────────────────── */}
       <section className="py-24 bg-black relative overflow-hidden">
-        <div className="absolute bottom-0 left-1/2 - translate-x-1/2 w-2/3 h-64 bg-orange-600/10 blur-[120px] - z-10" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-64 bg-orange-600/10 blur-[120px] -z-10" />
 
         <div className="max-w-4xl mx-auto px-8 text-center">
           <h2 className="font-display text-5xl md:text-7xl font-black tracking-tighter mb-8 italic">

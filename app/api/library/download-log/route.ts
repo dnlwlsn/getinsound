@@ -17,6 +17,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
+  const { count } = await supabase
+    .from('purchases')
+    .select('*', { count: 'exact', head: true })
+    .eq('buyer_user_id', user.id)
+    .eq('release_id', releaseId)
+    .eq('status', 'paid')
+
+  if (!count || count === 0) {
+    return NextResponse.json({ error: 'No purchase found' }, { status: 403 })
+  }
+
   await supabase.from('download_events').insert({
     user_id: user.id,
     release_id: releaseId,

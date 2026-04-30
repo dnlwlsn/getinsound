@@ -1,5 +1,8 @@
+import { requireAdmin } from '@/lib/admin'
+
 export const dynamic = 'force-dynamic'
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  await requireAdmin()
   return children
 }

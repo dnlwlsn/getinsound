@@ -91,7 +91,7 @@ export default function SearchClient() {
   }
 
   return (
-    <div className="min-h-screen bg-insound-bg">
+    <div className="min-h-screen bg-insound-bg pb-28">
       {/* Search input */}
       <div className="max-w-6xl mx-auto px-5 md:px-10 pt-10 pb-2">
         <form onSubmit={handleSubmit} className="relative">

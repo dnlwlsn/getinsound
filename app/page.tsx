@@ -96,7 +96,7 @@ export default async function Page() {
         artist_name: artist?.name,
         artist_slug: artist?.slug,
       }
-    }),
+    }).filter(p => p.release_title && p.artist_name),
     ...(recentFollows ?? []).map((f: any) => {
       const artist = Array.isArray(f.artists) ? f.artists[0] : f.artists
       return {

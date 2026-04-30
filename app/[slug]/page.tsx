@@ -5,6 +5,10 @@ import { RESERVED_SLUGS } from '@/lib/reserved-slugs'
 import ArtistProfileClient from './ArtistProfileClient'
 import { FanProfileClient } from './FanProfileClient'
 
+function safeJsonLd(data: Record<string, unknown>): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c')
+}
+
 interface Props {
   params: Promise<{ slug: string }>
 }
@@ -101,7 +105,7 @@ export default async function ProfilePage({ params }: Props) {
 
     const [purchasesRes, pinnedRes, badgesRes, prefsRes, hiddenRes, followsRes] = await Promise.all([
       supabase.from('purchases')
-        .select('id, amount_pence, paid_at, releases (id, slug, title, type, cover_url, price_pence), artists (slug, name, accent_colour)')
+        .select('id, amount_pence, fan_currency, paid_at, releases (id, slug, title, type, cover_url, price_pence), artists (slug, name, accent_colour)')
         .eq('buyer_user_id', fan.id)
         .eq('status', 'paid')
         .order('paid_at', { ascending: false }),
@@ -177,7 +181,7 @@ export default async function ProfilePage({ params }: Props) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLd({
               '@context': 'https://schema.org',
               '@type': 'Person',
               name: fan.username,
@@ -274,7 +278,7 @@ export default async function ProfilePage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
       />
     <ArtistProfileClient
       artist={artist}
