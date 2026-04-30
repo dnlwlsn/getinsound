@@ -24,9 +24,10 @@ registerRoute(
   })
 )
 
-// ── Fan library API ─────────────────────────────────────────
+// ── Fan library API (GET only) ──────────────────────────────
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/library'),
+  ({ url, request }) =>
+    request.method === 'GET' && url.pathname.startsWith('/api/library'),
   new StaleWhileRevalidate({
     cacheName: 'api-library',
     plugins: [
@@ -49,9 +50,10 @@ registerRoute(
   })
 )
 
-// ── General API calls ───────────────────────────────────────
+// ── General API calls (GET only — POST/DELETE must never be cached) ──
 registerRoute(
-  ({ url }) =>
+  ({ url, request }) =>
+    request.method === 'GET' &&
     url.pathname.startsWith('/api/') &&
     !url.pathname.startsWith('/api/library') &&
     !url.pathname.startsWith('/api/auth'),

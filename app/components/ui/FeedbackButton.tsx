@@ -25,7 +25,7 @@ export function FeedbackButton() {
   useEffect(() => {
     const observer = new MutationObserver(() => {
       const hasModal = document.querySelector('[role="dialog"], [data-modal]') !== null
-      setModalOpen(hasModal)
+      setModalOpen(prev => prev === hasModal ? prev : hasModal)
     })
     observer.observe(document.body, { childList: true, subtree: true })
     return () => observer.disconnect()

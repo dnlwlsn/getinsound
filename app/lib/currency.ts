@@ -55,6 +55,7 @@ export function convertPrice(
   rates: Record<string, number>,
 ): number {
   if (fromCurrency === toCurrency) return amount
+  if (!rates[fromCurrency] || !rates[toCurrency]) return amount
   const inUsd = amount / rates[fromCurrency]
   const converted = inUsd * rates[toCurrency]
   return ZERO_DECIMAL_CURRENCIES.has(toCurrency)

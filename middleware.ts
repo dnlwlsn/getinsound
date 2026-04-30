@@ -75,16 +75,17 @@ export async function middleware(request: NextRequest) {
   if (path.startsWith('/api') && request.method !== 'GET' && request.method !== 'HEAD') {
     const origin = request.headers.get('origin')
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
-    if (origin) {
-      try {
-        const originHost = new URL(origin).hostname
-        const siteHost = new URL(siteUrl).hostname
-        if (originHost !== siteHost && originHost !== `www.${siteHost}` && `www.${originHost}` !== siteHost) {
-          return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-        }
-      } catch {
+    if (!origin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    try {
+      const originHost = new URL(origin).hostname
+      const siteHost = new URL(siteUrl).hostname
+      if (originHost !== siteHost && originHost !== `www.${siteHost}` && `www.${originHost}` !== siteHost) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
+    } catch {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
   }
 

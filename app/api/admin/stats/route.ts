@@ -37,13 +37,11 @@ export async function GET(req: NextRequest) {
   let artistQ = supabase.from('artists').select('id', { count: 'exact', head: true })
   let fanQ = supabase.from('fan_profiles').select('id', { count: 'exact', head: true })
   let releaseQ = supabase.from('releases').select('id', { count: 'exact', head: true }).eq('published', true)
-  let waitlistQ = supabase.from('waitlist').select('id', { count: 'exact', head: true })
 
   if (since) {
     artistQ = artistQ.gte('created_at', since)
     fanQ = fanQ.gte('created_at', since)
     releaseQ = releaseQ.gte('created_at', since)
-    waitlistQ = waitlistQ.gte('created_at', since)
   }
 
   const purchaseAggQ = supabase.rpc('admin_purchase_stats', { since_ts: since })
@@ -58,10 +56,9 @@ export async function GET(req: NextRequest) {
     { count: artistCount },
     { count: fanCount },
     { count: releaseCount },
-    { count: waitlistCount },
     { data: purchaseAgg },
     { count: preorderCount },
-  ] = await Promise.all([artistQ, fanQ, releaseQ, waitlistQ, purchaseAggQ, preorderQ])
+  ] = await Promise.all([artistQ, fanQ, releaseQ, purchaseAggQ, preorderQ])
 
   const agg = purchaseAgg?.[0] ?? purchaseAgg ?? {
     total_sales: 0,
@@ -70,8 +67,6 @@ export async function GET(req: NextRequest) {
     platform_revenue: 0,
     stripe_fees: 0,
   }
-
-  const waitlist = waitlistCount ?? 0
 
   return NextResponse.json({
     artists: artistCount ?? 0,
@@ -84,7 +79,5 @@ export async function GET(req: NextRequest) {
     stripeFees: Number(agg.stripe_fees) || 0,
     activePreOrders: preorderCount ?? 0,
     merchPending: 0,
-    waitlist,
-    waitlistRemaining: Math.max(0, 50 - waitlist),
   })
 }

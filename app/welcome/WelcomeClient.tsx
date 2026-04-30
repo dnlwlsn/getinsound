@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
@@ -15,12 +15,16 @@ export function WelcomeClient({ hasProfile }: { hasProfile: boolean }) {
   const supabase = createClient()
   const [step, setStep] = useState<OnboardingStep>(hasProfile ? 'done' : 'profile')
 
-  async function markSeen() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('fan_profiles').update({ has_seen_welcome: true }).eq('id', user.id)
+  useEffect(() => {
+    if (step !== 'done') return
+    async function markSeen() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('fan_profiles').update({ has_seen_welcome: true }).eq('id', user.id)
+      }
     }
-  }
+    markSeen()
+  }, [step, supabase])
 
   if (step === 'profile') {
     return <StepProfile onNext={() => setStep('genres')} onSkip={() => setStep('done')} />
@@ -45,7 +49,7 @@ export function WelcomeClient({ hasProfile }: { hasProfile: boolean }) {
 
         <Link
           href="/discover"
-          onClick={markSeen}
+
           className="block max-w-sm mx-auto bg-zinc-900 ring-1 ring-white/[0.06] rounded-3xl p-8 text-center hover:ring-white/[0.15] transition-all group"
         >
           <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-white/[0.04] flex items-center justify-center">
@@ -60,7 +64,7 @@ export function WelcomeClient({ hasProfile }: { hasProfile: boolean }) {
         <div className="mt-10 text-center">
           <Link
             href="/become-an-artist"
-            onClick={markSeen}
+  
             className="inline-flex items-center gap-2 text-sm text-orange-500 hover:text-orange-400 transition-colors font-semibold"
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

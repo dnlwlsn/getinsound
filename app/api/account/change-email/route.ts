@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  const freshAuthError = await requireFreshAuth(request)
+  const freshAuthError = await requireFreshAuth(request, user.id)
   if (freshAuthError) return freshAuthError
 
   const rateLimited = await checkRateLimit(user.id, 'email_change', 1, 24)

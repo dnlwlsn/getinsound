@@ -89,17 +89,18 @@ export async function GET(request: Request) {
     })
   }
 
-  // No dedicated preview clip — only serve the master if user has full access
-  if (hasFullAccess && track.audio_path) {
+  // No dedicated preview clip — serve a short-lived signed URL from masters as preview
+  if (track.audio_path) {
     const admin = getAdminClient()
     const { data: signed, error: signErr } = await admin.storage
       .from('masters')
-      .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)
+      .createSignedUrl(track.audio_path, hasFullAccess ? SIGNED_URL_EXPIRY : 120)
 
     if (!signErr && signed) {
       return NextResponse.json({
         url: signed.signedUrl,
-        isPreview: false,
+        isPreview: !hasFullAccess,
+        ...(hasFullAccess ? {} : { previewDuration: 30 }),
       })
     }
   }

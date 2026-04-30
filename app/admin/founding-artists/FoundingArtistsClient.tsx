@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
-import { createClient } from '@/lib/supabase/client'
 
 type Programme = {
   total_spots: number
@@ -41,13 +40,13 @@ export function FoundingArtistsClient({ programme, artists: initialArtists, tota
   async function togglePause() {
     setToggling(true)
     try {
-      const supabase = createClient()
       const newPaused = !paused
-      const { error } = await supabase
-        .from('founding_artist_programme')
-        .update({ paused: newPaused })
-        .eq('id', 1)
-      if (!error) setPaused(newPaused)
+      const res = await fetch('/api/admin/founding-artists', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paused: newPaused }),
+      })
+      if (res.ok) setPaused(newPaused)
     } catch {}
     setToggling(false)
   }

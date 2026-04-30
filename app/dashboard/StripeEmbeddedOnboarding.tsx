@@ -83,10 +83,27 @@ export function StripeEmbeddedOnboarding({
         )
         if (popup) {
           setPopupOpen(true)
-          const check = setInterval(() => {
+          const check = setInterval(async () => {
             if (popup.closed) {
               clearInterval(check)
               setPopupOpen(false)
+              try {
+                const { data: { session: s } } = await supabase.auth.getSession()
+                if (!s?.access_token) return
+                const r = await fetch(
+                  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/connect-onboard`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${s.access_token}`,
+                    },
+                    body: JSON.stringify({ return_url: `${window.location.origin}/dashboard` }),
+                  }
+                )
+                const d = await r.json()
+                if (d.onboarded) onComplete()
+              } catch {}
             }
           }, 500)
         } else {

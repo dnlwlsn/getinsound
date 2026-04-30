@@ -7,7 +7,7 @@ export const metadata = { title: 'Account Settings | Insound' }
 export default async function DashboardSettingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/signup')
+  if (!user) redirect('/auth')
 
   const [artistRes, accountRes, pendingRes] = await Promise.all([
     supabase.from('artists').select('id, name').eq('id', user.id).maybeSingle(),

@@ -17,11 +17,10 @@ export function GenreOnboarding({ redirectTo = '/library' }: { redirectTo?: stri
 
   useEffect(() => {
     async function check() {
+      if (sessionStorage.getItem('insound_genre_dismissed')) return
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      // Already dismissed this session
-      if (sessionStorage.getItem('insound_genre_dismissed')) return
 
       // Check if fan already has genre selections or skipped
       const { count } = await supabase

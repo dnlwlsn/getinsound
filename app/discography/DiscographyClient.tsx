@@ -56,6 +56,23 @@ interface PendingTrack {
   file: File
   title: string
   position: number
+  durationSec: number | null
+}
+
+function getAudioDuration(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const audio = new Audio()
+    audio.addEventListener('loadedmetadata', () => {
+      const dur = Math.round(audio.duration)
+      URL.revokeObjectURL(audio.src)
+      resolve(dur > 0 ? dur : null)
+    })
+    audio.addEventListener('error', () => {
+      URL.revokeObjectURL(audio.src)
+      resolve(null)
+    })
+    audio.src = URL.createObjectURL(file)
+  })
 }
 
 /* ── Helpers ───────────────────────────────────────────────────── */
@@ -145,15 +162,18 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
     setCoverPreview(url)
   }
 
-  function handleTrackFiles(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleTrackFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
     const existing = pendingTracks.length
-    const newTracks: PendingTrack[] = files.map((f, i) => ({
-      file: f,
-      title: f.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
-      position: existing + i + 1,
-    }))
+    const newTracks: PendingTrack[] = await Promise.all(
+      files.map(async (f, i) => ({
+        file: f,
+        title: f.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+        position: existing + i + 1,
+        durationSec: await getAudioDuration(f),
+      }))
+    )
     setPendingTracks(prev => [...prev, ...newTracks])
     e.target.value = ''
   }
@@ -292,6 +312,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
             position: pt.position,
             title: pt.title.trim(),
             audio_path: audioPath,
+            duration_sec: pt.durationSec,
           })
 
         if (trackErr) throw new Error(`Failed to save track "${pt.title}": ${trackErr.message}`)
@@ -344,8 +365,18 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
   // ── Delete release ─────────────────────────────────────────
   async function deleteRelease(release: Release) {
     if (!confirm(`Delete "${release.title}"? This cannot be undone.`)) return
+    setPublishError(null)
 
-    // Delete storage files first
+    const { error } = await supabase.from('releases').delete().eq('id', release.id)
+    if (error) {
+      if (error.message.includes('violates foreign key') || error.code === '23503') {
+        setPublishError(`Cannot delete "${release.title}" — it has existing purchases.`)
+      } else {
+        setPublishError(`Failed to delete "${release.title}": ${error.message}`)
+      }
+      return
+    }
+
     const trackPaths = release.tracks.map(t => t.audio_path)
     if (trackPaths.length > 0) {
       await supabase.storage.from('masters').remove(trackPaths)
@@ -359,8 +390,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
       await supabase.storage.from('covers').remove([`${coverKey}.jpg`, `${coverKey}.png`, `${coverKey}.webp`, `${coverKey}-generated.svg`])
     }
 
-    const { error } = await supabase.from('releases').delete().eq('id', release.id)
-    if (!error) setReleases(prev => prev.filter(r => r.id !== release.id))
+    setReleases(prev => prev.filter(r => r.id !== release.id))
   }
 
   // ── Stats ───────────────────────────────────────────────────
@@ -486,7 +516,9 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => togglePublish(r.id, r.published)}
-                            className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${r.published ? 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10' : 'text-orange-500 hover:bg-orange-500/10'}`}
+                            disabled={!r.published && !stripeOnboarded}
+                            className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors ${r.published ? 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10' : 'text-orange-500 hover:bg-orange-500/10'} disabled:opacity-40 disabled:cursor-not-allowed`}
+                            title={!r.published && !stripeOnboarded ? 'Connect Stripe to publish' : undefined}
                           >
                             {r.published ? 'Unpublish' : 'Publish'}
                           </button>

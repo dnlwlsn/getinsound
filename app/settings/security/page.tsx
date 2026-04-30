@@ -7,7 +7,7 @@ export const metadata = { title: 'Security Settings | Insound' }
 export default async function SecuritySettingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/signup')
+  if (!user) redirect('/auth')
 
   return <SecuritySettingsClient />
 }

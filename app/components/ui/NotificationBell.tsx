@@ -45,8 +45,13 @@ export function NotificationBell({ userId, initialUnreadCount = 0 }: Props) {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
+    function handleCloseAll() { setOpen(false) }
     if (open) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('insound:close-dropdowns', handleCloseAll)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('insound:close-dropdowns', handleCloseAll)
+    }
   }, [open])
 
   const handleMarkAllRead = useCallback(() => setUnreadCount(0), [])
@@ -55,7 +60,10 @@ export function NotificationBell({ userId, initialUnreadCount = 0 }: Props) {
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(prev => !prev)}
+        onClick={() => {
+          if (!open) document.dispatchEvent(new Event('insound:close-dropdowns'))
+          setOpen(prev => !prev)
+        }}
         className="relative p-2 text-zinc-400 hover:text-white transition-colors"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >

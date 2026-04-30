@@ -36,7 +36,7 @@ export function WhyUsClient() {
         <div className="hidden md:flex gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
           <Link href="/explore" className="hover:text-orange-500 transition-colors">Explore</Link>
           <Link href="/why-us" className="text-orange-500">Why Insound</Link>
-          <Link href="/#how-it-works" className="hover:text-orange-500 transition-colors">How It Works</Link>
+          <Link href="/for-fans" className="hover:text-orange-500 transition-colors">How It Works</Link>
         </div>
         <div className="flex gap-3 items-center">
           <Link href="/auth" className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block">Sign In</Link>

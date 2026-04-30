@@ -10,6 +10,7 @@ function getAdminClient() { return createAdminClient(
 
 export async function requireFreshAuth(
   request: NextRequest,
+  userId: string,
 ): Promise<NextResponse | null> {
   const sessionId = request.cookies.get('session_id')?.value
   if (!sessionId) {
@@ -21,9 +22,16 @@ export async function requireFreshAuth(
 
   const { data: session } = await getAdminClient()
     .from('user_sessions')
-    .select('last_verified_at')
+    .select('last_verified_at, user_id')
     .eq('id', sessionId)
     .single()
+
+  if (session && session.user_id !== userId) {
+    return NextResponse.json(
+      { error: 'Session mismatch', code: 'FRESH_AUTH_REQUIRED' },
+      { status: 403 },
+    )
+  }
 
   if (!session?.last_verified_at) {
     return NextResponse.json(

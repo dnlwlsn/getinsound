@@ -33,37 +33,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
     }
 
-    // 14+ days with no tracking — full refund from artist
+    // 14+ days with no tracking — flag for admin review, notify artist
     if (order.status === 'refunded') {
       return NextResponse.json({ result: 'already_refunded', message: 'This order has already been refunded.' })
-    }
-    if (!order.stripe_payment_intent_id) {
-      return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
-    }
-
-    let refund: Stripe.Refund
-    try {
-      refund = await stripe.refunds.create({
-        payment_intent: order.stripe_payment_intent_id,
-      }, { idempotencyKey: `problem_notrack_${id}` })
-    } catch (err) {
-      return NextResponse.json({ error: (err as Error).message }, { status: 500 })
     }
 
     await supabase
       .from('orders')
-      .update({ status: 'refunded' })
+      .update({ status: 'disputed' })
       .eq('id', id)
 
     await supabase.from('notifications').insert({
       user_id: order.artist_id,
       type: 'merch_dispute',
-      title: 'Order dispute — refund issued',
-      body: `A fan reported a problem with ${merchName} (no tracking after 14 days). A full refund has been issued.`,
+      title: 'Order dispute — no tracking after 14 days',
+      body: `A fan reported a problem with ${merchName}. No tracking number was provided within 14 days. Please resolve this or the order may be refunded.`,
       link: '/dashboard/orders',
     })
 
-    return NextResponse.json({ result: 'refunded', refund_id: refund.id })
+    return NextResponse.json({ result: 'disputed', message: 'Your report has been submitted. The artist has been notified and we will review this.' })
   }
 
   // Branch 2: Has tracking number but no TrackingMore API key
@@ -122,33 +110,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (order.status === 'refunded') {
       return NextResponse.json({ result: 'already_refunded', message: 'This order has already been refunded.' })
     }
-    if (!order.stripe_payment_intent_id) {
-      return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
-    }
-
-    let refund: Stripe.Refund
-    try {
-      refund = await stripe.refunds.create({
-        payment_intent: order.stripe_payment_intent_id,
-      }, { idempotencyKey: `problem_exception_${id}` })
-    } catch (err) {
-      return NextResponse.json({ error: (err as Error).message }, { status: 500 })
-    }
 
     await supabase
       .from('orders')
-      .update({ status: 'refunded' })
+      .update({ status: 'disputed' })
       .eq('id', id)
 
     await supabase.from('notifications').insert({
       user_id: order.artist_id,
       type: 'merch_dispute',
-      title: 'Order lost in transit — refund issued',
-      body: `${merchName} appears lost in transit. A full refund has been issued to the fan.`,
+      title: 'Order appears lost in transit',
+      body: `${merchName} tracking shows "${deliveryStatus}". A fan has reported a problem. Please resolve this or the order may be refunded.`,
       link: '/dashboard/orders',
     })
 
-    return NextResponse.json({ result: 'refunded', refund_id: refund.id })
+    return NextResponse.json({ result: 'disputed', message: 'Your report has been submitted. The artist has been notified and we will review this.' })
   }
 
   // In transit or unknown

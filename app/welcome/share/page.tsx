@@ -7,7 +7,7 @@ export const metadata = { title: "You're in | Insound" }
 export default async function SharePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/signup')
+  if (!user) redirect('/auth')
 
   const { data: profile } = await supabase
     .from('fan_profiles')

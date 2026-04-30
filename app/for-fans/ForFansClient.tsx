@@ -144,10 +144,10 @@ export function ForFansClient() {
             Discover independent artists, support them directly, and build your collection.
           </p>
 
-          <a href="/explore"
+          <Link href="/explore"
             className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-bold text-sm px-7 py-4 rounded-2xl transition-colors shadow-xl shadow-orange-600/25 whitespace-nowrap">
             Explore music →
-          </a>
+          </Link>
         </div>
       </section>
 

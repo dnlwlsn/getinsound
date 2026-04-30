@@ -8,7 +8,7 @@ export default async function DashboardPage() {
   try {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/signup')
+  if (!user) redirect('/auth')
 
   // Parallel queries
   const [artistRes, accountRes, releasesRes, purchasesRes, codesRes, fanProfileRes, merchRes, ordersRes] = await Promise.all([

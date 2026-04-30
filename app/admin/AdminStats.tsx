@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 type Period = 'today' | 'week' | 'month' | 'all'
-type DetailType = 'artists' | 'fans' | 'releases' | 'sales' | 'waitlist'
+type DetailType = 'artists' | 'fans' | 'releases' | 'sales'
 
 interface Stats {
   artists: number
@@ -16,8 +16,6 @@ interface Stats {
   stripeFees: number
   activePreOrders: number
   merchPending: number
-  waitlist: number
-  waitlistRemaining: number
 }
 
 interface DetailRow {
@@ -56,7 +54,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const DELETABLE_TYPES: DetailType[] = ['artists', 'fans', 'releases', 'waitlist']
+const DELETABLE_TYPES: DetailType[] = ['artists', 'fans', 'releases']
 
 function DetailModal({ type, onClose }: { type: DetailType; onClose: () => void }) {
   const [rows, setRows] = useState<DetailRow[]>([])
@@ -78,7 +76,6 @@ function DetailModal({ type, onClose }: { type: DetailType; onClose: () => void 
     fans: 'Fan Profiles',
     releases: 'Published Releases',
     sales: 'Tracks Sold',
-    waitlist: 'Waitlist Signups',
   }
 
   useEffect(() => {
@@ -177,12 +174,74 @@ function DetailModal({ type, onClose }: { type: DetailType; onClose: () => void 
   )
 }
 
+interface ActivityEvent {
+  id: string
+  type: string
+  text: string
+  time: string
+}
+
+interface TopArtist {
+  name: string
+  slug: string
+  avatar: string | null
+  sales: number
+  revenue: number
+}
+
+interface RevenueDay {
+  date: string
+  revenue: number
+  platform: number
+  count: number
+}
+
+const EVENT_ICONS: Record<string, string> = {
+  signup: '👤',
+  purchase: '💷',
+  release: '💿',
+}
+
+function RevenueChart({ days }: { days: RevenueDay[] }) {
+  const maxRevenue = Math.max(...days.map(d => d.revenue), 1)
+
+  return (
+    <div className="flex items-end gap-[3px] h-32">
+      {days.map(d => {
+        const h = Math.max((d.revenue / maxRevenue) * 100, d.revenue > 0 ? 4 : 1)
+        const label = new Date(d.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        return (
+          <div
+            key={d.date}
+            className="flex-1 group relative"
+            style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}
+          >
+            <div
+              className={`w-full rounded-sm transition-colors ${d.revenue > 0 ? 'bg-orange-500/80 group-hover:bg-orange-400' : 'bg-zinc-800'}`}
+              style={{ height: `${h}%` }}
+            />
+            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+              <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[10px] whitespace-nowrap shadow-xl">
+                <p className="font-bold text-white">{label}</p>
+                <p className="text-zinc-400">£{(d.revenue / 100).toFixed(2)} · {d.count} sale{d.count !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function AdminStats() {
   const [period, setPeriod] = useState<Period>('all')
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [detail, setDetail] = useState<DetailType | null>(null)
+  const [activity, setActivity] = useState<ActivityEvent[]>([])
+  const [topArtists, setTopArtists] = useState<TopArtist[]>([])
+  const [revenueDays, setRevenueDays] = useState<RevenueDay[]>([])
 
   const fetchStats = useCallback(async (p: Period) => {
     setLoading(true)
@@ -204,6 +263,18 @@ export function AdminStats() {
     return () => clearInterval(interval)
   }, [period, fetchStats])
 
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/admin/activity').then(r => r.json()),
+      fetch('/api/admin/top-artists').then(r => r.json()),
+      fetch('/api/admin/revenue-chart').then(r => r.json()),
+    ]).then(([act, top, rev]) => {
+      setActivity(act.events ?? [])
+      setTopArtists(top.artists ?? [])
+      setRevenueDays(rev.days ?? [])
+    })
+  }, [])
+
   const cards: { label: string; value: number | string; detail?: DetailType }[] = stats
     ? [
         { label: 'Artist Profiles', value: stats.artists, detail: 'artists' },
@@ -213,11 +284,10 @@ export function AdminStats() {
         { label: 'Total Revenue', value: fmt(stats.totalRevenue) },
         { label: 'Artist Earnings', value: fmt(stats.artistEarnings) },
         { label: 'Insound Revenue', value: fmt(stats.insoundRevenue) },
+        { label: 'Insound Net', value: fmt(stats.insoundRevenue - stats.stripeFees) },
         { label: 'Stripe Fees', value: fmt(stats.stripeFees) },
         { label: 'Active Pre-orders', value: stats.activePreOrders },
         { label: 'Merch Pending', value: stats.merchPending },
-        { label: 'Waitlist Signups', value: stats.waitlist, detail: 'waitlist' },
-        { label: 'Waitlist Remaining', value: stats.waitlistRemaining },
       ]
     : []
 
@@ -307,6 +377,68 @@ export function AdminStats() {
                 <div className="h-3 w-24 bg-zinc-800 rounded mt-2" />
               </div>
             ))}
+      </div>
+
+      {/* Revenue Chart + Activity + Top Artists */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+        {/* Revenue Chart */}
+        <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+          <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Revenue — Last 30 Days</h3>
+          {revenueDays.length > 0 ? (
+            <RevenueChart days={revenueDays} />
+          ) : (
+            <div className="h-32 flex items-center justify-center text-zinc-600 text-sm">Loading…</div>
+          )}
+        </div>
+
+        {/* Top Artists */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+          <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Top Artists</h3>
+          {topArtists.length > 0 ? (
+            <div className="space-y-2.5">
+              {topArtists.map((a, i) => (
+                <a key={a.slug} href={`/${a.slug}`} className="flex items-center gap-3 hover:bg-zinc-800/40 rounded-lg px-2 py-1.5 -mx-2 transition-colors">
+                  <span className="text-[10px] font-bold text-zinc-600 w-4 text-right">{i + 1}</span>
+                  {a.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={a.avatar} alt="" className="w-7 h-7 rounded-full object-cover bg-zinc-800 shrink-0" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500 shrink-0">
+                      {a.name[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{a.name}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-bold text-orange-500">£{(a.revenue / 100).toFixed(2)}</p>
+                    <p className="text-[10px] text-zinc-600">{a.sales} sale{a.sales !== 1 ? 's' : ''}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-zinc-600 text-sm">No sales yet</div>
+          )}
+        </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mt-4">
+        <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Recent Activity</h3>
+        {activity.length > 0 ? (
+          <div className="space-y-1">
+            {activity.map(e => (
+              <div key={e.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/40 transition-colors">
+                <span className="text-base shrink-0">{EVENT_ICONS[e.type] ?? '•'}</span>
+                <p className="text-sm text-zinc-300 flex-1 min-w-0 truncate">{e.text}</p>
+                <p className="text-[10px] text-zinc-600 shrink-0">{timeAgo(e.time)}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading…</div>
+        )}
       </div>
 
       {detail && <DetailModal type={detail} onClose={() => setDetail(null)} />}

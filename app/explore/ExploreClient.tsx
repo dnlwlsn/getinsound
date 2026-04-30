@@ -409,10 +409,10 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
           </div>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">Start selling today.</h2>
           <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Upload your music, set your price, and get paid directly. You keep 90% &mdash; we absorb all processing fees. No monthly fee, no approval process.</p>
-          <a href="/signup?intent=artist"
+          <Link href="/auth?mode=signup&intent=artist"
             className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-7 py-4 rounded-xl text-sm transition-colors whitespace-nowrap shadow-lg shadow-orange-600/20 mb-5">
             Get started &rarr;
-          </a>
+          </Link>
           <p className="text-zinc-600 text-xs font-medium">
             Free to join &nbsp;&middot;&nbsp; No credit card required &nbsp;&middot;&nbsp;{' '}
             <Link href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>

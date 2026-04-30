@@ -52,6 +52,28 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, name: artist.name })
 }
 
+export async function PATCH(req: NextRequest) {
+  const user = await requireAdminApi()
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const { paused } = await req.json().catch(() => ({} as any))
+  if (typeof paused !== 'boolean') return NextResponse.json({ error: 'paused (boolean) required' }, { status: 400 })
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+
+  const { error } = await supabaseAdmin
+    .from('founding_artist_programme')
+    .update({ paused })
+    .eq('id', 1)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ ok: true, paused })
+}
+
 export async function DELETE(req: NextRequest) {
   const user = await requireAdminApi()
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

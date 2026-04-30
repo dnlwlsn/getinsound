@@ -227,6 +227,8 @@ export default async function ProfilePage({ params }: Props) {
 
   if (!artist) notFound()
 
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+
   const [{ data: releases }, { data: artistBadges }, { data: accountData }, { data: merchItems }, { count: followerCount }, { data: artistPosts }] = await Promise.all([
     supabase
       .from('releases')
@@ -292,6 +294,7 @@ export default async function ProfilePage({ params }: Props) {
       merch={merchItems || []}
       followerCount={followerCount ?? 0}
       posts={artistPosts || []}
+      currentUserId={currentUser?.id ?? null}
     />
     </>
   )

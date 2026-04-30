@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
       userId: result.artist_id,
       type: 'code_redeemed',
       title: 'Download code redeemed',
-      body: `${email} redeemed a download code for your release.`,
+      body: `A fan redeemed a download code for your release.`,
       link: '/dashboard/codes',
     })
 

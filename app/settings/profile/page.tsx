@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function ProfileSettingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/signup')
+  if (!user) redirect('/auth')
 
   let { data: profile } = await supabase
     .from('fan_profiles')

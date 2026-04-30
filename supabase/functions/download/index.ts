@@ -36,15 +36,33 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // Verify the caller is authenticated and owns this purchase
+    const authHeader = req.headers.get('authorization') ?? '';
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { global: { headers: { authorization: authHeader } } },
+    );
+    const { data: { user } } = await userClient.auth.getUser();
+
     const { data: purchase, error: purchaseErr } = await admin
       .from('purchases')
-      .select('id, release_id, status')
+      .select('id, release_id, status, buyer_user_id, buyer_email')
       .eq('stripe_checkout_id', sessionId)
       .maybeSingle();
 
     if (purchaseErr) return json({ error: purchaseErr.message }, 500);
     if (!purchase) return json({ error: 'pending' }, 202); // webhook hasn't fired yet
     if (purchase.status !== 'paid') return json({ error: 'Purchase not completed' }, 400);
+
+    // Ownership check: caller must be the buyer
+    if (user) {
+      if (purchase.buyer_user_id && purchase.buyer_user_id !== user.id) {
+        return json({ error: 'Unauthorized' }, 403);
+      }
+    } else if (purchase.buyer_user_id) {
+      return json({ error: 'Authentication required' }, 401);
+    }
 
     const { data: grant, error: grantErr } = await admin
       .from('download_grants')
@@ -59,17 +77,13 @@ Deno.serve(async (req) => {
       return json({ error: 'Download link has expired.' }, 410);
     }
 
-    // Atomic increment — only succeeds if under the limit
-    const { data: updated, error: incErr } = await admin
-      .from('download_grants')
-      .update({ used_count: grant.used_count + 1 })
-      .eq('id', grant.id)
-      .lt('used_count', grant.max_uses)
-      .select('id')
-      .maybeSingle();
+    // Atomic increment via RPC to avoid TOCTOU race
+    const { data: incremented, error: incErr } = await admin.rpc('increment_download_grant', {
+      p_grant_id: grant.id,
+    });
 
     if (incErr) return json({ error: incErr.message }, 500);
-    if (!updated) {
+    if (!incremented) {
       return json({ error: 'Download limit reached.' }, 410);
     }
 

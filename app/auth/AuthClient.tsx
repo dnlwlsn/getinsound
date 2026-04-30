@@ -23,6 +23,7 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [resetSent, setResetSent] = useState(false)
+  const [signupSent, setSignupSent] = useState(false)
 
   const intent = searchParams.get('intent')
   const redirectTo = intent === 'artist' ? '/become-an-artist' : '/'
@@ -68,6 +69,9 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
         const { error: signUpError } = await supabase.auth.signUp({
           email: trimmed,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+          },
         })
 
         if (signUpError) {
@@ -77,7 +81,8 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
           throw signUpError
         }
 
-        router.push(redirectTo)
+        setBusy(false)
+        setSignupSent(true)
         return
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -85,6 +90,7 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
           password,
         })
         if (error) throw error
+        setBusy(false)
         router.push('/')
         return
       }
@@ -120,7 +126,25 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
           </div>
 
           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl" style={{ boxShadow: '0 0 60px rgba(245,109,0,0.08)' }}>
-            {resetSent ? (
+            {signupSent ? (
+              <div className="text-center py-4">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" className="text-orange-600" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-black text-white mb-2 font-display">Check your email</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  We sent a confirmation link to <span className="text-white font-semibold">{email.trim()}</span>. Click the link to activate your account.
+                </p>
+                <button
+                  onClick={() => { setSignupSent(false); setMode('signin') }}
+                  className="text-orange-600 hover:text-orange-400 text-sm font-bold mt-4"
+                >
+                  ← Back to sign in
+                </button>
+              </div>
+            ) : resetSent ? (
               <div className="text-center py-4">
                 <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
                   <svg width="24" height="24" fill="none" stroke="currentColor" className="text-orange-600" strokeWidth="2.5" viewBox="0 0 24 24">

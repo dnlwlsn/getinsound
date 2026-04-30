@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser()
   if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const freshAuthError = await requireFreshAuth(request)
+  const freshAuthError = await requireFreshAuth(request, user.id)
   if (freshAuthError) return freshAuthError
 
   const { data: artist } = await supabase

@@ -712,28 +712,36 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (chargeId) {
-          for (const [artistId, { stripeAccountId, amount }] of artistTransfers) {
-            if (amount <= 0) continue;
-            try {
-              await stripe.transfers.create({
-                amount,
-                currency: session.currency || 'gbp',
-                destination: stripeAccountId,
-                source_transaction: chargeId,
-                metadata: {
-                  basket_session_id: basketSessionId,
-                  artist_id: artistId,
-                },
-              });
-            } catch (e) {
-              console.error(`Transfer to ${stripeAccountId} failed:`, (e as Error).message);
-              await logWebhookError(admin, event.type, event.id, `Transfer failed for artist ${artistId}: ${(e as Error).message}`, {
+        if (!chargeId) {
+          await logWebhookError(admin, event.type, event.id, 'No chargeId for basket transfers — artists unpaid', {
+            basket_session_id: basketSessionId,
+            pi_id: piId,
+          });
+          return new Response('Missing charge ID', { status: 500 });
+        }
+
+        for (const [artistId, { stripeAccountId, amount }] of artistTransfers) {
+          if (amount <= 0) continue;
+          try {
+            await stripe.transfers.create({
+              amount,
+              currency: session.currency || 'gbp',
+              destination: stripeAccountId,
+              source_transaction: chargeId,
+              metadata: {
+                basket_session_id: basketSessionId,
                 artist_id: artistId,
-                stripe_account_id: stripeAccountId,
-                amount,
-              });
-            }
+              },
+            }, {
+              idempotencyKey: `basket_${basketSessionId}_${artistId}`,
+            });
+          } catch (e) {
+            console.error(`Transfer to ${stripeAccountId} failed:`, (e as Error).message);
+            await logWebhookError(admin, event.type, event.id, `Transfer failed for artist ${artistId}: ${(e as Error).message}`, {
+              artist_id: artistId,
+              stripe_account_id: stripeAccountId,
+              amount,
+            });
           }
         }
 

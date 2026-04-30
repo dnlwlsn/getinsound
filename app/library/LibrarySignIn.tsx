@@ -97,7 +97,7 @@ export default function LibrarySignIn() {
             <div className="mt-6 pt-5 border-t border-zinc-800 text-center">
               <p className="text-zinc-600 text-xs">
                 Don&apos;t have an account?{' '}
-                <Link href="/signup" className="text-orange-600 hover:text-orange-400 font-bold">
+                <Link href="/auth?mode=signup" className="text-orange-600 hover:text-orange-400 font-bold">
                   Sign up
                 </Link>
               </p>

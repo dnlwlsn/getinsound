@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 
 interface BadgeEntry {
   id: string
@@ -66,7 +67,7 @@ export function BadgesClient() {
     <div className="min-h-screen bg-insound-bg text-zinc-100 p-8">
       <div className="max-w-3xl mx-auto space-y-10">
         <div>
-          <a href="/admin" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors">&larr; Admin</a>
+          <Link href="/admin" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors">&larr; Admin</Link>
           <h1 className="text-3xl font-display font-bold tracking-tight mt-4">Badges</h1>
           <p className="text-zinc-500 text-sm mt-1">Award Beta Tester and Founder badges to fan profiles.</p>
         </div>

@@ -71,35 +71,22 @@ export async function GET(req: NextRequest) {
     case 'sales': {
       const { data } = await supabase
         .from('purchases')
-        .select('id, amount_pence, currency, created_at, releases(title, slug, artists!inner(name, slug)), fan_profiles(username)')
+        .select('id, amount_pence, currency, buyer_email, created_at, releases(title, slug), artists(name, slug)')
         .eq('status', 'paid')
         .order('created_at', { ascending: false })
         .limit(200)
       return NextResponse.json({ rows: (data ?? []).map(p => {
-        const release = p.releases as unknown as { title: string; slug: string; artists: { name: string; slug: string } } | null
-        const fan = p.fan_profiles as unknown as { username: string | null } | null
+        const release = p.releases as unknown as { title: string; slug: string } | null
+        const artist = p.artists as unknown as { name: string; slug: string } | null
         return {
           id: p.id,
-          name: release ? `${release.title} — ${release.artists.name}` : 'Unknown release',
-          sub: fan?.username ? `@${fan.username}` : 'Anonymous',
+          name: release && artist ? `${release.title} — ${artist.name}` : release?.title || 'Unknown release',
+          sub: p.buyer_email,
           amount: p.amount_pence,
           currency: p.currency,
           created: p.created_at,
         }
       })})
-    }
-
-    case 'waitlist': {
-      const { data } = await supabase
-        .from('waitlist')
-        .select('id, email, created_at')
-        .order('created_at', { ascending: false })
-        .limit(200)
-      return NextResponse.json({ rows: (data ?? []).map(w => ({
-        id: w.id,
-        name: w.email,
-        created: w.created_at,
-      }))})
     }
 
     default:
@@ -111,7 +98,6 @@ const DELETABLE: Record<string, string> = {
   artists: 'artists',
   fans: 'fan_profiles',
   releases: 'releases',
-  waitlist: 'waitlist',
 }
 
 export async function DELETE(req: NextRequest) {

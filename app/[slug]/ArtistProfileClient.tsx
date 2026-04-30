@@ -91,6 +91,7 @@ interface Props {
   merch?: MerchItem[]
   followerCount?: number
   posts?: ArtistPost[]
+  currentUserId?: string | null
 }
 
 /* ── Gradient fallback ────────────────────────────────────────── */
@@ -169,7 +170,7 @@ function isPreorder(release: Release) {
 
 /* ── Component ────────────────────────────────────────────────── */
 
-export default function ArtistProfileClient({ artist, releases, badges = [], verified = false, socialLinks, merch = [], followerCount = 0, posts = [] }: Props) {
+export default function ArtistProfileClient({ artist, releases, badges = [], verified = false, socialLinks, merch = [], followerCount = 0, posts = [], currentUserId }: Props) {
   const accent = resolveAccent(artist.accent_colour)
   const { currency, formatPrice, convertPrice } = useCurrency()
   const play = usePlayerStore(s => s.play)
@@ -301,16 +302,18 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
                 <path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98" />
               </svg>
             </button>
-            <button
-              onClick={() => setShowReport(true)}
-              className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors"
-              aria-label="Report profile"
-            >
-              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                <line x1="4" y1="22" x2="4" y2="15" />
-              </svg>
-            </button>
+            {currentUserId !== artist.id && (
+              <button
+                onClick={() => setShowReport(true)}
+                className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors"
+                aria-label="Report profile"
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                  <line x1="4" y1="22" x2="4" y2="15" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 

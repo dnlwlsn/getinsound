@@ -223,7 +223,7 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
               Buy music directly from independent artists. No subscriptions, no algorithms — just great music you own forever. 90% goes straight to the artist.
             </p>
             <div className="flex items-center gap-3 mt-5">
-              <Link href="/signup" className="bg-orange-600 text-black font-black text-sm px-5 py-2.5 rounded-xl hover:bg-orange-500 transition-colors">
+              <Link href="/auth?mode=signup" className="bg-orange-600 text-black font-black text-sm px-5 py-2.5 rounded-xl hover:bg-orange-500 transition-colors">
                 Sign Up Free
               </Link>
               <Link href="/explore" className="text-sm font-bold text-zinc-400 hover:text-white transition-colors">

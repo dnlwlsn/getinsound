@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600_000 })
-    return false
-  }
-  entry.count++
-  return entry.count > 5
-}
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (isRateLimited(ip)) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-  }
+  const ip = getClientIp(request.headers)
+  const ipHash = await hashIp(ip)
+  const rateLimited = await checkRateLimit(ipHash, 'newsletter', 5, 1)
+  if (rateLimited) return rateLimited
 
   const body = await request.json().catch(() => null)
   const email = body?.email?.trim()?.toLowerCase()

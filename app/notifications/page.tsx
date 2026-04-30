@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function NotificationsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/signup')
+  if (!user) redirect('/auth')
 
   return <NotificationsClient userId={user.id} />
 }

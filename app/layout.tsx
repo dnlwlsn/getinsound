@@ -12,6 +12,7 @@ import { CookieBanner } from './components/ui/CookieBanner'
 import { FeedbackButton } from './components/ui/FeedbackButton'
 import { GlobalShortcuts } from './components/GlobalShortcuts'
 import { PwaSplash } from './components/pwa/PwaSplash'
+import { GenreOnboarding } from './components/GenreOnboarding'
 import './globals.css'
 
 
@@ -77,6 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <InstallBanner />
         <FeedbackButton />
         <CookieBanner />
+        <GenreOnboarding redirectTo="/discover" />
         <PwaSplash />
       </body>
     </html>

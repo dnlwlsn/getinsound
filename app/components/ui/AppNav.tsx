@@ -43,25 +43,32 @@ function HamburgerMenu({ links }: { links: { href: string; label: string }[] }) 
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!open) return
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
     }
-    document.addEventListener('mousedown', handleClick)
-    document.addEventListener('keydown', handleKey)
+    function handleCloseAll() { setOpen(false) }
+    if (open) {
+      document.addEventListener('mousedown', handleClick)
+      document.addEventListener('keydown', handleKey)
+    }
+    document.addEventListener('insound:close-dropdowns', handleCloseAll)
     return () => {
       document.removeEventListener('mousedown', handleClick)
       document.removeEventListener('keydown', handleKey)
+      document.removeEventListener('insound:close-dropdowns', handleCloseAll)
     }
   }, [open])
 
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          if (!open) document.dispatchEvent(new Event('insound:close-dropdowns'))
+          setOpen(o => !o)
+        }}
         className="min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
         aria-label="Menu"
       >
@@ -104,10 +111,16 @@ function HamburgerMenu({ links }: { links: { href: string; label: string }[] }) 
   )
 }
 
+function hasAuthCookie(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.cookie.split(';').some(c => c.trim().startsWith('sb-') && c.includes('auth-token'))
+}
+
 export function AppNav() {
   const pathname = usePathname()
   const [userId, setUserId] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [hint] = useState(hasAuthCookie)
 
   useEffect(() => {
     const supabase = createClient()
@@ -119,24 +132,11 @@ export function AppNav() {
 
   const navHidden = useScrollDirection()
 
-  if (!loaded) {
-    return (
-      <>
-        <nav className="fixed top-0 z-50 w-full pt-4 px-4" style={{ background: 'transparent' }}>
-          <div className="mx-auto max-w-7xl rounded-full px-6 py-3 flex items-center justify-between ring-1 ring-white/[0.06]"
-            style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-            <InsoundLogo size="sm" />
-            <div className="w-20" />
-          </div>
-        </nav>
-        <div className="h-[72px]" />
-      </>
-    )
-  }
+  const showLoggedIn = loaded ? !!userId : hint
   if (HIDE_NAV_ROUTES.some(r => pathname === r)) return null
   if (HIDE_NAV_PREFIXES.some(p => pathname.startsWith(p))) return null
 
-  if (!userId) {
+  if (!showLoggedIn) {
     return (
       <>
       <nav className={`fixed top-0 z-50 w-full pt-4 px-4 transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ background: 'transparent' }}>
@@ -158,7 +158,7 @@ export function AppNav() {
               className="text-zinc-400 hover:text-white text-[11px] font-bold uppercase tracking-widest px-3 sm:px-4 py-2.5 transition-colors whitespace-nowrap">
               Sign In
             </Link>
-            <Link href="/signup"
+            <Link href="/auth?mode=signup"
               className="bg-orange-600 hover:bg-orange-500 text-black text-[11px] font-bold uppercase tracking-widest px-3 sm:px-5 py-2.5 rounded-full transition-colors whitespace-nowrap">
               Sign Up
             </Link>
@@ -198,7 +198,7 @@ export function AppNav() {
                 {link.label}
               </Link>
             ))}
-            <NotificationBell userId={userId} />
+            {userId && <NotificationBell userId={userId} />}
             <BasketButton />
             <ProfileMenu />
             <HamburgerMenu links={LOGGED_IN_MENU_LINKS} />

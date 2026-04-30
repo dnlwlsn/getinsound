@@ -315,7 +315,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
     )
   }
 
-  if (releases.length === 0 && favourites.length === 0) {
+  if (releases.length === 0 && favourites.length === 0 && merchOrders.length === 0) {
     return (
       <div className="min-h-screen font-display">
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -805,14 +805,9 @@ function ReleaseCard({
         {release.artistVerified && <VerifiedTick size={12} />}
         {release.artistBadge && <Badge type={release.artistBadge.badge_type} position={release.artistBadge.metadata?.position} size="xs" />}
       </div>
-      <div className="flex items-center justify-between mt-1.5">
-        <span className="text-[10px] text-zinc-600 font-bold">
-          {formatDate(release.purchasedAt)}
-        </span>
-        <span className="text-[10px] font-black text-orange-600">
-          {formatPriceUtil(release.displayAmount / 100, release.displayCurrency)}
-        </span>
-      </div>
+      <p className="text-[10px] text-zinc-600 font-bold mt-1.5">
+        {formatDate(release.purchasedAt)}
+      </p>
     </div>
   )
 }
@@ -904,10 +899,6 @@ function ReleaseRowCompact({
         )}
 
         <span className="flex-1" />
-
-        <span className="text-[13px] font-semibold text-orange-600 flex-shrink-0">
-          {formatPriceUtil(release.displayAmount / 100, release.displayCurrency)}
-        </span>
 
         {!release.preOrder && (
           <button

@@ -34,17 +34,38 @@ export async function GET() {
     const release = purchase.releases as any
     if (!release) continue
 
-    const { data: grant, error: grantErr } = await supabase
+    const { data: existing } = await supabase
       .from('download_grants')
-      .upsert(
-        { purchase_id: purchase.id, token: crypto.randomUUID(), expires_at: expiresAt, used_count: 0, max_uses: GRANT_MAX_USES },
-        { onConflict: 'purchase_id' }
-      )
-      .select('token')
-      .single()
+      .select('token, expires_at')
+      .eq('purchase_id', purchase.id)
+      .maybeSingle()
 
-    if (grantErr) {
-      console.error('Grant creation failed for purchase', purchase.id, grantErr.message)
+    let grant: { token: string } | null = null
+    let grantErr: any = null
+
+    if (existing && new Date(existing.expires_at) > new Date()) {
+      grant = { token: existing.token }
+    } else if (existing) {
+      const res = await supabase
+        .from('download_grants')
+        .update({ token: crypto.randomUUID(), expires_at: expiresAt, used_count: 0, max_uses: GRANT_MAX_USES })
+        .eq('purchase_id', purchase.id)
+        .select('token')
+        .single()
+      grant = res.data
+      grantErr = res.error
+    } else {
+      const res = await supabase
+        .from('download_grants')
+        .insert({ purchase_id: purchase.id, token: crypto.randomUUID(), expires_at: expiresAt, used_count: 0, max_uses: GRANT_MAX_USES })
+        .select('token')
+        .single()
+      grant = res.data
+      grantErr = res.error
+    }
+
+    if (grantErr || !grant) {
+      console.error('Grant creation failed for purchase', purchase.id, grantErr?.message)
       continue
     }
 

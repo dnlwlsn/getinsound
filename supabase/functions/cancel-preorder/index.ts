@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     }
 
     try {
-      await stripe.refunds.create({ payment_intent: purchase.stripe_pi_id });
+      await stripe.refunds.create({ payment_intent: purchase.stripe_pi_id, refund_application_fee: true });
       await admin
         .from('purchases')
         .update({ status: 'refunded' })
@@ -149,8 +149,10 @@ Deno.serve(async (req) => {
   });
 });
 
-function buildCancelEmail(releaseTitle: string, artistName: string, amountPence: number): string {
-  const amount = `£${(amountPence / 100).toFixed(2)}`;
+function buildCancelEmail(releaseTitle: string, artistName: string, amountPence: number, currency = 'GBP'): string {
+  const symbols: Record<string, string> = { GBP: '£', USD: '$', EUR: '€', CAD: 'C$', AUD: 'A$', JPY: '¥' };
+  const sym = symbols[currency.toUpperCase()] || currency + ' ';
+  const amount = `${sym}${(amountPence / 100).toFixed(currency.toUpperCase() === 'JPY' ? 0 : 2)}`;
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

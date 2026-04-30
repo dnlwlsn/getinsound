@@ -48,26 +48,34 @@ export async function POST(req: NextRequest) {
 
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 })
 
-  const { data: followers } = await supabase
-    .from('fan_follows')
-    .select('user_id')
-    .eq('artist_id', artist.id)
+  // Fan-out notifications asynchronously — don't block the response
+  const fanOut = async () => {
+    try {
+      const { data: followers } = await supabase
+        .from('fan_follows')
+        .select('user_id')
+        .eq('artist_id', artist.id)
 
-  if (followers && followers.length > 0) {
-    const uniqueIds = [...new Set(followers.map(f => f.user_id))]
-    const CHUNK = 50
-    for (let i = 0; i < uniqueIds.length; i += CHUNK) {
-      const chunk = uniqueIds.slice(i, i + CHUNK)
-      await createNotificationBatch({
-        supabase,
-        userIds: chunk,
-        type: 'artist_post',
-        title: `${artist.name} posted an update`,
-        body: content.slice(0, 100),
-        link: `/${artist.slug}`,
-      })
+      if (followers && followers.length > 0) {
+        const uniqueIds = [...new Set(followers.map(f => f.user_id))]
+        const CHUNK = 50
+        for (let i = 0; i < uniqueIds.length; i += CHUNK) {
+          const chunk = uniqueIds.slice(i, i + CHUNK)
+          await createNotificationBatch({
+            supabase,
+            userIds: chunk,
+            type: 'artist_post',
+            title: `${artist.name} posted an update`,
+            body: content.slice(0, 100),
+            link: `/${artist.slug}`,
+          })
+        }
+      }
+    } catch (err) {
+      console.error('[posts] notification fan-out failed:', err)
     }
   }
+  fanOut()
 
   return NextResponse.json({ post })
 }
