@@ -5,31 +5,32 @@ import { useEffect, useState } from 'react'
 
 export function UnsubscribeClient() {
   const searchParams = useSearchParams()
+  const userId = searchParams.get('user_id') || searchParams.get('token')
   const token = searchParams.get('token')
   const [status, setStatus] = useState<'loading' | 'done' | 'resubscribed' | 'error'>('loading')
 
   useEffect(() => {
-    if (!token) {
+    if (!userId) {
       setStatus('error')
       return
     }
     fetch('/api/unsubscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: token, unsubscribe: true }),
+      body: JSON.stringify({ user_id: userId, token: searchParams.get('user_id') ? token : undefined, unsubscribe: true }),
     })
       .then((r) => {
         setStatus(r.ok ? 'done' : 'error')
       })
       .catch(() => setStatus('error'))
-  }, [token])
+  }, [userId, token, searchParams])
 
   async function handleResubscribe() {
-    if (!token) return
+    if (!userId) return
     const res = await fetch('/api/unsubscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: token, unsubscribe: false }),
+      body: JSON.stringify({ user_id: userId, token: searchParams.get('user_id') ? token : undefined, unsubscribe: false }),
     })
     setStatus(res.ok ? 'resubscribed' : 'error')
   }

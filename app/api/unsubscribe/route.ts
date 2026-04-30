@@ -20,15 +20,21 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0
 }
 
-async function generateToken(userId: string): Promise<string> {
+function monthBucket(offsetMonths = 0): string {
+  const d = new Date()
+  d.setMonth(d.getMonth() + offsetMonths)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+async function generateToken(userId: string, bucket: string): Promise<string> {
   const secret = process.env.UNSUBSCRIBE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY!
-  const data = new TextEncoder().encode(`unsubscribe:${userId}:${secret}`)
+  const data = new TextEncoder().encode(`unsubscribe:${userId}:${bucket}:${secret}`)
   const hash = await crypto.subtle.digest('SHA-256', data)
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 export async function generateUnsubscribeToken(userId: string): Promise<string> {
-  return generateToken(userId)
+  return generateToken(userId, monthBucket())
 }
 
 export async function POST(req: NextRequest) {
@@ -41,8 +47,9 @@ export async function POST(req: NextRequest) {
   let authorised = false
 
   if (token) {
-    const expected = await generateToken(user_id)
-    authorised = timingSafeEqual(token, expected)
+    const current = await generateToken(user_id, monthBucket(0))
+    const previous = await generateToken(user_id, monthBucket(-1))
+    authorised = timingSafeEqual(token, current) || timingSafeEqual(token, previous)
   }
 
   if (!authorised) {

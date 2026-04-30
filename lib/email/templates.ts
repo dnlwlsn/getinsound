@@ -46,7 +46,7 @@ export type EmailTemplate = keyof typeof TEMPLATES;
 export function buildMagicLinkEmail(
   actionUrl: string,
   template: EmailTemplate,
-  meta?: { releaseTitle?: string; artistName?: string; userId?: string },
+  meta?: { releaseTitle?: string; artistName?: string; userId?: string; unsubscribeToken?: string },
 ): { subject: string; html: string } {
   const config = TEMPLATES[template];
 
@@ -84,7 +84,7 @@ export function buildMagicLinkEmail(
         </td></tr>
         <tr><td style="color:${TEXT_MUTED};font-size:13px;line-height:1.5;">
           ${config.footer}
-        </td></tr>${unsubscribeFooter(meta?.userId)}
+        </td></tr>${unsubscribeFooter(meta?.userId, meta?.unsubscribeToken)}
       </table>
     </td></tr>
   </table>
@@ -94,13 +94,17 @@ export function buildMagicLinkEmail(
   return { subject, html };
 }
 
-function unsubscribeFooter(userId?: string): string {
+function unsubscribeFooter(userId?: string, unsubscribeToken?: string): string {
   if (!userId) return '';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com';
+  const params = unsubscribeToken
+    ? `user_id=${userId}&token=${unsubscribeToken}`
+    : `user_id=${userId}`;
   return `
-        <tr><td style="padding-top:32px;"><a href="https://getinsound.com/unsubscribe?token=${userId}" style="color:#71717A;font-size:11px;text-decoration:underline;">Unsubscribe</a></td></tr>`;
+        <tr><td style="padding-top:32px;"><a href="${siteUrl}/unsubscribe?${params}" style="color:#71717A;font-size:11px;text-decoration:underline;">Unsubscribe</a></td></tr>`;
 }
 
-function wrapEmail(body: string, userId?: string): string {
+function wrapEmail(body: string, userId?: string, unsubscribeToken?: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -111,7 +115,7 @@ function wrapEmail(body: string, userId?: string): string {
         <tr><td style="padding-bottom:40px;">
           <span style="font-size:24px;font-weight:900;color:${BRAND_ORANGE};letter-spacing:-0.5px;">insound.</span>
         </td></tr>
-        ${body}${unsubscribeFooter(userId)}
+        ${body}${unsubscribeFooter(userId, unsubscribeToken)}
       </table>
     </td></tr>
   </table>

@@ -45,6 +45,8 @@ export function ProfileMenu() {
   }, [open])
 
   const handleSignOut = useCallback(async () => {
+    const { usePlayerStore } = await import('@/lib/stores/player')
+    usePlayerStore.getState().stop()
     const supabase = createClient()
     await supabase.auth.signOut()
     window.location.href = '/'
