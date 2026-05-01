@@ -12,9 +12,10 @@ interface Props {
   userEmail: string
   userId: string
   pendingDeletion: { id: string; execute_at: string } | null
+  isArtist?: boolean
 }
 
-export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Props) {
+export function AccountSettingsClient({ userEmail, userId, pendingDeletion, isArtist = false }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showModal, setShowModal] = useState(false)
@@ -25,6 +26,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
   const [emailChanging, setEmailChanging] = useState(false)
   const [emailChangeSuccess, setEmailChangeSuccess] = useState(false)
   const [emailChangeError, setEmailChangeError] = useState('')
+  const [deleteError, setDeleteError] = useState('')
   const [showReverify, setShowReverify] = useState(false)
   const [pendingAction, setPendingAction] = useState<'email' | 'delete' | 'export' | null>(null)
 
@@ -88,13 +90,14 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
       const res = await fetch('/api/account/delete', { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setEmailChangeError(data.error || 'Failed to cancel deletion. Please try again.')
+        setDeleteError(data.error || 'Failed to cancel deletion. Please try again.')
         return
       }
+      setDeleteError('')
       setPending(null)
       router.replace('/settings/account')
     } catch {
-      setEmailChangeError('Failed to cancel deletion. Please try again.')
+      setDeleteError('Failed to cancel deletion. Please try again.')
     }
   }
 
@@ -117,7 +120,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
   async function handleExport() {
     setExporting(true)
     try {
-      const res = await fetch('/api/account/export')
+      const res = await fetch('/api/account/export', { method: 'POST' })
       if (res.status === 403) {
         const data = await res.json()
         if (data.code === 'FRESH_AUTH_REQUIRED') {
@@ -208,7 +211,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
               )}
             </div>
 
-            <NotificationPreferences isArtist={false} />
+            <NotificationPreferences isArtist={isArtist} />
 
             {/* Data export */}
             <div className="mt-8 pt-8 border-t border-zinc-800">

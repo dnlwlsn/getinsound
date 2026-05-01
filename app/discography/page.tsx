@@ -16,7 +16,7 @@ export default async function DiscographyPage() {
     .eq('id', user.id)
     .maybeSingle()
 
-  if (!artist) redirect('/auth')
+  if (!artist) redirect('/become-an-artist')
 
   const [{ data: account }, { data: releases }] = await Promise.all([
     supabase.from('artist_accounts')

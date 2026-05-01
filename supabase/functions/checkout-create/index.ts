@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
     // Always charge in the artist's currency to avoid FX undercharging
     const chargeCurrency = (release.currency || 'GBP').toLowerCase();
 
-    const idempotencyKey = `checkout_${releaseId}_${stripeCustomerId || 'guest'}_${unitAmount}`;
+    const idempotencyKey = `checkout_${releaseId}_${stripeCustomerId || crypto.randomUUID()}_${unitAmount}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',

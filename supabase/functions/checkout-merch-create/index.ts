@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     const photos = (merch.photos as string[]) || [];
     const itemName = variant ? `${merch.name} (${variant})` : merch.name;
 
-    const idempotencyKey = `merch_${merchId}_${stripeCustomerId || fanId || 'guest'}_${variant || 'default'}`;
+    const idempotencyKey = `merch_${merchId}_${stripeCustomerId || fanId || crypto.randomUUID()}_${variant || 'default'}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',

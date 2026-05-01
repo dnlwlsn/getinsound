@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
-const SIGNED_URL_EXPIRY = 60 * 60 // 1 hour
+const SIGNED_URL_EXPIRY = 5 * 60 // 5 minutes
 
 function getAdminClient() {
   return createServiceClient(
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
       url: signed.signedUrl,
       isPreview: false,
       format,
-    })
+    }, { headers: { 'Cache-Control': 'no-store' } })
   }
 
   // Preview — public bucket, stable URL so Cloudflare can cache at edge

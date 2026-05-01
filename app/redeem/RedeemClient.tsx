@@ -228,6 +228,20 @@ export function RedeemClient() {
                 <p className="text-sm text-zinc-400 leading-relaxed">
                   Check your inbox for a magic link to <span className="text-white font-semibold">{email.trim()}</span> to access it.
                 </p>
+                <div className="flex flex-col gap-3 mt-6">
+                  <Link
+                    href="/library"
+                    className="w-full bg-orange-600 text-black font-black py-3 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider text-center"
+                  >
+                    Go to My Collection
+                  </Link>
+                  <Link
+                    href="/explore"
+                    className="w-full text-center text-sm text-zinc-400 hover:text-white transition-colors font-bold"
+                  >
+                    Explore more music
+                  </Link>
+                </div>
               </div>
             )}
 

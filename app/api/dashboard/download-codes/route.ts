@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const MAX_BATCH = 50
   const MAX_PER_RELEASE = 200
   const count = Math.min(Math.max(body.count || 10, 1), MAX_BATCH)
-  const expiryDays = body.expiry_days || 90
+  const expiryDays = Math.min(Math.max(body.expiry_days || 90, 1), 365)
 
   if (!releaseId) return NextResponse.json({ error: 'release_id required' }, { status: 400 })
 

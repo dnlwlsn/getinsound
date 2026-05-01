@@ -146,7 +146,8 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     if (path !== '/signup' && path !== '/') {
-      url.searchParams.set('next', path)
+      const fullPath = request.nextUrl.search ? path + request.nextUrl.search : path
+      url.searchParams.set('next', fullPath)
     }
     return NextResponse.redirect(url)
   }

@@ -67,7 +67,7 @@ export default async function Page() {
   // Recent activity for social proof
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  const [{ data: recentPurchases }, { data: recentFollows }] = await Promise.all([
+  const [{ data: recentPurchases }, { data: recentFollows }, { data: merchItems }] = await Promise.all([
     supabase
       .from('purchases')
       .select('created_at, releases ( title, slug, cover_url ), artists!inner ( name, slug )')
@@ -81,6 +81,12 @@ export default async function Page() {
       .gte('created_at', twentyFourHoursAgo)
       .order('created_at', { ascending: false })
       .limit(10),
+    supabase
+      .from('merch')
+      .select('id, name, price, currency, photos, stock, artists!inner ( name, slug, accent_colour )')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(12),
   ])
 
   const activityItems = [
@@ -110,6 +116,21 @@ export default async function Page() {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 20)
 
+  const mappedMerch = (merchItems ?? []).map((m: any) => {
+    const artist = Array.isArray(m.artists) ? m.artists[0] : m.artists
+    return {
+      id: m.id,
+      name: m.name,
+      price: m.price,
+      currency: m.currency || 'GBP',
+      photo: m.photos?.length > 0 ? m.photos[0] : null,
+      stock: m.stock,
+      artist_name: artist?.name,
+      artist_slug: artist?.slug,
+      accent: artist?.accent_colour ?? '#f97316',
+    }
+  })
+
   const soundCounts = new Map<string, number>()
   for (const r of mapped) {
     if (r.genre) soundCounts.set(r.genre, (soundCounts.get(r.genre) || 0) + 1)
@@ -127,6 +148,7 @@ export default async function Page() {
       activityItems={activityItems}
       userEmail={user?.email ?? null}
       popularSounds={popularSounds}
+      merch={mappedMerch}
     />
   )
 }

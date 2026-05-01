@@ -285,15 +285,8 @@ Deno.serve(async (req) => {
     for (const reqItem of releaseItems) {
       const release = releases.find((r: any) => r.id === reqItem.release_id)!;
       const artist = Array.isArray(release.artists) ? release.artists[0] : release.artists;
-
-      let unitAmount = release.price_pence;
-      if (release.pwyw_enabled && reqItem.custom_amount != null) {
-        const minimum = release.pwyw_minimum_pence ?? release.price_pence;
-        const maxAmount = release.price_pence * 50;
-        if (reqItem.custom_amount >= minimum) {
-          unitAmount = Math.min(reqItem.custom_amount, maxAmount);
-        }
-      }
+      const validatedItem = basketItems.find((bi: any) => bi.type === 'release' && bi.release_id === release.id);
+      const unitAmount = validatedItem ? validatedItem.amount_pence : release.price_pence;
 
       lineItems.push({
         quantity: 1,
@@ -362,7 +355,9 @@ Deno.serve(async (req) => {
       };
     }
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await stripe.checkout.sessions.create(sessionParams, {
+      idempotencyKey: `basket_session_${basketRow.id}`,
+    });
 
     return json({
       sessions: [{

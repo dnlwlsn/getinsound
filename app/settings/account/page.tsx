@@ -12,7 +12,7 @@ export default async function AccountSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  const [{ data: profile }, { data: pending }] = await Promise.all([
+  const [{ data: profile }, { data: pending }, { data: artist }] = await Promise.all([
     supabase.from('fan_profiles')
       .select('id')
       .eq('id', user.id)
@@ -22,6 +22,10 @@ export default async function AccountSettingsPage() {
       .eq('user_id', user.id)
       .eq('cancelled', false)
       .eq('executed', false)
+      .maybeSingle(),
+    supabase.from('artists')
+      .select('id')
+      .eq('id', user.id)
       .maybeSingle(),
   ])
 
@@ -34,6 +38,7 @@ export default async function AccountSettingsPage() {
       userEmail={user.email!}
       userId={user.id}
       pendingDeletion={pending ?? null}
+      isArtist={!!artist}
     />
   )
 }

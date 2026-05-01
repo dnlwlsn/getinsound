@@ -28,6 +28,18 @@ interface Release {
   isNew: boolean
 }
 
+interface MerchItem {
+  id: string
+  name: string
+  price: number
+  currency: string
+  photo: string | null
+  stock: number
+  artist_name: string
+  artist_slug: string
+  accent: string
+}
+
 interface HomeClientProps {
   releases: Release[]
   isLoggedIn: boolean
@@ -35,6 +47,7 @@ interface HomeClientProps {
   activityItems: ActivityItem[]
   userEmail: string | null
   popularSounds?: string[]
+  merch?: MerchItem[]
 }
 
 const PAGE_SIZE = 20
@@ -169,7 +182,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
   )
 }
 
-export default function HomeClient({ releases, isLoggedIn, followedArtistReleases, activityItems, userEmail, popularSounds = [] }: HomeClientProps) {
+export default function HomeClient({ releases, isLoggedIn, followedArtistReleases, activityItems, userEmail, popularSounds = [], merch = [] }: HomeClientProps) {
   const { currency, formatPrice, convertPrice } = useCurrency()
   const [currentGenre, setCurrentGenre] = useState('All')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -364,6 +377,29 @@ export default function HomeClient({ releases, isLoggedIn, followedArtistRelease
           </div>
         )}
       </section>
+
+      {/* Merch shelf */}
+      {merch.length > 0 && (
+        <section className="border-b border-zinc-900">
+          <Shelf title="Merch">
+            {merch.map(item => {
+              const soldOut = item.stock === 0
+              const displayPrice = formatPrice(convertPrice(item.price / 100, item.currency, currency))
+              return (
+                <ShelfCard
+                  key={item.id}
+                  href={`/${item.artist_slug}/merch/${item.id}`}
+                  coverUrl={item.photo || generateGradientDataUri(item.id, item.id)}
+                  title={item.name}
+                  subtitle={item.artist_name}
+                  badge={soldOut ? 'Sold out' : undefined}
+                  price={displayPrice}
+                />
+              )
+            })}
+          </Shelf>
+        </section>
+      )}
 
       {/* Newsletter signup */}
       <NewsletterSignup isLoggedIn={isLoggedIn} userEmail={userEmail} />

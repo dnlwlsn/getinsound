@@ -52,9 +52,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to generate link' }, { status: 500 });
   }
 
-  const callbackPath = safeRedirect || '/auth/callback?next=/welcome';
-  const separator = callbackPath.includes('?') ? '&' : '?';
-  const magicLink = `${SITE_URL}${callbackPath}${separator}token_hash=${tokenHash}&type=magiclink`;
+  const nextPath = safeRedirect || '/welcome';
+  const callbackPath = `/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  const magicLink = `${SITE_URL}${callbackPath}&token_hash=${tokenHash}&type=magiclink`;
 
   const { subject, html } = buildMagicLinkEmail(magicLink, template);
   const result = await sendEmail(email, subject, html);

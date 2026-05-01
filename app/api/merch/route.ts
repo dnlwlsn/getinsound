@@ -50,10 +50,10 @@ export async function POST(req: NextRequest) {
       name,
       description,
       price,
-      currency,
+      currency: currency.toUpperCase(),
       postage,
       stock,
-      variants: variants || null,
+      variants: variants ? variants.slice(0, 20).map((v: any) => String(v).slice(0, 100)) : null,
       dispatch_estimate: dispatch_estimate || 'Ships within 5 days',
     })
     .select('id')

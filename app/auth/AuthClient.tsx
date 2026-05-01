@@ -97,7 +97,8 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
         if (error) throw error
         await fetch('/api/auth/create-session', { method: 'POST' })
         setBusy(false)
-        router.push(redirectTo)
+        const signInTarget = redirectTo === '/' ? '/welcome' : redirectTo
+        router.push(signInTarget)
         return
       }
     } catch (err) {
@@ -286,11 +287,19 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
                         if (!trimmed) { setError('Enter your email address first.'); return }
                         setError('')
                         setBusy(true)
-                        const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-                          redirectTo: `${window.location.origin}/auth/callback?next=/`,
-                        })
+                        try {
+                          const res = await fetch('/api/auth/reset-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: trimmed }),
+                          })
+                          if (!res.ok) {
+                            const data = await res.json().catch(() => ({}))
+                            if (res.status === 429) { setError('Too many requests. Please try again later.'); setBusy(false); return }
+                            setError(data.error || 'Something went wrong.'); setBusy(false); return
+                          }
+                        } catch { setError('Something went wrong.'); setBusy(false); return }
                         setBusy(false)
-                        if (error) { setError(error.message); return }
                         setResetSent(true)
                       }}
                       className="w-full text-center text-xs text-zinc-500 hover:text-orange-500 mt-3 transition-colors"
