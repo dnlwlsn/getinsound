@@ -43,7 +43,11 @@ Deno.serve(async (req) => {
     const user = userData.user;
 
     const body = await req.json().catch(() => ({}));
-    const returnUrl: string = body.return_url || 'https://getinsound.com/discography';
+    const SITE_URL = Deno.env.get('SITE_URL') || 'https://getinsound.com';
+    const rawReturnUrl: string = body.return_url || '/discography';
+    const returnUrl = rawReturnUrl.startsWith('/') && !rawReturnUrl.startsWith('//')
+      ? `${SITE_URL}${rawReturnUrl}`
+      : rawReturnUrl.startsWith(SITE_URL) ? rawReturnUrl : `${SITE_URL}/discography`;
 
     const [{ data: account, error: accountErr }, { data: artist }] = await Promise.all([
       admin

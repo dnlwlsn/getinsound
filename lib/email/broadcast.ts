@@ -25,7 +25,7 @@ function markdownToHtml(md: string): string {
 }
 
 export function buildBroadcastHtml(bodyMarkdown: string): string {
-  const bodyHtml = markdownToHtml(bodyMarkdown)
+  const bodyHtml = markdownToHtml(escapeHtml(bodyMarkdown))
 
   return `<!DOCTYPE html>
 <html>

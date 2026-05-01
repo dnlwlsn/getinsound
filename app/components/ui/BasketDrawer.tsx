@@ -9,7 +9,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { stripePromise } from '@/lib/stripe'
 
-type Stage = 'review' | 'checkout' | 'preparing' | 'consent' | 'download' | 'confirmed' | 'error'
+type Stage = 'review' | 'checkout' | 'preparing' | 'consent' | 'download' | 'confirmed' | 'finalising' | 'error'
 
 interface Props {
   onClose: () => void
@@ -216,8 +216,8 @@ export function BasketDrawer({ onClose }: Props) {
       } catch (err) {
         if (i === maxAttempts - 1) {
           setErrorTitle('Still finalising...')
-          setErrorMsg("Your payment went through but the downloads aren't ready. Check your collection in a moment.")
-          setStage('error')
+          setErrorMsg("Your payment went through but the downloads aren't ready yet. Check your library in a moment.")
+          setStage('finalising')
           clear()
           return
         }
@@ -225,8 +225,8 @@ export function BasketDrawer({ onClose }: Props) {
       await new Promise((r) => setTimeout(r, 1500))
     }
     setErrorTitle('Still finalising...')
-    setErrorMsg("Your payment went through but the downloads aren't ready. Check your collection in a moment.")
-    setStage('error')
+    setErrorMsg("Your payment went through but the downloads aren't ready yet. Check your library in a moment.")
+    setStage('finalising')
     clear()
   }
 
@@ -456,6 +456,20 @@ export function BasketDrawer({ onClose }: Props) {
                 ? 'A receipt and sign-in link have been sent to your email.'
                 : 'A receipt has been sent by Stripe.'}
             </p>
+          </div>
+        )}
+
+        {stage === 'finalising' && (
+          <div className="p-12 text-center mt-20">
+            <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received</p>
+            <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
+            <p className="text-zinc-400 text-sm font-medium mb-6">{errorMsg}</p>
+            <a href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Go to your library</a>
           </div>
         )}
 

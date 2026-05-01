@@ -12,6 +12,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 })
   }
 
+  try {
+    const url = new URL(endpoint)
+    if (url.protocol !== 'https:') {
+      return NextResponse.json({ error: 'Push endpoint must be HTTPS' }, { status: 400 })
+    }
+  } catch {
+    return NextResponse.json({ error: 'Invalid push endpoint URL' }, { status: 400 })
+  }
+
   const { error } = await supabase.from('push_subscriptions').upsert(
     {
       user_id: user.id,

@@ -115,11 +115,15 @@ Deno.serve(async (req) => {
     // Determine unit amount — support PWYW custom amounts
     let unitAmount = release.price_pence;
     if (release.pwyw_enabled && customAmount != null) {
+      if (!Number.isInteger(customAmount) || customAmount <= 0) {
+        return json({ error: 'custom_amount must be a positive integer (pence)' }, 400);
+      }
       const minimum = release.pwyw_minimum_pence ?? release.price_pence;
       const maxAmount = release.price_pence * 50;
-      if (customAmount >= minimum) {
-        unitAmount = Math.min(customAmount, maxAmount);
+      if (customAmount < minimum) {
+        return json({ error: `Minimum amount is ${minimum} pence` }, 400);
       }
+      unitAmount = Math.min(customAmount, maxAmount);
     }
     if (!unitAmount || unitAmount < 300) {
       return json({ error: 'Invalid price' }, 400);
@@ -144,7 +148,7 @@ Deno.serve(async (req) => {
     // Always charge in the artist's currency to avoid FX undercharging
     const chargeCurrency = (release.currency || 'GBP').toLowerCase();
 
-    const idempotencyKey = `checkout_${releaseId}_${stripeCustomerId || fanCurrency || 'guest'}_${Math.floor(Date.now() / 300000)}`;
+    const idempotencyKey = `checkout_${releaseId}_${stripeCustomerId || 'guest'}_${unitAmount}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',

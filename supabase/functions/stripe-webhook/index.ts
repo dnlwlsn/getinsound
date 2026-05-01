@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
         // If stock was already 0, refund
         if (stockErr || updated === false) {
           if (piId) {
-            try { await stripe.refunds.create({ payment_intent: piId, refund_application_fee: true }); } catch (e) {
+            try { await stripe.refunds.create({ payment_intent: piId, refund_application_fee: true }, { idempotencyKey: `refund_merch_${session.id}_${merchId}` }); } catch (e) {
               console.error('Refund failed:', (e as Error).message);
             }
           }
@@ -559,7 +559,7 @@ Deno.serve(async (req) => {
               const refundAmount = item.amount_pence + (item.postage_pence || 0);
               if (piId && refundAmount > 0) {
                 try {
-                  await stripe.refunds.create({ payment_intent: piId, amount: refundAmount, refund_application_fee: true });
+                  await stripe.refunds.create({ payment_intent: piId, amount: refundAmount, refund_application_fee: true }, { idempotencyKey: `refund_basket_${session.id}_${item.merch_id}` });
                 } catch (e) {
                   console.error('Basket merch refund failed:', (e as Error).message);
                   await logWebhookError(admin, event.type, event.id, `Basket merch refund failed: ${(e as Error).message}`, { merch_id: item.merch_id, refundAmount });
@@ -719,6 +719,7 @@ Deno.serve(async (req) => {
           return new Response('Missing charge ID', { status: 500 });
         }
 
+        let anyTransferFailed = false;
         for (const [artistId, { stripeAccountId, amount }] of artistTransfers) {
           if (amount <= 0) continue;
 
@@ -746,7 +747,6 @@ Deno.serve(async (req) => {
               console.error(`Transfer to ${stripeAccountId} attempt ${attempt}/${MAX_RETRIES} failed:`, errMsg);
 
               if (attempt < MAX_RETRIES) {
-                // Exponential backoff: 1s, 2s, 4s
                 const delayMs = Math.pow(2, attempt - 1) * 1000;
                 await new Promise(resolve => setTimeout(resolve, delayMs));
               }
@@ -754,6 +754,7 @@ Deno.serve(async (req) => {
           }
 
           if (!transferSuccess) {
+            anyTransferFailed = true;
             console.error(`Transfer to ${stripeAccountId} failed after ${MAX_RETRIES} attempts — logging for manual retry`);
             await logWebhookError(admin, event.type, event.id, `Transfer failed for artist ${artistId} after ${MAX_RETRIES} retries`, {
               basket_session_id: basketSessionId,
@@ -766,6 +767,10 @@ Deno.serve(async (req) => {
               retries_exhausted: true,
             });
           }
+        }
+
+        if (anyTransferFailed) {
+          return new Response('Transfer failed — retry', { status: 500 });
         }
 
         // Email
@@ -1320,6 +1325,48 @@ Deno.serve(async (req) => {
           console.log(`Marked ${refundedOrders.length} order(s) as refunded for PI ${paymentIntent}`);
         }
       }
+
+      // Reverse basket transfers (separate charges + transfers model)
+      // For single-release destination charges, Stripe auto-reverses via refund_application_fee.
+      // For basket purchases, transfers were created manually and must be reversed manually.
+      if (isFullRefund && refundedPurchases && refundedPurchases.length > 1) {
+        try {
+          const artistIds = [...new Set(refundedPurchases.map((p: any) => p.artist_id).filter(Boolean))];
+          const { data: accounts } = await admin
+            .from('artist_accounts')
+            .select('artist_id, stripe_account_id')
+            .in('artist_id', artistIds);
+
+          for (const account of (accounts || [])) {
+            if (!account.stripe_account_id) continue;
+            try {
+              const transfers = await stripe.transfers.list({
+                destination: account.stripe_account_id,
+                limit: 20,
+              });
+              const matchingTransfers = transfers.data.filter(
+                (t: Stripe.Transfer) => t.source_transaction === (charge as Stripe.Charge).id
+              );
+              for (const transfer of matchingTransfers) {
+                await stripe.transfers.createReversal(transfer.id, {
+                  metadata: { reason: 'refund', payment_intent: paymentIntent },
+                });
+                console.log(`Reversed transfer ${transfer.id} (${transfer.amount} ${transfer.currency}) for artist ${account.artist_id}`);
+              }
+            } catch (e) {
+              console.error(`Transfer reversal failed for artist ${account.artist_id}:`, (e as Error).message);
+              await logWebhookError(admin, event.type, event.id, `Transfer reversal failed: ${(e as Error).message}`, {
+                artist_id: account.artist_id,
+                stripe_account_id: account.stripe_account_id,
+                paymentIntent,
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Basket transfer reversal lookup failed:', (e as Error).message);
+          await logWebhookError(admin, event.type, event.id, `Basket transfer reversal failed: ${(e as Error).message}`, { paymentIntent });
+        }
+      }
     }
 
     return new Response('ok', { status: 200 });
@@ -1327,7 +1374,7 @@ Deno.serve(async (req) => {
     const message = (err as Error).message;
     console.error('Handler error:', message);
     await logWebhookError(admin, event.type, event.id, message, null);
-    return new Response('ok', { status: 200 });
+    return new Response('Internal error', { status: 500 });
   }
 });
 

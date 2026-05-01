@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
 
       if (release.cover_url) {
         const coverPath = release.cover_url.split('/covers/')[1];
-        if (coverPath) {
+        if (coverPath && !coverPath.includes('..') && /^[a-zA-Z0-9_\-/.]+$/.test(coverPath)) {
           await admin.storage.from('covers').remove([coverPath]);
         }
       }

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { AppNav } from '@/app/components/ui/AppNav'
 import OrdersClient from './OrdersClient'
 
 export const metadata: Metadata = {
@@ -24,10 +23,5 @@ export default async function OrdersPage() {
     .eq('fan_id', user.id)
     .order('created_at', { ascending: false })
 
-  return (
-    <>
-      <AppNav />
-      <OrdersClient orders={data ?? []} />
-    </>
-  )
+  return <OrdersClient orders={data ?? []} />
 }

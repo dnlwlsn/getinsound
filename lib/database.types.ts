@@ -1875,6 +1875,10 @@ export type Database = {
         | "redeem_code"
         | "social_verify"
         | "email_change"
+        | "general"
+        | "search"
+        | "log_play"
+        | "newsletter"
       report_category:
         | "dmca_copyright"
         | "ai_generated_music"

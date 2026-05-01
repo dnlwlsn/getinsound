@@ -576,14 +576,22 @@ export default function DiscoverClient({ featured, newReleases, recommendations,
               <p className="text-sm text-zinc-600 mb-5">
                 {currentGenre !== 'All' ? 'Try a different sound filter' : 'Check back soon for fresh music'}
               </p>
-              {currentGenre !== 'All' && (
-                <button
-                  onClick={() => setGenre('All')}
-                  className="text-xs font-black text-orange-500 hover:text-orange-400 uppercase tracking-widest transition-colors"
+              <div className="flex items-center justify-center gap-3">
+                {currentGenre !== 'All' && (
+                  <button
+                    onClick={() => setGenre('All')}
+                    className="text-xs font-black text-orange-500 hover:text-orange-400 uppercase tracking-widest transition-colors"
+                  >
+                    Clear filter
+                  </button>
+                )}
+                <Link
+                  href="/explore"
+                  className="text-xs font-black text-white hover:text-orange-400 uppercase tracking-widest transition-colors"
                 >
-                  Clear filter
-                </button>
-              )}
+                  Browse all music
+                </Link>
+              </div>
             </div>
           )}
 

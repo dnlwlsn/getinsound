@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   const { newEmail } = await request.json()
   const email = (newEmail as string)?.trim()?.toLowerCase()
 
-  if (!email || !email.includes('@') || email.length < 5) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
   }
 

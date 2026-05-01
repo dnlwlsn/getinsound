@@ -52,8 +52,8 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (purchaseErr) return json({ error: purchaseErr.message }, 500);
-    if (!purchase) return json({ error: 'pending' }, 202); // webhook hasn't fired yet
-    if (purchase.status !== 'paid') return json({ error: 'Purchase not completed' }, 400);
+    if (!purchase) return json({ error: 'pending' }, 202);
+    if (purchase.status !== 'paid') return json({ error: 'pending' }, 202);
 
     // Ownership check: caller must be the buyer
     if (user) {

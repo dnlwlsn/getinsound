@@ -71,7 +71,7 @@ interface DiscographyItem { id: string; slug: string; title: string; type: strin
 interface Supporter { name: string; paidAt: string | null }
 interface Recommendation { id: string; slug: string; title: string; cover_url: string | null; price_pence: number; currency: string; artistName: string; artistSlug: string }
 
-type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'preorder-confirmed' | 'error'
+type Stage = 'checkout' | 'preparing' | 'consent' | 'download' | 'preorder-confirmed' | 'finalising' | 'error'
 
 
 export default function ReleaseClient({ artist, release, discography, supporters, recommendations, isOwned = false }: { artist: Artist; release: Release; discography: DiscographyItem[]; supporters: Supporter[]; recommendations: Recommendation[]; isOwned?: boolean }) {
@@ -191,16 +191,16 @@ export default function ReleaseClient({ artist, release, discography, supporters
       } catch (err) {
         if (i === maxAttempts - 1) {
           setErrorTitle('Still finalising...')
-          setErrorMsg("Your payment went through but the download isn't ready. Refresh this page in a moment.")
-          setStage('error')
+          setErrorMsg("Your payment went through but the download isn't ready yet. Check your library in a moment.")
+          setStage('finalising')
           return
         }
       }
       await new Promise((r) => setTimeout(r, 1500))
     }
     setErrorTitle('Still finalising...')
-    setErrorMsg("Your payment went through but the download isn't ready. Refresh this page in a moment.")
-    setStage('error')
+    setErrorMsg("Your payment went through but the download isn't ready yet. Check your library in a moment.")
+    setStage('finalising')
   }
 
   const tracks = [...release.tracks].sort((a, b) => a.position - b.position)
@@ -346,6 +346,20 @@ export default function ReleaseClient({ artist, release, discography, supporters
                 <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
                 <p className="text-zinc-400 text-sm font-medium mb-6">{errorMsg}</p>
                 <button onClick={closeModal} className="bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Close</button>
+              </div>
+            )}
+
+            {stage === 'finalising' && (
+              <div className="p-12 text-center mt-20">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
+                <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
+                <p className="text-zinc-400 text-sm font-medium mb-6">{errorMsg}</p>
+                <a href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Go to your library</a>
               </div>
             )}
 

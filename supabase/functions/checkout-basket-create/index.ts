@@ -216,11 +216,15 @@ Deno.serve(async (req) => {
       const release = releases.find((r: any) => r.id === reqItem.release_id)!;
       let unitAmount = release.price_pence;
       if (release.pwyw_enabled && reqItem.custom_amount != null) {
+        if (!Number.isInteger(reqItem.custom_amount) || reqItem.custom_amount <= 0) {
+          return json({ error: `custom_amount must be a positive integer for ${release.title}` }, 400);
+        }
         const minimum = release.pwyw_minimum_pence ?? release.price_pence;
         const maxAmount = release.price_pence * 50;
-        if (reqItem.custom_amount >= minimum) {
-          unitAmount = Math.min(reqItem.custom_amount, maxAmount);
+        if (reqItem.custom_amount < minimum) {
+          return json({ error: `Minimum amount is ${minimum} pence for ${release.title}` }, 400);
         }
+        unitAmount = Math.min(reqItem.custom_amount, maxAmount);
       }
       if (!unitAmount || unitAmount < 300) {
         return json({ error: `Invalid price for ${release.title}` }, 400);

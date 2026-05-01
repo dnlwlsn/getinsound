@@ -270,10 +270,16 @@ footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
   background: linear-gradient(to right, var(--artist-accent) calc(var(--fill, 0%)), var(--line-color) calc(var(--fill, 0%)));
 }
 
-/* ── Player bar ─────────────────────────────────────────────── */
-/* Bottom padding so page content isn't hidden behind the player */
-body:has(.player-bar-active) { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
-@media (max-width: 640px) { body:has(.player-bar-active) { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); } }
+/* ── Bottom bar padding ────────────────────────────────────── */
+/* Mobile: always reserve space for bottom nav; player adds more */
+@media (max-width: 640px) {
+  body { padding-bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+  body:has(.player-bar-active) { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
+}
+/* Desktop: only the player needs padding */
+@media (min-width: 641px) {
+  body:has(.player-bar-active) { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+}
 
 /* Volume slider thumb */
 .player-vol::-webkit-slider-thumb {
@@ -334,8 +340,15 @@ body:has(.player-bar-active) { padding-bottom: calc(5rem + env(safe-area-inset-b
 /* ── Sticky section headers ─────────────────────────────────── */
 .sticky-section-header {
   position: sticky;
-  top: 0;
+  top: 56px;
   z-index: 10;
+}
+
+@media (min-width: 768px) {
+  .sticky-section-header {
+    top: 72px;
+  }
+}
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   background: rgba(9,9,11,0.85);

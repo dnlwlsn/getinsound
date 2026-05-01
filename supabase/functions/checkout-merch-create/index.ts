@@ -64,10 +64,10 @@ Deno.serve(async (req) => {
     if (!merch) return json({ error: 'Merch item not found' }, 404);
     if (merch.stock <= 0) return json({ error: 'Item is sold out' }, 400);
 
-    if (variant && merch.variants) {
+    if (merch.variants) {
       const variants = merch.variants as string[];
-      if (!variants.includes(variant)) {
-        return json({ error: 'Invalid variant' }, 400);
+      if (!variant || !variants.includes(variant)) {
+        return json({ error: 'Invalid or missing variant' }, 400);
       }
     }
 
@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
     const photos = (merch.photos as string[]) || [];
     const itemName = variant ? `${merch.name} (${variant})` : merch.name;
 
+    const idempotencyKey = `merch_${merchId}_${stripeCustomerId || fanId || 'guest'}_${variant || 'default'}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',
@@ -162,6 +163,8 @@ Deno.serve(async (req) => {
         ...(variant ? { variant } : {}),
         ...(fanId ? { fan_id: fanId } : {}),
       },
+    }, {
+      idempotencyKey,
     });
 
     return json({ client_secret: session.client_secret, session_id: session.id });

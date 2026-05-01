@@ -26,7 +26,12 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
   const [signupSent, setSignupSent] = useState(false)
 
   const intent = searchParams.get('intent')
-  const redirectTo = intent === 'artist' ? '/become-an-artist' : '/'
+  const nextParam = searchParams.get('next')
+  const redirectTo = intent === 'artist'
+    ? '/become-an-artist'
+    : (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//'))
+      ? nextParam
+      : '/'
 
   useEffect(() => {
     if (searchParams.get('error') === 'auth') {

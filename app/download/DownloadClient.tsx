@@ -90,9 +90,14 @@ export default function DownloadClient() {
         <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">Something&apos;s off</p>
         <h1 className="text-3xl font-black mb-3 font-display">{errorTitle}</h1>
         <p className="text-zinc-500 font-medium mb-8">{errorMsg}</p>
-        <Link href="/" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">
-          Back to Home
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">
+            Go to My Collection
+          </Link>
+          <Link href="/" className="inline-block bg-zinc-800 hover:bg-zinc-700 text-white font-black px-6 py-3 rounded-xl text-sm transition-colors">
+            Back to Home
+          </Link>
+        </div>
       </div>
     )
   }

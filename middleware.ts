@@ -145,6 +145,9 @@ export async function middleware(request: NextRequest) {
   if (!user && !hasPreviewAccess && !isProfileRoute && !isMerchRoute && !PUBLIC_ROUTES.some(r => path === r) && !AUTH_EXCLUDED.some(r => path.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
+    if (path !== '/signup' && path !== '/') {
+      url.searchParams.set('next', path)
+    }
     return NextResponse.redirect(url)
   }
 

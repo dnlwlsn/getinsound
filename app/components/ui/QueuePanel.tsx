@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { usePlayerStore } from '@/lib/stores/player'
 import { resolveAccent } from '@/lib/accent'
@@ -14,12 +14,24 @@ export function QueuePanel({ open, onClose }: Props) {
   const { queue, queueIndex, currentTrack } = usePlayerStore()
   const accent = resolveAccent(currentTrack?.accentColour)
 
+  const panelRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (!open) return
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll<HTMLElement>('button, a, [tabindex]:not([tabindex="-1"])')
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
     }
     window.addEventListener('keydown', handleKey)
+    const closeBtn = panelRef.current?.querySelector<HTMLElement>('button[aria-label="Close queue"]')
+    closeBtn?.focus()
     return () => window.removeEventListener('keydown', handleKey)
   }, [open, onClose])
 
@@ -30,7 +42,7 @@ export function QueuePanel({ open, onClose }: Props) {
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
-      <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-sm bg-zinc-950 border-l border-white/[0.06] flex flex-col animate-slide-in-right">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Play queue" className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-sm bg-zinc-950 border-l border-white/[0.06] flex flex-col animate-slide-in-right">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Queue</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" aria-label="Close queue">

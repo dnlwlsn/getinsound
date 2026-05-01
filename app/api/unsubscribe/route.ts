@@ -37,6 +37,18 @@ export async function generateUnsubscribeToken(userId: string): Promise<string> 
   return generateToken(userId, monthBucket())
 }
 
+async function updatePreference(userId: string, unsubscribe: boolean) {
+  const { error } = await getAdminClient()
+    .from('fan_profiles')
+    .update({ email_unsubscribed: unsubscribe })
+    .eq('id', userId)
+
+  if (error) {
+    return NextResponse.json({ error: 'Failed to update preference' }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true })
+}
+
 export async function POST(req: NextRequest) {
   const { user_id, unsubscribe, token } = await req.json()
 
@@ -55,7 +67,10 @@ export async function POST(req: NextRequest) {
   if (!authorised) {
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (user && user.id === user_id) authorised = true
+    if (user) {
+      // Ignore the body's user_id — use the authenticated user
+      return updatePreference(user.id, unsubscribe)
+    }
   }
 
   if (!authorised) {

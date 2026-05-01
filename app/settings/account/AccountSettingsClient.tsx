@@ -147,6 +147,16 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
 
           <SettingsTabs />
 
+          {searchParams.get('verify') === 'artist' && (
+            <div className="mb-6 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4">
+              <p className="text-sm font-semibold text-orange-400 mb-1">Email verification required</p>
+              <p className="text-sm text-zinc-400">
+                Please verify your email address before becoming an artist. Check your inbox for a confirmation link, then return to{' '}
+                <a href="/become-an-artist" className="text-orange-400 underline underline-offset-2 hover:text-orange-300">become an artist</a>.
+              </p>
+            </div>
+          )}
+
           {pending && (
             <DeletionPendingBanner
               executeAt={pending.execute_at}
