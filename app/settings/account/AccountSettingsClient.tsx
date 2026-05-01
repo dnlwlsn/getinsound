@@ -84,13 +84,18 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
   }
 
   async function handleCancel() {
-    const res = await fetch('/api/account/delete', { method: 'DELETE' })
-    if (!res.ok) {
-      const data = await res.json()
-      throw new Error(data.error || 'Failed to cancel deletion')
+    try {
+      const res = await fetch('/api/account/delete', { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setEmailChangeError(data.error || 'Failed to cancel deletion. Please try again.')
+        return
+      }
+      setPending(null)
+      router.replace('/settings/account')
+    } catch {
+      setEmailChangeError('Failed to cancel deletion. Please try again.')
     }
-    setPending(null)
-    router.replace('/settings/account')
   }
 
   async function handleDownload() {
@@ -140,7 +145,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion }: Pr
     <div className="min-h-screen flex flex-col relative"
       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px)', backgroundSize: '48px 48px' }}>
 
-      <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
+      <div className="flex-1 flex items-start justify-center p-6 pt-24 relative">
         <div className="w-full max-w-lg relative z-10">
           <h1 className="font-display text-2xl font-bold mb-2">Settings</h1>
           <p className="text-zinc-500 text-sm mb-6">Manage your account.</p>

@@ -155,7 +155,7 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, u
     <div className="min-h-screen flex flex-col relative"
       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px)', backgroundSize: '48px 48px' }}>
 
-      <div className="flex-1 flex items-start justify-center p-6 pt-12 relative">
+      <div className="flex-1 flex items-start justify-center p-6 pt-24 relative">
         <div className="w-full max-w-lg relative z-10">
           <h1 className="font-display text-2xl font-bold mb-2">Fan Profile</h1>
           <p className="text-zinc-500 text-sm mb-6">This is your personal profile on Insound. Artists also get a separate artist page.</p>

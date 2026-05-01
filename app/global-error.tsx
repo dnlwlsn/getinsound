@@ -1,10 +1,10 @@
 'use client'
 
 
-export default function GlobalError({ reset }: { error: Error; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <html lang="en">
-      <body>
+      <body style={{ backgroundColor: '#09090b', color: '#e4e4e7', fontFamily: 'system-ui, -apple-system, sans-serif', margin: 0 }}>
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#F56D00', marginBottom: '1rem' }}>Error</p>

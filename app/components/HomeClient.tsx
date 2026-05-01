@@ -118,7 +118,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
   convertPrice: (amount: number, from: string, to: string) => number
   currency: string
 }) {
-  if (releases.length < 3) return null
+  if (releases.length === 0) return null
 
   return (
     <section className="border-b border-zinc-900 bg-zinc-950">

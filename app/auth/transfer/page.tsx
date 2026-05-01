@@ -151,7 +151,7 @@ export default function AuthTransferPage() {
               <p className="text-sm text-zinc-400">This link has expired or has already been used. Please request a new one.</p>
             </div>
             <a
-              href="/auth"
+              href={`/auth?next=${encodeURIComponent(next)}`}
               className="inline-block w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider text-center"
             >
               Sign in again

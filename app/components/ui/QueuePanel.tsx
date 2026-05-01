@@ -41,8 +41,8 @@ export function QueuePanel({ open, onClose }: Props) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Play queue" className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-sm bg-zinc-950 border-l border-white/[0.06] flex flex-col animate-slide-in-right">
+      <div className="fixed inset-0 z-[60] bg-black/40" onClick={onClose} />
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Play queue" className="fixed right-0 top-0 bottom-0 z-[60] w-full max-w-sm bg-zinc-950 border-l border-white/[0.06] flex flex-col animate-slide-in-right">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Queue</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" aria-label="Close queue">

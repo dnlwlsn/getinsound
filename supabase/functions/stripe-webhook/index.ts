@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
           const { data: artistAccount } = await admin
             .from('artist_accounts')
             .select('stripe_account_id')
-            .eq('artist_id', artistId)
+            .eq('id', artistId)
             .maybeSingle();
 
           if (artistAccount?.stripe_account_id) {
@@ -1337,6 +1337,18 @@ Deno.serve(async (req) => {
           await logWebhookError(admin, event.type, event.id, `Purchase refund update failed: ${purchaseUpdateErr.message}`, { paymentIntent });
         } else {
           console.log(`Marked ${refundedPurchases.length} purchase(s) as refunded for PI ${paymentIntent}`);
+
+          // Revoke download grants for refunded purchases
+          const refundedIds = refundedPurchases.map((p: any) => p.id);
+          const { error: grantErr } = await admin
+            .from('download_grants')
+            .delete()
+            .in('purchase_id', refundedIds);
+          if (grantErr) {
+            console.error('Failed to revoke download grants:', grantErr.message);
+          } else {
+            console.log(`Revoked download grants for ${refundedIds.length} refunded purchase(s)`);
+          }
         }
       }
 
@@ -1369,8 +1381,8 @@ Deno.serve(async (req) => {
           const artistIds = [...new Set(refundedPurchases.map((p: any) => p.artist_id).filter(Boolean))];
           const { data: accounts } = await admin
             .from('artist_accounts')
-            .select('artist_id, stripe_account_id')
-            .in('artist_id', artistIds);
+            .select('id, stripe_account_id')
+            .in('id', artistIds);
 
           for (const account of (accounts || [])) {
             if (!account.stripe_account_id) continue;
@@ -1386,12 +1398,12 @@ Deno.serve(async (req) => {
                 await stripe.transfers.createReversal(transfer.id, {
                   metadata: { reason: 'refund', payment_intent: paymentIntent },
                 });
-                console.log(`Reversed transfer ${transfer.id} (${transfer.amount} ${transfer.currency}) for artist ${account.artist_id}`);
+                console.log(`Reversed transfer ${transfer.id} (${transfer.amount} ${transfer.currency}) for artist ${account.id}`);
               }
             } catch (e) {
-              console.error(`Transfer reversal failed for artist ${account.artist_id}:`, (e as Error).message);
+              console.error(`Transfer reversal failed for artist ${account.id}:`, (e as Error).message);
               await logWebhookError(admin, event.type, event.id, `Transfer reversal failed: ${(e as Error).message}`, {
-                artist_id: account.artist_id,
+                artist_id: account.id,
                 stripe_account_id: account.stripe_account_id,
                 paymentIntent,
               });

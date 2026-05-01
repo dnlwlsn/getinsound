@@ -778,7 +778,7 @@ function PriceSection({ release, accent, onBuy, onAmountChange }: { release: Rel
         style={{ background: accent, color: '#000' }}
       >
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" /><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /></svg>
-        <span>Buy for {release.pwyw_enabled ? displayCustom : displayPrice}</span>
+        <span>{release.price_pence === 0 && !release.pwyw_enabled ? 'Get for free' : `Buy for ${release.pwyw_enabled ? displayCustom : displayPrice}`}</span>
       </button>
 
       <p className="text-[10px] text-zinc-600 mt-3">

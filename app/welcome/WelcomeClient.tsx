@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
@@ -13,6 +14,7 @@ type OnboardingStep = 'profile' | 'genres' | 'done'
 
 export function WelcomeClient({ hasProfile }: { hasProfile: boolean }) {
   const supabase = createClient()
+  const router = useRouter()
   const [step, setStep] = useState<OnboardingStep>(hasProfile ? 'done' : 'profile')
 
   useEffect(() => {
@@ -22,9 +24,12 @@ export function WelcomeClient({ hasProfile }: { hasProfile: boolean }) {
       if (user) {
         await supabase.from('fan_profiles').update({ has_seen_welcome: true }).eq('id', user.id)
       }
+      if (hasProfile) {
+        router.push('/explore')
+      }
     }
     markSeen()
-  }, [step, supabase])
+  }, [step, supabase, hasProfile, router])
 
   if (step === 'profile') {
     return <StepProfile onNext={() => setStep('genres')} onSkip={() => setStep('done')} />
@@ -217,6 +222,7 @@ function StepProfile({ onNext, onSkip }: { onNext: () => void; onSkip: () => voi
 function StepGenres({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
   const [selected, setSelected] = useState<Sound[]>([])
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   const canSubmit = selected.length >= MIN_GENRES
 
   function toggle(genre: Sound) {
@@ -229,6 +235,7 @@ function StepGenres({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
 
   async function handleSave() {
     setBusy(true)
+    setError('')
     try {
       const res = await fetch('/api/fan-preferences', {
         method: 'POST',
@@ -237,6 +244,7 @@ function StepGenres({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
       })
       if (!res.ok) throw new Error('Failed to save')
     } catch {
+      setError('Something went wrong. Please try again.')
       setBusy(false)
       return
     }
@@ -295,6 +303,12 @@ function StepGenres({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
               <span className="text-zinc-600"> · pick {MIN_GENRES - selected.length} more</span>
             )}
           </p>
+
+          {error && (
+            <div role="alert" className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3 mb-4">
+              {error}
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button

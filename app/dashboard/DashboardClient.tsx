@@ -17,6 +17,7 @@ import { SocialAccountsEditor } from '@/app/components/ui/SocialAccountsEditor'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import type { SocialLinks } from '@/lib/verification'
 import { CARRIERS } from '@/lib/carriers'
+import { RESERVED_SLUGS } from '@/lib/reserved-slugs'
 import dynamic from 'next/dynamic'
 const AnalyticsCharts = dynamic(() => import('./AnalyticsCharts').then(m => m.AnalyticsCharts), { ssr: false })
 const StripeEmbeddedOnboarding = dynamic(() => import('./StripeEmbeddedOnboarding').then(m => m.StripeEmbeddedOnboarding), { ssr: false })
@@ -114,6 +115,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
   const [editName, setEditName] = useState(artist.name)
   const [editBio, setEditBio] = useState(artist.bio || '')
   const [profileSaving, setProfileSaving] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
 
   // Merch state
   const [merch, setMerch] = useState(merchItems)
@@ -147,8 +149,15 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     const name = editName.trim()
     if (!name) return
     setProfileSaving(true)
+    setProfileError(null)
     const newSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     if (newSlug.length < 3) {
+      setProfileError('Name is too short (minimum 3 characters after formatting).')
+      setProfileSaving(false)
+      return
+    }
+    if (RESERVED_SLUGS.has(newSlug)) {
+      setProfileError(`"${name}" conflicts with a system page. Please choose a different name.`)
       setProfileSaving(false)
       return
     }
@@ -156,6 +165,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
     if (newSlug !== artist.slug) {
       const { data: existing } = await supabase.from('artists').select('id').eq('slug', newSlug).neq('id', artist.id).maybeSingle()
       if (existing) {
+        setProfileError('An artist with this name already exists. Please choose a different name.')
         setProfileSaving(false)
         return
       }
@@ -1382,9 +1392,14 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
                   />
                   <p className="text-right text-[10px] text-zinc-600 mt-1">{editBio.length}/500</p>
                 </div>
+                {profileError && (
+                  <div role="alert" className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-4 py-3">
+                    {profileError}
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <button
-                    onClick={() => { setEditName(artist.name); setEditBio(artist.bio || ''); setEditingProfile(false) }}
+                    onClick={() => { setEditName(artist.name); setEditBio(artist.bio || ''); setEditingProfile(false); setProfileError(null) }}
                     className="px-5 py-2.5 text-sm font-bold text-zinc-400 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-colors"
                   >
                     Cancel

@@ -62,6 +62,13 @@ Deno.serve(async (req) => {
       }
     } else if (purchase.buyer_user_id) {
       return json({ error: 'Authentication required' }, 401);
+    } else {
+      // Guest purchase — verify via email if provided, otherwise allow
+      // (session_id is only known to the buyer from their checkout flow)
+      const callerEmail = (body.buyer_email ?? '').trim().toLowerCase();
+      if (callerEmail && callerEmail !== (purchase.buyer_email ?? '').toLowerCase()) {
+        return json({ error: 'Unauthorized' }, 403);
+      }
     }
 
     const { data: grant, error: grantErr } = await admin

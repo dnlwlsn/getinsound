@@ -27,18 +27,13 @@ export async function redeemTransferCode(code: string): Promise<string | null> {
 
   const { data, error } = await admin
     .from('auth_transfer_codes')
-    .select('id, user_id, expires_at, used')
+    .update({ used: true })
     .eq('code', code)
+    .eq('used', false)
+    .gte('expires_at', new Date().toISOString())
+    .select('user_id')
     .maybeSingle()
 
   if (error || !data) return null
-  if (data.used) return null
-  if (new Date(data.expires_at) < new Date()) return null
-
-  await admin
-    .from('auth_transfer_codes')
-    .update({ used: true })
-    .eq('id', data.id)
-
   return data.user_id
 }

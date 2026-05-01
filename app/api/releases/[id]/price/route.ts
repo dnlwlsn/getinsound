@@ -32,12 +32,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const effectivePwyw = typeof pwyw_enabled === 'boolean' ? pwyw_enabled : release.pwyw_enabled
 
   if (effectivePwyw) {
-    if (price_pence < 0 || price_pence > 10_000_000) {
-      return NextResponse.json({ error: 'Price must be between £0 and £100,000' }, { status: 400 })
+    if (price_pence < 300 || price_pence > 10_000_000) {
+      return NextResponse.json({ error: 'PWYW suggested price must be at least £3.00' }, { status: 400 })
     }
     if (pwyw_minimum_pence != null) {
-      if (!Number.isInteger(pwyw_minimum_pence) || pwyw_minimum_pence < 0 || pwyw_minimum_pence > 10_000_000) {
-        return NextResponse.json({ error: 'PWYW minimum must be between £0 and £100,000' }, { status: 400 })
+      if (!Number.isInteger(pwyw_minimum_pence) || pwyw_minimum_pence < 300 || pwyw_minimum_pence > 10_000_000) {
+        return NextResponse.json({ error: 'PWYW minimum must be at least £3.00' }, { status: 400 })
       }
     }
   } else {

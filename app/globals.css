@@ -340,7 +340,7 @@ footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
 /* ── Sticky section headers ─────────────────────────────────── */
 .sticky-section-header {
   position: sticky;
-  top: 56px;
+  top: 72px;
   z-index: 10;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);

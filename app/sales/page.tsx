@@ -9,5 +9,8 @@ export default async function SalesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
+  const { data: artist } = await supabase.from('artists').select('id').eq('id', user.id).maybeSingle()
+  if (!artist) redirect('/explore')
+
   return <SalesClient />
 }
