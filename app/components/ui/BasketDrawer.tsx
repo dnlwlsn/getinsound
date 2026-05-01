@@ -101,7 +101,7 @@ export function BasketDrawer({ onClose }: Props) {
 
     sessionIdRef.current = sessionId
 
-    const embedded = await stripe.initEmbeddedCheckout({
+    const embedded = await stripe.createEmbeddedCheckoutPage({
       clientSecret,
       onComplete: () => {
         pollForDownloads(sessionId)

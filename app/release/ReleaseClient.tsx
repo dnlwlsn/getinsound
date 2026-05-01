@@ -143,7 +143,7 @@ export default function ReleaseClient({ artist, release, discography, supporters
       supabase.functions.invoke('record-digital-consent', {
         body: { session_id: data.session_id },
       }).catch(() => {})
-      const embedded = await stripe.initEmbeddedCheckout({
+      const embedded = await stripe.createEmbeddedCheckoutPage({
         clientSecret: data.client_secret,
         onComplete: () => {
           setStage('preparing')
