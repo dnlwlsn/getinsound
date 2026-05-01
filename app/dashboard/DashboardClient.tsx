@@ -202,6 +202,29 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
       }
       return
     }
+    if (field === 'pwyw_enabled' || field === 'pwyw_minimum_pence') {
+      const release = rels.find(r => r.id === releaseId)
+      if (!release) return
+      const payload: Record<string, unknown> = { price_pence: release.price_pence }
+      if (field === 'pwyw_enabled') {
+        payload.pwyw_enabled = value
+        if (!value) payload.pwyw_minimum_pence = null
+      } else {
+        payload.pwyw_minimum_pence = value
+      }
+      const res = await fetch(`/api/releases/${releaseId}/price`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        setRels(prev => prev.map(r => r.id === releaseId ? { ...r, [field]: value } : r))
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setPublishError(body.error || 'Failed to update pricing.')
+      }
+      return
+    }
     const { error } = await supabase.from('releases').update({ [field]: value }).eq('id', releaseId)
     if (!error) setRels(prev => prev.map(r => r.id === releaseId ? { ...r, [field]: value } : r))
   }
@@ -239,7 +262,6 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
       slug: newSlug,
       description: updated.description.trim() || null,
       genre: updated.genre.trim() ? titleCaseGenre(updated.genre) : null,
-      price_pence: updated.price_pence,
     }).eq('id', releaseId)
 
     if (!error) {
@@ -247,8 +269,19 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
         ...r, title: updated.title.trim(), slug: newSlug,
         description: updated.description.trim() || null,
         genre: updated.genre.trim() ? titleCaseGenre(updated.genre) : null,
-        price_pence: updated.price_pence,
       } : r))
+    }
+
+    const release = rels.find(r => r.id === releaseId)
+    if (release && updated.price_pence !== release.price_pence) {
+      const res = await fetch(`/api/releases/${releaseId}/price`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ price_pence: updated.price_pence }),
+      })
+      if (res.ok) {
+        setRels(prev => prev.map(r => r.id === releaseId ? { ...r, price_pence: updated.price_pence } : r))
+      }
     }
 
     for (const track of updated.tracks) {

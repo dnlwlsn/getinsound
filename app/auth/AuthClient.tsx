@@ -95,6 +95,7 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
           password,
         })
         if (error) throw error
+        await fetch('/api/auth/create-session', { method: 'POST' })
         setBusy(false)
         router.push(redirectTo)
         return
