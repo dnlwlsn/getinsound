@@ -4,9 +4,7 @@ import Stripe from 'stripe'
 
 
 export async function GET() {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-06-20' as Stripe.LatestApiVersion,
-  })
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -30,7 +28,7 @@ export async function GET() {
 
     // Fetch balance
     const balance = await stripe.balance.retrieve(
-      { stripeAccount: account.stripe_account_id }
+      {}, { stripeAccount: account.stripe_account_id }
     )
 
     const availablePence = balance.available

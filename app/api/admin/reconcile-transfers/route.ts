@@ -18,9 +18,7 @@ export async function GET(req: NextRequest) {
   const cutoff = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString()
 
   const admin = getAdminClient()
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-06-20' as Stripe.LatestApiVersion,
-  })
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
   // 1. Find all basket sessions in the window that completed checkout
   const { data: sessions, error: sessionsErr } = await admin
@@ -174,9 +172,7 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = getAdminClient()
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-06-20' as Stripe.LatestApiVersion,
-  })
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
   // Find failed transfer errors for this basket
   const { data: errors, error: fetchErr } = await admin
