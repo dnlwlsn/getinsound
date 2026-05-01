@@ -4,6 +4,16 @@ import { createClient } from '@/lib/supabase/server'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024
 
+function detectMimeFromBytes(buffer: ArrayBuffer): string | null {
+  const bytes = new Uint8Array(buffer)
+  if (bytes.length < 12) return null
+  if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'image/jpeg'
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return 'image/png'
+  if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return 'image/webp'
+  return null
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
@@ -27,20 +37,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: 'Only JPEG, PNG, and WebP images are allowed' }, { status: 400 })
-  }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: 'Image must be under 5MB' }, { status: 400 })
   }
 
+  const arrayBuffer = await file.arrayBuffer()
+  const detectedMime = detectMimeFromBytes(arrayBuffer)
+  if (!detectedMime || !ALLOWED_TYPES.includes(detectedMime)) {
+    return NextResponse.json({ error: 'Only JPEG, PNG, and WebP images are allowed' }, { status: 400 })
+  }
+
   const extMap: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
-  const ext = extMap[file.type] || 'jpg'
+  const ext = extMap[detectedMime] || 'jpg'
   const path = `${user.id}/${id}/${crypto.randomUUID()}.${ext}`
 
   const { error: uploadErr } = await supabase.storage
     .from('merch-images')
-    .upload(path, file, { upsert: true, contentType: file.type })
+    .upload(path, arrayBuffer, { upsert: true, contentType: detectedMime })
   if (uploadErr) return NextResponse.json({ error: uploadErr.message }, { status: 500 })
 
   const { data: urlData } = supabase.storage.from('merch-images').getPublicUrl(path)
@@ -81,11 +94,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const formData = await req.formData()
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: 'Only JPEG, PNG, and WebP images are allowed' }, { status: 400 })
-  }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: 'Image must be under 5MB' }, { status: 400 })
+  }
+
+  const putBuffer = await file.arrayBuffer()
+  const putDetectedMime = detectMimeFromBytes(putBuffer)
+  if (!putDetectedMime || !ALLOWED_TYPES.includes(putDetectedMime)) {
+    return NextResponse.json({ error: 'Only JPEG, PNG, and WebP images are allowed' }, { status: 400 })
   }
 
   const oldUrl = currentPhotos[index]
@@ -97,11 +113,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const extMap2: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
-  const ext = extMap2[file.type] || 'jpg'
+  const ext = extMap2[putDetectedMime] || 'jpg'
   const path = `${user.id}/${id}/${crypto.randomUUID()}.${ext}`
   const { error: uploadErr } = await supabase.storage
     .from('merch-images')
-    .upload(path, file, { upsert: true, contentType: file.type })
+    .upload(path, putBuffer, { upsert: true, contentType: putDetectedMime })
   if (uploadErr) return NextResponse.json({ error: uploadErr.message }, { status: 500 })
 
   const { data: urlData } = supabase.storage.from('merch-images').getPublicUrl(path)

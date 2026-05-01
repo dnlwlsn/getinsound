@@ -56,8 +56,8 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
   if (audience === 'purchasers') {
     const { data } = await getAdminClient()
       .from('purchases')
-      .select('fan_id')
-    const fanIds = [...new Set((data ?? []).map(r => r.fan_id))].filter(id => !unsubscribed.has(id))
+      .select('buyer_user_id')
+    const fanIds = [...new Set((data ?? []).map(r => r.buyer_user_id))].filter((id): id is string => !!id && !unsubscribed.has(id))
     if (fanIds.length === 0) return []
     const users = { users: await getAllUsers() }
     return (users?.users ?? [])

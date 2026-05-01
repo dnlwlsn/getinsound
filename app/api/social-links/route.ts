@@ -10,6 +10,11 @@ export async function DELETE(req: NextRequest) {
 
   const { platform } = await req.json() as { platform: SocialPlatform }
 
+  const VALID_PLATFORMS: SocialPlatform[] = ['instagram', 'twitter', 'spotify', 'soundcloud', 'youtube', 'website']
+  if (!VALID_PLATFORMS.includes(platform)) {
+    return NextResponse.json({ error: 'Invalid platform' }, { status: 400 })
+  }
+
   const { data: current } = await supabase
     .from('artists')
     .select('social_links')

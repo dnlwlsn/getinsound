@@ -75,9 +75,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to generate URL' }, { status: 500 })
     }
 
+    const format = track.audio_path.split('.').pop()?.toLowerCase() || 'wav'
     return NextResponse.json({
       url: signed.signedUrl,
       isPreview: false,
+      format,
     })
   }
 
@@ -107,9 +109,11 @@ export async function GET(request: Request) {
       .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)
 
     if (!signErr && signed) {
+      const fmt = track.audio_path!.split('.').pop()?.toLowerCase() || 'wav'
       return NextResponse.json({
         url: signed.signedUrl,
         isPreview: false,
+        format: fmt,
       })
     }
   }

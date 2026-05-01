@@ -231,6 +231,41 @@ Deno.serve(async (req) => {
           return new Response('ok', { status: 200 });
         }
 
+        // Transfer artist's share to their Connect account
+        if (artistReceived > 0 && piId) {
+          const { data: artistAccount } = await admin
+            .from('artist_accounts')
+            .select('stripe_account_id')
+            .eq('artist_id', artistId)
+            .maybeSingle();
+
+          if (artistAccount?.stripe_account_id) {
+            try {
+              const pi = await stripe.paymentIntents.retrieve(piId, { expand: ['latest_charge'] });
+              const chargeId = (pi.latest_charge as Stripe.Charge)?.id;
+              if (chargeId) {
+                await stripe.transfers.create({
+                  amount: artistReceived,
+                  currency: merchItem?.currency?.toLowerCase() || 'gbp',
+                  destination: artistAccount.stripe_account_id,
+                  source_transaction: chargeId,
+                  metadata: { merch_id: merchId, artist_id: artistId, order_type: 'standalone_merch' },
+                }, {
+                  idempotencyKey: `merch_transfer_${session.id}_${artistId}`,
+                });
+              } else {
+                await logWebhookError(admin, event.type, event.id, 'No charge ID for merch transfer', { merchId, artistId, piId });
+              }
+            } catch (e) {
+              console.error('Merch transfer to artist failed:', (e as Error).message);
+              await logWebhookError(admin, event.type, event.id, `Merch transfer failed: ${(e as Error).message}`, {
+                merchId, artistId, amount: artistReceived,
+                stripe_checkout_id: session.id,
+              });
+            }
+          }
+        }
+
         // Check if stock hit 0
         const { data: currentMerch } = await admin
           .from('merch')
@@ -770,7 +805,7 @@ Deno.serve(async (req) => {
         }
 
         if (anyTransferFailed) {
-          return new Response('Transfer failed — retry', { status: 500 });
+          console.error('One or more transfers failed — logged for manual reconciliation via /api/admin/reconcile-transfers');
         }
 
         // Email
@@ -1329,7 +1364,7 @@ Deno.serve(async (req) => {
       // Reverse basket transfers (separate charges + transfers model)
       // For single-release destination charges, Stripe auto-reverses via refund_application_fee.
       // For basket purchases, transfers were created manually and must be reversed manually.
-      if (isFullRefund && refundedPurchases && refundedPurchases.length > 1) {
+      if (isFullRefund && refundedPurchases && refundedPurchases.length >= 1) {
         try {
           const artistIds = [...new Set(refundedPurchases.map((p: any) => p.artist_id).filter(Boolean))];
           const { data: accounts } = await admin
@@ -1342,7 +1377,7 @@ Deno.serve(async (req) => {
             try {
               const transfers = await stripe.transfers.list({
                 destination: account.stripe_account_id,
-                limit: 20,
+                limit: 100,
               });
               const matchingTransfers = transfers.data.filter(
                 (t: Stripe.Transfer) => t.source_transaction === (charge as Stripe.Charge).id

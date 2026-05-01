@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function OrdersPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth')
+  if (!user) redirect('/auth?next=/orders')
 
   const { data } = await supabase
     .from('orders')

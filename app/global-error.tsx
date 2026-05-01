@@ -16,6 +16,7 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
             >
               Try Again
             </button>
+            <a href="/" style={{ display: 'block', marginTop: '1rem', fontSize: '0.875rem', color: '#a1a1aa', textDecoration: 'none' }}>Go home</a>
           </div>
         </div>
       </body>

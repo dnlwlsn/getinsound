@@ -229,11 +229,17 @@ function StepGenres({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
 
   async function handleSave() {
     setBusy(true)
-    await fetch('/api/fan-preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ genres: selected }),
-    })
+    try {
+      const res = await fetch('/api/fan-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ genres: selected }),
+      })
+      if (!res.ok) throw new Error('Failed to save')
+    } catch {
+      setBusy(false)
+      return
+    }
     setBusy(false)
     onNext()
   }

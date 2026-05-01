@@ -36,10 +36,15 @@ export function ProfileMenu() {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     function handleCloseAll() { setOpen(false) }
-    if (open) document.addEventListener('mousedown', handleClickOutside)
+    function handleEscape(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+    }
     document.addEventListener('insound:close-dropdowns', handleCloseAll)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
       document.removeEventListener('insound:close-dropdowns', handleCloseAll)
     }
   }, [open])

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { buildMagicLinkEmail } from '@/lib/email/templates'
 import { sendEmail } from '@/lib/email/send'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 function getAdminClient() {
   return createClient(
@@ -16,11 +16,16 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const email = (body.email as string)?.trim()?.toLowerCase()
-  const nextPath = typeof body.redirectTo === 'string' && body.redirectTo.startsWith('/') ? body.redirectTo : '/welcome'
+  const nextPath = typeof body.redirectTo === 'string' && body.redirectTo.startsWith('/') && !body.redirectTo.startsWith('//') ? body.redirectTo : '/welcome'
 
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })
   }
+
+  const ip = getClientIp(req.headers)
+  const ipHash = await hashIp(ip)
+  const ipLimited = await checkRateLimit(ipHash, 'signup', 10, 1)
+  if (ipLimited) return ipLimited
 
   const rateLimited = await checkRateLimit(email, 'signup', 3, 5)
   if (rateLimited) return rateLimited
