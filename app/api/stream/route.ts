@@ -60,7 +60,7 @@ export async function GET(request: Request) {
         .eq('buyer_user_id', user.id)
         .eq('release_id', track.release_id)
         .eq('status', 'paid')
-        .eq('pre_order', false)
+        .or('pre_order.eq.false,pre_order.is.null')
 
       hasFullAccess = (count ?? 0) > 0
     }

@@ -12,12 +12,17 @@ const ALLOWED_ORIGINS = [SITE_URL, 'http://localhost:3000'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : SITE_URL;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : null;
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': allowedOrigin || SITE_URL,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
+}
+
+function isOriginAllowed(req: Request): boolean {
+  const origin = req.headers.get('origin') || '';
+  return ALLOWED_ORIGINS.includes(origin);
 }
 
 type BasketRequestItem =
@@ -38,6 +43,10 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (!isOriginAllowed(req)) {
+    return json({ error: 'Origin not allowed' }, 403);
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const requestItems: BasketRequestItem[] = body.items;
@@ -46,6 +55,11 @@ Deno.serve(async (req) => {
 
     if (!requestItems || !Array.isArray(requestItems) || requestItems.length === 0) {
       return json({ error: 'items array required' }, 400);
+    }
+
+    const VALID_CURRENCIES = ['gbp', 'usd', 'eur', 'cad', 'aud', 'jpy'];
+    if (fanCurrency && !VALID_CURRENCIES.includes(fanCurrency.toLowerCase())) {
+      return json({ error: 'Invalid fan_currency' }, 400);
     }
     if (requestItems.length > 20) {
       return json({ error: 'Maximum 20 items per basket' }, 400);
@@ -334,14 +348,28 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Calculate total platform fee across all basket items ──
+    let totalApplicationFee = 0;
+    for (const item of basketItems) {
+      if (item.type === 'release') {
+        totalApplicationFee += Math.round((item.amount_pence * item.fee_bps) / 10000);
+      } else if (item.type === 'merch') {
+        totalApplicationFee += Math.round((item.amount_pence * STANDARD_FEE_BPS) / 10000);
+      }
+    }
+
     // ── Create one consolidated Stripe session ──
-    // No transfer_data — the webhook will create separate transfers to each artist.
+    // Webhook creates separate transfers to each artist; application_fee_amount
+    // ensures Insound's cut is held at the Stripe level before transfers go out.
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
       ui_mode: 'embedded',
       redirect_on_completion: 'never',
       ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
       line_items: lineItems,
+      payment_intent_data: {
+        application_fee_amount: totalApplicationFee,
+      },
       metadata: {
         type: 'basket',
         basket_session_id: basketRow.id,

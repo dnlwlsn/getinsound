@@ -31,7 +31,7 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
     ? '/become-an-artist'
     : (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//'))
       ? nextParam
-      : '/'
+      : '/welcome'
 
   useEffect(() => {
     if (searchParams.get('error') === 'auth') {

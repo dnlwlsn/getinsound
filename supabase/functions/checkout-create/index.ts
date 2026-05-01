@@ -17,12 +17,18 @@ const ALLOWED_ORIGINS = [SITE_URL, 'http://localhost:3000'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : SITE_URL;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : null;
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': allowedOrigin || SITE_URL,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    ...(allowedOrigin ? {} : { 'X-Cors-Rejected': 'true' }),
   };
+}
+
+function isOriginAllowed(req: Request): boolean {
+  const origin = req.headers.get('origin') || '';
+  return ALLOWED_ORIGINS.includes(origin);
 }
 
 Deno.serve(async (req) => {
@@ -37,6 +43,10 @@ Deno.serve(async (req) => {
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (!isOriginAllowed(req)) {
+    return json({ error: 'Origin not allowed' }, 403);
   }
 
   try {
@@ -148,7 +158,13 @@ Deno.serve(async (req) => {
     // Always charge in the artist's currency to avoid FX undercharging
     const chargeCurrency = (release.currency || 'GBP').toLowerCase();
 
-    const idempotencyKey = `checkout_${releaseId}_${stripeCustomerId || crypto.randomUUID()}_${unitAmount}`;
+    let idempotencyBuyer = stripeCustomerId;
+    if (!idempotencyBuyer) {
+      const ipRaw = req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown';
+      const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ipRaw));
+      idempotencyBuyer = 'anon_' + [...new Uint8Array(hash)].map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 16);
+    }
+    const idempotencyKey = `checkout_${releaseId}_${idempotencyBuyer}_${unitAmount}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded',

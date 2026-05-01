@@ -31,6 +31,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name must be 200 characters or fewer' }, { status: 400 })
   }
 
+  if (bio && bio.trim().length > 2000) {
+    return NextResponse.json({ error: 'Bio must be 2000 characters or fewer' }, { status: 400 })
+  }
+
+  if (accent_colour && !/^#[0-9A-Fa-f]{6}$/.test(accent_colour)) {
+    return NextResponse.json({ error: 'Invalid accent colour format' }, { status: 400 })
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
+  }
+
   const trimmedSlug = slug.trim().toLowerCase()
 
   if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(trimmedSlug)) {

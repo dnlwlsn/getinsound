@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Code is required' }, { status: 400 })
   }
 
+  if (!/^INSND-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(code)) {
+    return NextResponse.json({ error: 'Invalid code format' }, { status: 400 })
+  }
+
   const admin = getAdminClient()
 
   if (action === 'validate') {
@@ -64,8 +68,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'redeem') {
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
     }
 
     const emailRateLimited = await checkRateLimit(email, 'redeem_code', 10, 1)

@@ -12,12 +12,17 @@ const ALLOWED_ORIGINS = [SITE_URL, 'http://localhost:3000'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : SITE_URL;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : null;
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': allowedOrigin || SITE_URL,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
+}
+
+function isOriginAllowed(req: Request): boolean {
+  const origin = req.headers.get('origin') || '';
+  return ALLOWED_ORIGINS.includes(origin);
 }
 
 Deno.serve(async (req) => {
@@ -34,6 +39,10 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (!isOriginAllowed(req)) {
+    return json({ error: 'Origin not allowed' }, 403);
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const merchId: string | undefined = body.merch_id;
@@ -41,7 +50,7 @@ Deno.serve(async (req) => {
     const origin: string = body.origin || 'https://getinsound.com';
     const fanCurrency: string | undefined = body.fan_currency;
     const fanLocale: string | undefined = body.fan_locale;
-    const fanId: string | undefined = body.fan_id;
+    let fanId: string | undefined;
 
     if (!merchId) return json({ error: 'merch_id required' }, 400);
 
@@ -93,11 +102,14 @@ Deno.serve(async (req) => {
         { global: { headers: { authorization: authHeader } } },
       );
       const { data: { user } } = await userClient.auth.getUser();
-      if (user?.email) {
-        try {
-          stripeCustomerId = await resolveStripeCustomer(stripe, admin, user.id, user.email);
-        } catch (e) {
-          console.error('Stripe customer resolution failed:', (e as Error).message);
+      if (user) {
+        fanId = user.id;
+        if (user.email) {
+          try {
+            stripeCustomerId = await resolveStripeCustomer(stripe, admin, user.id, user.email);
+          } catch (e) {
+            console.error('Stripe customer resolution failed:', (e as Error).message);
+          }
         }
       }
     }

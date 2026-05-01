@@ -29,11 +29,11 @@ export async function POST(req: NextRequest) {
   if (typeof description !== 'string' || description.length > 5000) {
     return NextResponse.json({ error: 'Description must be a string (max 5000 chars)' }, { status: 400 })
   }
-  if (typeof price !== 'number' || price < 300 || price > 10000000) {
-    return NextResponse.json({ error: 'Price must be between 300 and 10000000 (smallest currency unit)' }, { status: 400 })
+  if (typeof price !== 'number' || !Number.isInteger(price) || price < 300 || price > 10000000) {
+    return NextResponse.json({ error: 'Price must be an integer between 300 and 10000000 (smallest currency unit)' }, { status: 400 })
   }
-  if (typeof postage !== 'number' || postage < 0 || postage > 10000000) {
-    return NextResponse.json({ error: 'Postage must be between 0 and 10000000' }, { status: 400 })
+  if (typeof postage !== 'number' || !Number.isInteger(postage) || postage < 0 || postage > 10000000) {
+    return NextResponse.json({ error: 'Postage must be an integer between 0 and 10000000' }, { status: 400 })
   }
   if (typeof stock !== 'number' || stock < 0 || !Number.isInteger(stock)) {
     return NextResponse.json({ error: 'Stock must be a non-negative integer' }, { status: 400 })
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       postage,
       stock,
       variants: variants ? variants.slice(0, 20).map((v: any) => String(v).slice(0, 100)) : null,
-      dispatch_estimate: dispatch_estimate || 'Ships within 5 days',
+      dispatch_estimate: (typeof dispatch_estimate === 'string' ? dispatch_estimate.slice(0, 200) : null) || 'Ships within 5 days',
     })
     .select('id')
     .single()
