@@ -137,7 +137,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
             href={releaseUrl(releases[0])}
             className="sm:col-span-1 sm:row-span-2 group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
           >
-            <Image src={coverSrc(releases[0])} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 33vw, 100vw" alt="" />
+            <Image src={coverSrc(releases[0])} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 33vw, 100vw" alt={releases[0].title} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
             <div className="absolute top-3 left-3 bg-orange-600 text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{releases[0].type}</div>
             <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -153,7 +153,7 @@ function FeaturedHero({ releases, formatPrice, convertPrice, currency }: {
                 href={releaseUrl(f)}
                 className="group relative rounded-2xl overflow-hidden aspect-square bg-zinc-900 border border-zinc-800 hover:border-orange-600/40 transition-all"
               >
-                <Image src={coverSrc(f)} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 25vw, 100vw" alt="" />
+                <Image src={coverSrc(f)} fill className="object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500" sizes="(min-width: 640px) 25vw, 100vw" alt={f.title} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <p className="font-black text-sm leading-tight">{f.title}</p>

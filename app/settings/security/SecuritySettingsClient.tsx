@@ -5,7 +5,7 @@ import { SettingsTabs } from '@/components/settings/SettingsTabs'
 export function SecuritySettingsClient() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="max-w-2xl mx-auto px-4 py-12">
+      <div className="max-w-2xl mx-auto px-4 pt-24 pb-12">
         <h1 className="text-2xl font-bold mb-6">Settings</h1>
         <SettingsTabs />
 
