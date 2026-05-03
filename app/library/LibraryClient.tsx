@@ -335,7 +335,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
   }
 
   return (
-    <div className="min-h-screen font-display pb-40">
+    <div className="min-h-screen font-display pb-6">
 
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         {/* Header + Stats */}

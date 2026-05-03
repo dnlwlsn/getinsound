@@ -172,7 +172,7 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
 
   /* ── Render ───────────────────────────────────────────────── */
   return (
-    <div className="pb-40 font-display">
+    <div className="pb-6 font-display">
 
       {/* FEATURED HERO — hide when filtering by genre/tag */}
       {featured.length > 0 && currentGenre === 'All' && (

@@ -453,6 +453,7 @@ Deno.serve(async (req) => {
         }, 0);
         // Process each item
         const purchasedTitles: string[] = [];
+        const refundedItemIndices = new Set<number>();
         for (let idx = 0; idx < basketItems.length; idx++) {
           const item = basketItems[idx];
           const itemAmount = item.type === 'merch' ? item.amount_pence + item.postage_pence : item.amount_pence;
@@ -591,6 +592,7 @@ Deno.serve(async (req) => {
             });
 
             if (stockErr || updated === false) {
+              refundedItemIndices.add(idx);
               const refundAmount = item.amount_pence + (item.postage_pence || 0);
               if (piId && refundAmount > 0) {
                 try {
@@ -722,8 +724,11 @@ Deno.serve(async (req) => {
 
         // ── Create transfers to each artist's Connect account ──
         // Group earnings by artist, then create one transfer per artist.
+        // Exclude items that were refunded (e.g. merch out of stock).
         const artistTransfers = new Map<string, { stripeAccountId: string; amount: number }>();
-        for (const item of basketItems) {
+        for (let i = 0; i < basketItems.length; i++) {
+          if (refundedItemIndices.has(i)) continue;
+          const item = basketItems[i];
           const artistId = item.artist_id;
           const stripeAccountId = item.stripe_account_id;
           if (!stripeAccountId) continue;

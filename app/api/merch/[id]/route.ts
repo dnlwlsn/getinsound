@@ -25,14 +25,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Description must be a string (max 5000 chars)' }, { status: 400 })
   }
 
-  if ('price' in updates && (typeof updates.price !== 'number' || updates.price < 300 || updates.price > 10_000_000)) {
-    return NextResponse.json({ error: 'Price must be between 300 and 10,000,000 (in pence/cents)' }, { status: 400 })
+  if ('price' in updates && (typeof updates.price !== 'number' || !Number.isInteger(updates.price) || updates.price < 300 || updates.price > 10_000_000)) {
+    return NextResponse.json({ error: 'Price must be an integer between 300 and 10,000,000 (in pence/cents)' }, { status: 400 })
   }
-  if ('postage' in updates && (typeof updates.postage !== 'number' || updates.postage < 0 || updates.postage > 10_000_000)) {
-    return NextResponse.json({ error: 'Postage must be between 0 and 10,000,000' }, { status: 400 })
+  if ('postage' in updates && (typeof updates.postage !== 'number' || !Number.isInteger(updates.postage) || updates.postage < 0 || updates.postage > 10_000_000)) {
+    return NextResponse.json({ error: 'Postage must be an integer between 0 and 10,000,000' }, { status: 400 })
   }
-  if ('stock' in updates && (typeof updates.stock !== 'number' || updates.stock < 0)) {
-    return NextResponse.json({ error: 'Stock cannot be negative' }, { status: 400 })
+  if ('stock' in updates && (typeof updates.stock !== 'number' || updates.stock < 0 || !Number.isInteger(updates.stock))) {
+    return NextResponse.json({ error: 'Stock must be a non-negative integer' }, { status: 400 })
   }
   const validCurrencies = ['GBP', 'USD', 'EUR', 'CAD', 'AUD']
   if ('currency' in updates && (typeof updates.currency !== 'string' || !validCurrencies.includes((updates.currency as string).toUpperCase()))) {

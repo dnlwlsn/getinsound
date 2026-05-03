@@ -115,7 +115,7 @@ export async function GET(request: Request) {
         url: signed.signedUrl,
         isPreview: false,
         format: fmt,
-      })
+      }, { headers: { 'Cache-Control': 'no-store' } })
     }
   }
 

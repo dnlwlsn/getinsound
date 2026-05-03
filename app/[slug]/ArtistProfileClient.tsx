@@ -319,7 +319,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
 
         {/* Releases */}
         {releases.length > 0 ? (
-          <section className="pb-40">
+          <section className="pb-6">
             <div className="flex items-center justify-between mb-8">
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Discography</p>
               <div className="flex items-center gap-3">
@@ -679,7 +679,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
             </>}
           </section>
         ) : (
-          <div className="text-center py-24 pb-40">
+          <div className="text-center py-24 pb-6">
             <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-zinc-600">
                 <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
@@ -692,7 +692,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       </div>
 
       {merch.length > 0 && (
-        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-40">
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-6">
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-8">Merch</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {merch.map((item) => {
@@ -718,7 +718,7 @@ export default function ArtistProfileClient({ artist, releases, badges = [], ver
       )}
 
       {posts.length > 0 && (
-        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-40">
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-6">
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-8">Updates</p>
           <div className="space-y-4 max-w-2xl">
             {posts.map((post) => (
