@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (next.includes('reverified=1') && sessionId) {
+    if (new URL(next, origin).searchParams.get('reverified') === '1' && sessionId) {
       const admin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,

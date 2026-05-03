@@ -591,7 +591,7 @@ export function PlayerBar() {
       <audio ref={crossfadeRef} preload="auto" />
 
       {/* Mobile player bar */}
-      <div className="player-bar-active fixed left-0 right-0 z-40 sm:hidden" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom))' }}>
+      <div className="player-bar-active fixed left-0 right-0 z-[55] sm:hidden" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom))' }}>
         <div
           className="border-t border-white/[0.06] backdrop-blur-xl"
           style={{ background: 'rgba(10,10,10,0.95)' }}

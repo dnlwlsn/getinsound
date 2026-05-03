@@ -1,4 +1,3 @@
-export const PLATFORM_FEE_BPS = 1000; // 10.00%
 export const FOUNDING_ARTIST_FEE_BPS = 750; // 7.50%
 export const STANDARD_FEE_BPS = 1000; // 10.00%
 

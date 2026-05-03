@@ -15,9 +15,10 @@ interface Props {
   onCancel: () => void
   onDownload: () => void
   downloading: boolean
+  downloadError?: string
 }
 
-export function DeleteAccountModal({ userType, impactData, onConfirm, onCancel, onDownload, downloading }: Props) {
+export function DeleteAccountModal({ userType, impactData, onConfirm, onCancel, onDownload, downloading, downloadError }: Props) {
   const [confirmText, setConfirmText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -118,6 +119,7 @@ export function DeleteAccountModal({ userType, impactData, onConfirm, onCancel, 
         >
           {downloading ? 'Generating links...' : '↓ Download all my music'}
         </button>
+        {downloadError && <p className="text-red-400 text-xs mb-4 -mt-2">{downloadError}</p>}
 
         {/* Type DELETE */}
         <div className="mb-4">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/email/send'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
   if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 })
 
   const ip = getClientIp(req.headers)
-  const ipLimited = await checkRateLimit(ip, 'password_reset', 10, 1)
+  const hashedIp = await hashIp(ip)
+  const ipLimited = await checkRateLimit(hashedIp, 'password_reset', 10, 1)
   if (ipLimited) return ipLimited
   const emailLimited = await checkRateLimit(email, 'password_reset', 3, 1)
   if (emailLimited) return emailLimited

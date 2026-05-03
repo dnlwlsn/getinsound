@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { buildMagicLinkEmail, type EmailTemplate } from '@/lib/email/templates';
 import { sendEmail } from '@/lib/email/send';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit';
 
 function getAdminClient() {
   return createClient(
@@ -25,9 +25,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
+  }
+
   if (!VALID_TEMPLATES.includes(template)) {
     return NextResponse.json({ error: 'Invalid template' }, { status: 400 });
   }
+
+  const ip = getClientIp(req.headers)
+  const hashedIp = await hashIp(ip)
+  const ipLimited = await checkRateLimit(hashedIp, 'magic_link', 10, 1)
+  if (ipLimited) return ipLimited
 
   const rateLimited = await checkRateLimit(email, 'magic_link', 3, 1)
   if (rateLimited) return rateLimited

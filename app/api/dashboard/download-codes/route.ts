@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 
 // GET: list codes for a release
@@ -32,12 +33,15 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
+  const rateLimited = await checkRateLimit(user.id, 'general', 20, 1)
+  if (rateLimited) return rateLimited
+
   const body = await req.json().catch(() => ({}))
   const releaseId = body.release_id as string | undefined
   const MAX_BATCH = 50
   const MAX_PER_RELEASE = 200
-  const count = Math.min(Math.max(body.count || 10, 1), MAX_BATCH)
-  const expiryDays = Math.min(Math.max(body.expiry_days || 90, 1), 365)
+  const count = Number.isInteger(body.count) ? Math.min(Math.max(body.count, 1), MAX_BATCH) : 10
+  const expiryDays = Number.isInteger(body.expiry_days) ? Math.min(Math.max(body.expiry_days, 1), 365) : 90
 
   if (!releaseId) return NextResponse.json({ error: 'release_id required' }, { status: 400 })
 

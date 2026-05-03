@@ -12,6 +12,10 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
+  if (!user.email_confirmed_at) {
+    return NextResponse.json({ error: 'Email must be verified before registering as an artist' }, { status: 403 })
+  }
+
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 

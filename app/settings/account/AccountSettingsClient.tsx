@@ -27,6 +27,8 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion, isAr
   const [emailChangeSuccess, setEmailChangeSuccess] = useState(false)
   const [emailChangeError, setEmailChangeError] = useState('')
   const [deleteError, setDeleteError] = useState('')
+  const [downloadError, setDownloadError] = useState('')
+  const [exportError, setExportError] = useState('')
   const [showReverify, setShowReverify] = useState(false)
   const [pendingAction, setPendingAction] = useState<'email' | 'delete' | 'export' | null>(null)
 
@@ -103,6 +105,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion, isAr
 
   async function handleDownload() {
     setDownloading(true)
+    setDownloadError('')
     try {
       const res = await fetch('/api/account/delete/download-links')
       const data = await res.json()
@@ -112,13 +115,14 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion, isAr
         }
       }
     } catch {
-      // error handled by UI state
+      setDownloadError('Failed to get download links. Please try again.')
     }
     setDownloading(false)
   }
 
   async function handleExport() {
     setExporting(true)
+    setExportError('')
     try {
       const res = await fetch('/api/account/export', { method: 'POST' })
       if (res.status === 403) {
@@ -139,7 +143,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion, isAr
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      // silent fail — download simply won't start
+      setExportError('Failed to export your data. Please try again.')
     }
     setExporting(false)
   }
@@ -226,6 +230,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion, isAr
               >
                 {exporting ? 'Preparing export...' : 'Download my data'}
               </button>
+              {exportError && <p className="text-red-400 text-xs mt-2">{exportError}</p>}
             </div>
 
             {!pending && (
@@ -256,6 +261,7 @@ export function AccountSettingsClient({ userEmail, userId, pendingDeletion, isAr
           onCancel={() => setShowModal(false)}
           onDownload={handleDownload}
           downloading={downloading}
+          downloadError={downloadError}
         />
       )}
 

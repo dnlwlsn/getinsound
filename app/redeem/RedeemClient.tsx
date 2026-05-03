@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface ReleaseInfo {
   title: string
@@ -151,11 +152,15 @@ export function RedeemClient() {
               <>
                 <div className="flex items-center gap-4 mb-6">
                   {release.cover_url ? (
-                    <img
-                      src={release.cover_url}
-                      alt={release.title}
-                      className="w-20 h-20 rounded-xl object-cover border border-zinc-800"
-                    />
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-zinc-800 shrink-0">
+                      <Image
+                        src={release.cover_url}
+                        alt={release.title}
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                      />
+                    </div>
                   ) : (
                     <div className="w-20 h-20 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                       <svg width="24" height="24" fill="none" stroke="#71717a" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -192,7 +197,8 @@ export function RedeemClient() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider"
+                    disabled={loading}
+                    className="w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Claim release →
                   </button>

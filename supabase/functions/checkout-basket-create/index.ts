@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const requestItems: BasketRequestItem[] = body.items;
-    const fanCurrency: string | undefined = body.fan_currency;
+    const fanCurrency: string | undefined = body.fan_currency?.toLowerCase();
     const refCode: string | undefined = body.ref_code;
 
     if (!requestItems || !Array.isArray(requestItems) || requestItems.length === 0) {
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
       .from('basket_sessions')
       .insert({
         items: basketItems,
-        fan_currency: fanCurrency || 'GBP',
+        fan_currency: fanCurrency || 'gbp',
         ref_code: refCode || null,
       })
       .select('id')
@@ -373,7 +373,7 @@ Deno.serve(async (req) => {
       metadata: {
         type: 'basket',
         basket_session_id: basketRow.id,
-        fan_currency: fanCurrency || 'GBP',
+        fan_currency: fanCurrency || 'gbp',
       },
     };
 
