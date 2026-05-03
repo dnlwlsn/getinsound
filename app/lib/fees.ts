@@ -75,8 +75,36 @@ export function calculateFeesPence(amountPence: number) {
   }
 }
 
-// DEPRECATED: isZeroFeesActive removed — zero-fees referral feature retired 2026-04-27.
-// Replaced by Founding Artist programme (7.5% fee for 12 months from first sale).
+export function validatePriceProfitability(
+  amountPence: number,
+  fanRegion: string,
+  artistRegion: string,
+  fanCurrency: string,
+  artistCurrency: string,
+): { profitable: boolean; minimumPence: number } {
+  const amount = amountPence / 100
+  const result = calculateStripeFee(amount, fanRegion, artistRegion, fanCurrency, artistCurrency)
+  const totalStripeCost = result.stripeFee + result.internationalFee + result.conversionFee
+  const profitable = result.insoundFee >= totalStripeCost
+
+  if (profitable) return { profitable: true, minimumPence: amountPence }
+
+  // Binary search for minimum profitable price
+  let low = amountPence
+  let high = amountPence * 5
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    const midResult = calculateStripeFee(mid / 100, fanRegion, artistRegion, fanCurrency, artistCurrency)
+    const midCost = midResult.stripeFee + midResult.internationalFee + midResult.conversionFee
+    if (midResult.insoundFee >= midCost) {
+      high = mid
+    } else {
+      low = mid + 1
+    }
+  }
+
+  return { profitable: false, minimumPence: low }
+}
 
 export interface MerchFeeResult {
   insoundFee: number

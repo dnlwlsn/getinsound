@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -78,8 +79,8 @@ export function ProfileMenu() {
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl py-1.5 z-[60]">
+      {open && createPortal(
+        <div className="fixed right-4 top-[72px] w-56 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl py-1.5 z-[60]">
           {profile.isArtist ? (
             <>
               {profile.fanUsername && (
@@ -117,7 +118,8 @@ export function ProfileMenu() {
           >
             Sign out
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

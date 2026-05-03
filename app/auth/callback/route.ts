@@ -27,10 +27,16 @@ export async function GET(request: NextRequest) {
     const transferCode = await createTransferCode(user.id)
 
     const redirectUrl = new URL(`${origin}/auth/transfer`)
-    redirectUrl.searchParams.set('code', transferCode)
     redirectUrl.searchParams.set('next', next)
 
     const response = NextResponse.redirect(redirectUrl)
+    response.cookies.set('auth_transfer_code', transferCode, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/auth/transfer',
+      maxAge: 300,
+    })
 
     const existingSessionId = request.cookies.get('session_id')?.value
     let sessionId = existingSessionId

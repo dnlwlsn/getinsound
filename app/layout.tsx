@@ -69,7 +69,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ToastProvider>
             <AppNav />
             <VerificationBanner />
-            <main id="main-content">{children}</main>
+            <main id="main-content" className="pb-40 sm:pb-6">{children}</main>
           </ToastProvider>
         </CurrencyProvider>
         <PlayerBar />

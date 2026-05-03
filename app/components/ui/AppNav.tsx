@@ -133,8 +133,33 @@ export function AppNav() {
   const navHidden = useScrollDirection()
 
   const showLoggedIn = loaded ? !!userId : hint
-  if (HIDE_NAV_ROUTES.some(r => pathname === r)) return null
-  if (HIDE_NAV_PREFIXES.some(p => pathname.startsWith(p))) return null
+
+  const isArtistRoute = ['/dashboard', '/sales', '/discography'].includes(pathname) || pathname.startsWith('/dashboard/')
+  const isHiddenRoute = HIDE_NAV_ROUTES.filter(r => !isArtistRoute || !['/dashboard', '/sales', '/discography'].includes(r)).some(r => pathname === r)
+  const isHiddenPrefix = HIDE_NAV_PREFIXES.filter(p => !isArtistRoute || p !== '/dashboard/').some(p => pathname.startsWith(p))
+
+  if (isArtistRoute) {
+    return (
+      <>
+        <nav className="fixed top-0 w-full z-50 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl border-b border-zinc-900">
+          <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-4">
+            <Link href="/" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              <InsoundLogo size="sm" />
+            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard" className={`text-xs font-black uppercase tracking-widest transition-colors ${pathname === '/dashboard' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}>Dashboard</Link>
+              <Link href="/sales" className={`text-xs font-black uppercase tracking-widest transition-colors ${pathname === '/sales' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}>Sales</Link>
+              <Link href="/discography" className={`text-xs font-black uppercase tracking-widest transition-colors ${pathname === '/discography' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}>Releases</Link>
+            </div>
+          </div>
+        </nav>
+        <div className="h-[60px]" />
+      </>
+    )
+  }
+
+  if (isHiddenRoute || isHiddenPrefix) return null
 
   if (!showLoggedIn) {
     return (
@@ -167,6 +192,26 @@ export function AppNav() {
         </div>
       </nav>
       <div className="h-[72px]" />
+
+      {/* Mobile bottom nav — logged out */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-xl flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <Link href="/" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/' ? 'text-orange-500' : 'text-zinc-500'}`}>
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <span className="text-[10px] font-black uppercase tracking-wider">Home</span>
+        </Link>
+        <Link href="/explore" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/explore' ? 'text-orange-500' : 'text-zinc-500'}`}>
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span className="text-[10px] font-black uppercase tracking-wider">Explore</span>
+        </Link>
+        <Link href="/search" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/search' ? 'text-orange-500' : 'text-zinc-500'}`}>
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span className="text-[10px] font-black uppercase tracking-wider">Search</span>
+        </Link>
+        <Link href="/auth" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/auth' ? 'text-orange-500' : 'text-zinc-500'}`}>
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+          <span className="text-[10px] font-black uppercase tracking-wider">Sign In</span>
+        </Link>
+      </nav>
       </>
     )
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 
 interface Notification {
@@ -78,8 +79,8 @@ export function NotificationDropdown({ onClose, onMarkAllRead, onMarkRead }: Pro
 
   const hasUnread = notifications.some(n => !n.read)
 
-  return (
-    <div className="fixed inset-x-3 top-[72px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[360px] max-h-[480px] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl z-[100] flex flex-col overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-x-3 top-[72px] sm:fixed sm:inset-x-auto sm:right-4 sm:top-[72px] w-auto sm:w-[360px] max-h-[480px] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl z-[100] flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Notifications</p>
@@ -151,6 +152,7 @@ export function NotificationDropdown({ onClose, onMarkAllRead, onMarkRead }: Pro
       >
         View all notifications
       </Link>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { SOCIAL_PLATFORMS, type SocialPlatform, type SocialLinks } from '@/lib/verification'
 import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
+import dns from 'dns/promises'
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers)
@@ -39,25 +40,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid URL protocol' }, { status: 400 })
   }
   const hostname = parsedUrl.hostname
+
+  function isPrivateIp(ip: string): boolean {
+    if (ip === '127.0.0.1' || ip === '::1' || ip === '0.0.0.0') return true
+    const parts = ip.split('.').map(Number)
+    if (parts.length === 4) {
+      if (parts[0] === 10) return true
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true
+      if (parts[0] === 192 && parts[1] === 168) return true
+      if (parts[0] === 169 && parts[1] === 254) return true
+      if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) return true
+      if (parts[0] === 0) return true
+    }
+    if (ip.startsWith('fe80:') || ip.startsWith('fd') || ip.startsWith('fc')) return true
+    if (ip.startsWith('::ffff:')) return isPrivateIp(ip.slice(7))
+    return false
+  }
+
   if (
     hostname === 'localhost' ||
-    hostname.startsWith('127.') ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('172.') ||
-    hostname.startsWith('169.254.') ||
-    hostname.startsWith('100.64.') ||
-    hostname === '0.0.0.0' ||
-    hostname === '[::1]' ||
-    hostname.startsWith('[::ffff:') ||
-    hostname.startsWith('[fe80:') ||
-    hostname.startsWith('[fd') ||
-    hostname.startsWith('[fc') ||
-    hostname.startsWith('fc') ||
-    hostname.startsWith('fd') ||
     hostname.includes('internal') ||
-    hostname.endsWith('.local')
+    hostname.endsWith('.local') ||
+    isPrivateIp(hostname)
   ) {
+    return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+  }
+
+  let resolvedAddresses: string[]
+  try {
+    const records = await dns.resolve4(hostname).catch(() => [] as string[])
+    const records6 = await dns.resolve6(hostname).catch(() => [] as string[])
+    resolvedAddresses = [...records, ...records6]
+  } catch {
+    return NextResponse.json({ error: 'Could not resolve hostname' }, { status: 400 })
+  }
+
+  if (resolvedAddresses.length === 0) {
+    return NextResponse.json({ error: 'Could not resolve hostname' }, { status: 400 })
+  }
+
+  if (resolvedAddresses.some(isPrivateIp)) {
     return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
   }
 

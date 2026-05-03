@@ -9,10 +9,10 @@ export async function POST(req: NextRequest) {
   const rateLimited = await checkRateLimit(ip, 'auth_transfer', 5, 0.25)
   if (rateLimited) return rateLimited
 
-  const body = await req.json().catch(() => null)
-  if (!body?.code) return NextResponse.json({ error: 'code required' }, { status: 400 })
+  const transferCode = req.cookies.get('auth_transfer_code')?.value
+  if (!transferCode) return NextResponse.json({ error: 'code required' }, { status: 400 })
 
-  const userId = await redeemTransferCode(body.code)
+  const userId = await redeemTransferCode(transferCode)
   if (!userId) return NextResponse.json({ error: 'Invalid or expired code' }, { status: 401 })
 
   const admin = createClient(
@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
   const tokenHash = linkData.properties.hashed_token
 
   const response = NextResponse.json({ ok: true, token_hash: tokenHash })
+
+  response.cookies.set('auth_transfer_code', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/auth/transfer',
+    maxAge: 0,
+  })
 
   const session = await createSession(userId, req.headers)
   if (session) setSessionCookie(response, session.sessionId)

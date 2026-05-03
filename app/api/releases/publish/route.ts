@@ -54,12 +54,13 @@ export async function POST(req: NextRequest) {
       .eq('id', release_id)
       .single()
 
-    if (releaseData && !releaseData.pwyw_enabled && (releaseData.price_pence == null || releaseData.price_pence < 300)) {
-      return NextResponse.json({ error: 'Price must be at least 300 (e.g. £3.00). Enable "name your price" for flexible pricing.' }, { status: 400 })
+    const MINIMUM_PRICE_PENCE = 300
+    if (releaseData && !releaseData.pwyw_enabled && (releaseData.price_pence == null || releaseData.price_pence < MINIMUM_PRICE_PENCE)) {
+      return NextResponse.json({ error: 'Price must be at least £3.00. Enable "name your price" for flexible pricing.' }, { status: 400 })
     }
     if (releaseData?.pwyw_enabled) {
       const effectiveMin = releaseData.pwyw_minimum_pence ?? releaseData.price_pence ?? 0
-      if (effectiveMin < 300) {
+      if (effectiveMin < MINIMUM_PRICE_PENCE) {
         return NextResponse.json({ error: 'Minimum price for name-your-price releases must be at least £3.00.' }, { status: 400 })
       }
     }

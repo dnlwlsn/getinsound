@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function AuthTransferPage() {
   const searchParams = useSearchParams()
-  const code = searchParams.get('code')
   const rawNext = searchParams.get('next') || '/'
   const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
   const [status, setStatus] = useState<'checking' | 'browser-ok' | 'pwa-prompt' | 'transferring' | 'done' | 'error'>('checking')
@@ -22,11 +21,7 @@ export default function AuthTransferPage() {
       (navigator as any).standalone === true
 
     if (isStandalone) {
-      if (code) {
-        exchangeCode(code)
-      } else {
-        setStatus('error')
-      }
+      exchangeCodeFromCookie()
     } else {
       const supabase = createClient()
       supabase.auth.getUser().then(({ data: { user } }) => {
@@ -37,15 +32,15 @@ export default function AuthTransferPage() {
         }
       })
     }
-  }, [code])
+  }, [])
 
-  async function exchangeCode(transferCode: string) {
+  async function exchangeCodeFromCookie() {
     setStatus('transferring')
     try {
       const res = await fetch('/api/auth/transfer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: transferCode }),
+        credentials: 'same-origin',
       })
       if (!res.ok) {
         setStatus('error')
@@ -72,7 +67,7 @@ export default function AuthTransferPage() {
   }
 
   function handleOpenInApp() {
-    const appUrl = `${window.location.origin}/auth/transfer?code=${code}&next=${encodeURIComponent(next)}`
+    const appUrl = `${window.location.origin}/auth/transfer?next=${encodeURIComponent(next)}`
     window.location.href = appUrl
     setTimeout(() => setStatus('pwa-prompt'), 500)
   }

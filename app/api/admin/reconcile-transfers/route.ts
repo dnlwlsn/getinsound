@@ -216,6 +216,24 @@ export async function POST(req: NextRequest) {
       continue
     }
 
+    // Atomically claim this row — if another process already claimed it, skip
+    const { data: claimed } = await admin
+      .from('webhook_errors')
+      .update({ error: `[RESOLVING] ${err.error}` })
+      .eq('id', err.id)
+      .like('error', 'Transfer failed%')
+      .select('id')
+      .maybeSingle()
+
+    if (!claimed) {
+      results.push({
+        artist_id: payload.artist_id,
+        status: 'failed',
+        error: 'Already being resolved by another process',
+      })
+      continue
+    }
+
     try {
       await stripe.transfers.create({
         amount: payload.amount,
@@ -228,10 +246,9 @@ export async function POST(req: NextRequest) {
           retried: 'true',
         },
       }, {
-        idempotencyKey: `basket_${payload.basket_session_id}_${payload.artist_id}_retry`,
+        idempotencyKey: `basket_${payload.basket_session_id}_${payload.artist_id}_retry_${Date.now()}`,
       })
 
-      // Mark the error as resolved
       await admin
         .from('webhook_errors')
         .update({ error: `[RESOLVED] ${err.error}` })
@@ -239,6 +256,12 @@ export async function POST(req: NextRequest) {
 
       results.push({ artist_id: payload.artist_id, status: 'success' })
     } catch (e) {
+      // Revert to original error state so it can be retried later
+      await admin
+        .from('webhook_errors')
+        .update({ error: err.error })
+        .eq('id', err.id)
+
       results.push({
         artist_id: payload.artist_id,
         status: 'failed',
