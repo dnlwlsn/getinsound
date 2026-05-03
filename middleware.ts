@@ -69,7 +69,7 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const path = request.nextUrl.pathname
+  const path = request.nextUrl.pathname.replace(/\/$/, '') || '/'
 
   // ── CSRF protection for state-changing API requests ──
   if (path.startsWith('/api') && request.method !== 'GET' && request.method !== 'HEAD') {

@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     .from('purchases')
     .select('id, buyer_user_id, release_id, releases ( title, artists ( name ) )')
     .eq('id', purchase_id)
+    .eq('status', 'paid')
     .single()
 
   if (purchaseError || !purchase) {

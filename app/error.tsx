@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 
-export default function Error({ reset }: { error: Error; reset: () => void }) {
+export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+  console.error('[page-error]', error)
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-6">
       <div className="text-center max-w-sm">

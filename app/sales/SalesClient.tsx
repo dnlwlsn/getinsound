@@ -7,7 +7,7 @@ import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 
-const fmtPayout = (n: number, cur: string) => formatPriceUtil(n, cur || 'GBP')
+const fmtPayout = (n: number, cur: string) => formatPriceUtil(n / 100, cur || 'GBP')
 
 interface Payout {
   id: string

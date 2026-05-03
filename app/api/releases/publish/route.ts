@@ -50,12 +50,18 @@ export async function POST(req: NextRequest) {
 
     const { data: releaseData } = await supabase
       .from('releases')
-      .select('price_pence, pwyw_enabled')
+      .select('price_pence, pwyw_enabled, pwyw_minimum_pence')
       .eq('id', release_id)
       .single()
 
     if (releaseData && !releaseData.pwyw_enabled && (releaseData.price_pence == null || releaseData.price_pence < 300)) {
       return NextResponse.json({ error: 'Price must be at least 300 (e.g. £3.00). Enable "name your price" for flexible pricing.' }, { status: 400 })
+    }
+    if (releaseData?.pwyw_enabled) {
+      const effectiveMin = releaseData.pwyw_minimum_pence ?? releaseData.price_pence ?? 0
+      if (effectiveMin < 300) {
+        return NextResponse.json({ error: 'Minimum price for name-your-price releases must be at least £3.00.' }, { status: 400 })
+      }
     }
   }
 
@@ -63,6 +69,7 @@ export async function POST(req: NextRequest) {
     .from('releases')
     .update({ published })
     .eq('id', release_id)
+    .eq('artist_id', user.id)
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 

@@ -399,7 +399,36 @@ export function BasketDrawer({ onClose }: Props) {
         )}
 
         {/* Stage: Confirmed */}
-        {(stage === 'confirmed' || stage === 'consent' || stage === 'download') && (
+        {stage === 'consent' && (
+          <div className="p-6 md:p-8 mt-8 text-center">
+            <div className="inline-block w-10 h-10 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin mb-4" />
+            <p className="text-sm text-zinc-400 font-medium">Preparing your downloads...</p>
+          </div>
+        )}
+
+        {stage === 'download' && (
+          <div className="p-6 md:p-8 mt-8">
+            <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2 text-center">Ready to download</p>
+            <h2 className="text-2xl font-black mb-4 font-display text-center">Your music is ready</h2>
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-4">
+              <p className="text-sm text-zinc-300">Download links have been sent to your email. You can also download from your collection.</p>
+            </div>
+            <Link
+              href="/library"
+              onClick={handleClose}
+              className="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+            >
+              Go to my collection
+            </Link>
+          </div>
+        )}
+
+        {stage === 'confirmed' && (
           <div className="p-6 md:p-8 mt-8">
             <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-orange-600/15 border border-orange-600/40 flex items-center justify-center">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-orange-600">
@@ -436,12 +465,21 @@ export function BasketDrawer({ onClose }: Props) {
             )}
 
             {wasGuest ? (
-              <button
-                onClick={handleClose}
-                className="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
-              >
-                Done
-              </button>
+              <>
+                <button
+                  onClick={handleClose}
+                  className="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                >
+                  Done
+                </button>
+                <Link
+                  href="/signup"
+                  onClick={handleClose}
+                  className="block text-center text-sm font-bold text-orange-500 hover:text-orange-400 mt-3 transition-colors"
+                >
+                  Create a free account to access your collection anytime
+                </Link>
+              </>
             ) : (
               <Link
                 href="/library"
@@ -520,6 +558,7 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
   const { currency, formatPrice, convertPrice } = useCurrency()
   const [checking, setChecking] = useState(false)
   const [priceChanges, setPriceChanges] = useState<PriceChange[] | null>(null)
+  const [checkError, setCheckError] = useState<string | null>(null)
 
   const feeCurrency = items[0]?.currency || 'GBP'
   const convertedSubtotal = items.reduce((sum, i) => {
@@ -541,6 +580,7 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
   const handleCheckout = useCallback(async () => {
     setChecking(true)
     setPriceChanges(null)
+    setCheckError(null)
     try {
       const supabase = createClient()
       const releaseIds = items.filter(i => i.type === 'release').map(i => (i as any).releaseId as string)
@@ -579,8 +619,8 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
         openCheckout()
       }
     } catch {
-      // If the price check fails, proceed anyway — server will re-validate
-      openCheckout()
+      setPriceChanges(null)
+      setCheckError('Unable to verify prices. Please try again.')
     } finally {
       setChecking(false)
     }
@@ -676,6 +716,12 @@ function BasketSummary({ items, itemsTotal, postageTotal, total, hasMerch, openC
 
       {hasMerch() && (
         <p className="text-[11px] text-zinc-500 font-medium mb-3">Shipping address collected at checkout.</p>
+      )}
+
+      {checkError && (
+        <div className="bg-red-950/40 border border-red-700/50 rounded-xl px-4 py-3 mb-4">
+          <p className="text-[12px] text-red-300 font-medium">{checkError}</p>
+        </div>
       )}
 
       <button

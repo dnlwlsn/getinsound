@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const rateLimited = await checkRateLimit(email, 'magic_link', 3, 1)
   if (rateLimited) return rateLimited
 
-  const safeRedirect = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : undefined;
+  const safeRedirect = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') && !redirectTo.includes('\\') ? redirectTo : undefined;
 
   const { data: linkData, error: linkErr } = await getAdminClient().auth.admin.generateLink({
     type: 'magiclink',

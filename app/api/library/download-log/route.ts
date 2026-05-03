@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     .eq('buyer_user_id', user.id)
     .eq('release_id', releaseId)
     .eq('status', 'paid')
+    .or('pre_order.eq.false,pre_order.is.null')
 
   if (!count || count === 0) {
     return NextResponse.json({ error: 'No purchase found' }, { status: 403 })

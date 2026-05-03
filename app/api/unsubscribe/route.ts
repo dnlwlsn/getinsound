@@ -27,7 +27,8 @@ function monthBucket(offsetMonths = 0): string {
 }
 
 async function generateToken(userId: string, bucket: string): Promise<string> {
-  const secret = process.env.UNSUBSCRIBE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const secret = process.env.UNSUBSCRIBE_SECRET
+  if (!secret) throw new Error('UNSUBSCRIBE_SECRET is not configured')
   const data = new TextEncoder().encode(`unsubscribe:${userId}:${bucket}:${secret}`)
   const hash = await crypto.subtle.digest('SHA-256', data)
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')

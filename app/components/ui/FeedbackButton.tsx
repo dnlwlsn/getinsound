@@ -86,7 +86,7 @@ export function FeedbackButton() {
   }
 
   return (
-    <div ref={ref} className={`fixed right-4 z-30 sm:bottom-6 transition-opacity duration-200 ${modalOpen ? 'opacity-0 pointer-events-none' : ''} ${hasTrack ? 'bottom-[160px]' : 'bottom-[80px]'}`}>
+    <div ref={ref} className={`fixed right-4 z-50 sm:bottom-6 transition-opacity duration-200 ${modalOpen ? 'opacity-0 pointer-events-none' : ''} ${hasTrack ? 'bottom-[160px]' : 'bottom-[80px]'}`}>
       {open && (
         <div className="absolute bottom-12 right-0 w-80 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
           {sent ? (

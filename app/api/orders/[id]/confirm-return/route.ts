@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   let refund: Stripe.Refund
   try {
     refund = await stripe.refunds.create(
-      { payment_intent: order.stripe_payment_intent_id, refund_application_fee: true },
+      { payment_intent: order.stripe_payment_intent_id, refund_application_fee: true, reverse_transfer: true },
       { idempotencyKey: `refund_order_${id}` },
     )
   } catch (err) {

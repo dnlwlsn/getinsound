@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     .from('artist_accounts')
     .insert({
       id: user.id,
-      email,
+      email: user.email!,
       self_attest_independent: true,
       independence_confirmed: true,
       independence_confirmed_at: new Date().toISOString(),

@@ -55,7 +55,7 @@ export function CookieBanner() {
 
   return (
     <div
-      className={`fixed left-4 right-4 z-[60] mx-auto max-w-lg bottom-20 md:bottom-8
+      className={`fixed left-4 right-4 z-[70] mx-auto max-w-lg bottom-36 md:bottom-8
         rounded-xl bg-zinc-900 border border-white/[0.08] p-5 shadow-2xl
         transition-all duration-300 ease-out
         ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}

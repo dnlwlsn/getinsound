@@ -38,6 +38,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to update email' }, { status: 500 })
   }
 
+  try {
+    const { createClient: createAdmin } = await import('@supabase/supabase-js')
+    const admin = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    await admin.from('user_sessions').delete().eq('user_id', user.id).neq('id', request.cookies.get('session_id')?.value ?? '')
+  } catch {}
+
+
   const oldEmail = user.email
   await sendEmail(
     oldEmail,

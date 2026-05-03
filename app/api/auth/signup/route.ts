@@ -16,7 +16,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const email = (body.email as string)?.trim()?.toLowerCase()
-  const nextPath = typeof body.redirectTo === 'string' && body.redirectTo.startsWith('/') && !body.redirectTo.startsWith('//') ? body.redirectTo : '/welcome'
+  const nextPath = typeof body.redirectTo === 'string' && body.redirectTo.startsWith('/') && !body.redirectTo.startsWith('//') && !body.redirectTo.includes('\\') ? body.redirectTo : '/welcome'
 
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })

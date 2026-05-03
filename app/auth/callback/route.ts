@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get('token_hash')
   const type = (searchParams.get('type') ?? 'magiclink') as 'magiclink' | 'email'
   const nextParam = searchParams.get('next') ?? '/'
-  const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/'
+  const next = nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\') ? nextParam : '/'
 
   const supabase = await createClient()
   let user = null

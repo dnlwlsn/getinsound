@@ -143,6 +143,14 @@ export default function DownloadClient() {
       <p className="text-center text-[11px] text-zinc-600 font-medium mt-2">
         Bookmark this page — you can come back to it from the same link.
       </p>
+      <div className="flex flex-col items-center gap-3 mt-8">
+        <Link href="/library" className="inline-block bg-zinc-800 hover:bg-zinc-700 text-white font-black px-6 py-3 rounded-xl text-sm transition-colors">
+          Go to My Collection
+        </Link>
+        <Link href="/signup" className="text-sm font-bold text-orange-500 hover:text-orange-400 transition-colors">
+          Create a free account to keep your music forever
+        </Link>
+      </div>
     </article>
   )
 }

@@ -1,5 +1,5 @@
 export function referralShareUrl(code: string): string {
-  return `https://getinsound.com?ref=${code}`
+  return `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://getinsound.com'}?ref=${code}`
 }
 
 export function twitterShareUrl(code: string): string {

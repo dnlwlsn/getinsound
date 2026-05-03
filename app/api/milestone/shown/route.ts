@@ -7,6 +7,9 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { data: artist } = await supabase.from('artists').select('id').eq('id', user.id).maybeSingle()
+  if (!artist) return NextResponse.json({ error: 'Not an artist' }, { status: 403 })
+
   const { error } = await supabase
     .from('artists')
     .update({

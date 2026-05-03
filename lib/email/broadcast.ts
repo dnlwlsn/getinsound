@@ -13,19 +13,22 @@ function escapeHtml(str: string): string {
 }
 
 function markdownToHtml(md: string): string {
-  return md
+  return escapeHtml(md)
     .replace(/^### (.+)$/gm, `<h3 style="color:${TEXT_WHITE};font-size:18px;font-weight:700;margin:24px 0 8px;">$1</h3>`)
     .replace(/^## (.+)$/gm, `<h2 style="color:${TEXT_WHITE};font-size:20px;font-weight:700;margin:24px 0 8px;">$1</h2>`)
     .replace(/^# (.+)$/gm, `<h1 style="color:${TEXT_WHITE};font-size:24px;font-weight:700;margin:24px 0 8px;">$1</h1>`)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2" style="color:${BRAND_ORANGE};text-decoration:underline;">$1</a>`)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text, url) => {
+      const safeUrl = /^https?:\/\//i.test(url) ? url : '#'
+      return `<a href="${safeUrl}" style="color:${BRAND_ORANGE};text-decoration:underline;">${text}</a>`
+    })
     .replace(/\n\n/g, '</p><p style="margin:0 0 16px;line-height:1.6;">')
     .replace(/\n/g, '<br>')
 }
 
 export function buildBroadcastHtml(bodyMarkdown: string): string {
-  const bodyHtml = markdownToHtml(escapeHtml(bodyMarkdown))
+  const bodyHtml = markdownToHtml(bodyMarkdown)
 
   return `<!DOCTYPE html>
 <html>

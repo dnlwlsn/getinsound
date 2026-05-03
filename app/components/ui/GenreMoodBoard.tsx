@@ -52,7 +52,7 @@ export function GenreMoodBoard({ onComplete, onSkip, onClose }: GenreMoodBoardPr
   }
 
   return (
-    <div role="dialog" className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950">
+    <div role="dialog" className="fixed inset-0 z-[300] flex items-center justify-center bg-zinc-950">
       {onClose && (
         <button
           type="button"
