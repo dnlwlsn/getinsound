@@ -12,19 +12,14 @@ type PrefType = {
 }
 
 const FAN_TYPES: { type: string; label: string }[] = [
-  { type: 'new_release', label: 'New releases from artists you\'ve bought from' },
   { type: 'preorder_ready', label: 'Pre-order ready for download' },
   { type: 'order_dispatched', label: 'Order dispatched' },
-  { type: 'artist_post', label: 'New posts from artists you\'ve bought from' },
 ]
 
 const ARTIST_TYPES: { type: string; label: string }[] = [
   { type: 'sale', label: 'New sale' },
-  { type: 'first_sale', label: 'First sale milestone' },
   { type: 'preorder', label: 'New pre-order' },
   { type: 'merch_order', label: 'New merch order' },
-  { type: 'code_redeemed', label: 'Download code redeemed' },
-  { type: 'zero_fees_unlocked', label: 'Zero fees unlocked' },
 ]
 
 interface Props {
@@ -103,13 +98,13 @@ export function NotificationPreferences({ isArtist }: Props) {
       </label>
 
       {/* Push notifications toggle */}
-      <div className="mb-6 p-4 rounded-xl bg-zinc-900/50 border border-white/[0.06]">
-        {pushSupported ? (
+      {pushSupported ? (
+        <div className="mb-6 p-4 rounded-xl bg-zinc-900/50 border border-white/[0.06]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-white">Push Notifications</p>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Get notified instantly when artists release new music
+                Get notified instantly when something happens
               </p>
             </div>
             <button
@@ -124,15 +119,15 @@ export function NotificationPreferences({ isArtist }: Props) {
               }`} />
             </button>
           </div>
-        ) : isIOS() ? (
-          <div>
-            <p className="text-sm font-semibold text-white">Notifications</p>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Push notifications aren&apos;t available on iOS. We&apos;ll send notifications via email instead.
-            </p>
-          </div>
-        ) : null}
-      </div>
+        </div>
+      ) : isIOS() ? (
+        <div className="mb-6 p-4 rounded-xl bg-zinc-900/50 border border-white/[0.06]">
+          <p className="text-sm font-semibold text-white">Notifications</p>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Push notifications aren&apos;t available on iOS. We&apos;ll send notifications via email instead.
+          </p>
+        </div>
+      ) : null}
 
       {/* Column headers */}
       <div className="flex items-center gap-2 mb-3 pl-0">
@@ -186,7 +181,7 @@ export function NotificationPreferences({ isArtist }: Props) {
         disabled={saving}
         className="mt-6 px-6 py-2.5 bg-orange-600 text-white text-sm font-bold rounded-xl hover:bg-orange-500 transition-colors disabled:opacity-50"
       >
-        {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save preferences'}
+        {saving ? 'Saving...' : saved ? 'Saved' : 'Save preferences'}
       </button>
     </div>
   )

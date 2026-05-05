@@ -521,16 +521,39 @@ Deno.serve(async (req) => {
             // Notify artist
             const saleLabel = formatPrice(item.amount_pence, basketSession.fan_currency || session.currency || 'GBP');
             {
-              const { error: notifErr } = await admin.from('notifications').insert({
-                user_id: item.artist_id,
-                type: isPreOrder ? 'preorder' : 'sale',
-                title: isPreOrder
-                  ? `New pre-order: ${releaseTitle}`
-                  : `New sale: ${releaseTitle}`,
-                body: `${basketFanLabel} purchased for ${saleLabel}`,
-                link: '/dashboard',
-              });
-              if (notifErr) console.error('Notification insert failed:', notifErr.message);
+              const saleType = isPreOrder ? 'preorder' : 'sale';
+              if (await shouldNotifyInApp(admin, item.artist_id, saleType)) {
+                const { error: notifErr } = await admin.from('notifications').insert({
+                  user_id: item.artist_id,
+                  type: saleType,
+                  title: isPreOrder
+                    ? `New pre-order: ${releaseTitle}`
+                    : `New sale: ${releaseTitle}`,
+                  body: `${basketFanLabel} purchased for ${saleLabel}`,
+                  link: '/dashboard',
+                });
+                if (notifErr) console.error('Notification insert failed:', notifErr.message);
+              }
+            }
+
+            // Email artist about sale (respecting preferences)
+            try {
+              if (await shouldNotifyEmail(admin, item.artist_id, saleType)) {
+                const { data: artistRow } = await admin
+                  .from('artists')
+                  .select('email')
+                  .eq('id', item.artist_id)
+                  .single();
+                if (artistRow?.email) {
+                  await sendEmail(
+                    artistRow.email,
+                    isPreOrder ? `New pre-order: ${releaseTitle}` : `New sale: ${releaseTitle}`,
+                    buildSaleArtistEmail(releaseTitle, basketFanLabel, saleLabel, isPreOrder),
+                  );
+                }
+              }
+            } catch (e) {
+              console.error('Artist sale email failed:', (e as Error).message);
             }
 
             // Founding Artist: record first sale timestamp
@@ -1091,16 +1114,19 @@ Deno.serve(async (req) => {
 
         // Notify artist of sale
         {
-          const { error: notifErr } = await admin.from('notifications').insert({
-            user_id: artistId,
-            type: isPreOrder ? 'preorder' : 'sale',
-            title: isPreOrder
-              ? `New pre-order: ${releaseTitle}`
-              : `New sale: ${releaseTitle}`,
-            body: `${singleFanLabel} purchased for ${saleLabel}`,
-            link: '/dashboard',
-          });
-          if (notifErr) console.error('Notification insert failed:', notifErr.message);
+          const saleType = isPreOrder ? 'preorder' : 'sale';
+          if (await shouldNotifyInApp(admin, artistId, saleType)) {
+            const { error: notifErr } = await admin.from('notifications').insert({
+              user_id: artistId,
+              type: saleType,
+              title: isPreOrder
+                ? `New pre-order: ${releaseTitle}`
+                : `New sale: ${releaseTitle}`,
+              body: `${singleFanLabel} purchased for ${saleLabel}`,
+              link: '/dashboard',
+            });
+            if (notifErr) console.error('Notification insert failed:', notifErr.message);
+          }
         }
 
         // Check if this was the first sale — notify with special type
@@ -1110,7 +1136,7 @@ Deno.serve(async (req) => {
           .eq('artist_id', artistId)
           .eq('status', 'paid');
 
-        if (saleCount === 1) {
+        if (saleCount === 1 && await shouldNotifyInApp(admin, artistId, 'first_sale')) {
           const { error: notifErr } = await admin.from('notifications').insert({
             user_id: artistId,
             type: 'first_sale',
@@ -1122,6 +1148,27 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         console.error('Notification insert failed:', (e as Error).message);
+      }
+
+      // Email artist about sale (respecting preferences)
+      try {
+        const saleType = isPreOrder ? 'preorder' : 'sale';
+        if (await shouldNotifyEmail(admin, artistId, saleType)) {
+          const { data: artistRow } = await admin
+            .from('artists')
+            .select('email')
+            .eq('id', artistId)
+            .single();
+          if (artistRow?.email) {
+            await sendEmail(
+              artistRow.email,
+              isPreOrder ? `New pre-order: ${releaseTitle}` : `New sale: ${releaseTitle}`,
+              buildSaleArtistEmail(releaseTitle, singleFanLabel, saleLabel, isPreOrder),
+            );
+          }
+        }
+      } catch (e) {
+        console.error('Artist sale email failed:', (e as Error).message);
       }
 
       if (isNewAccount) {
@@ -1703,6 +1750,36 @@ function buildMerchOrderEmail(itemName: string, variant: string | null): string 
         </td></tr>
         <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
           If you didn't place this order, please contact us.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildSaleArtistEmail(releaseTitle: string, fanLabel: string, saleLabel: string, isPreOrder: boolean): string {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:60px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0">
+        <tr><td style="padding-bottom:40px;">
+          <span style="font-size:24px;font-weight:900;color:#F56D00;letter-spacing:-0.5px;">insound.</span>
+        </td></tr>
+        <tr><td style="color:#FAFAFA;font-size:18px;line-height:1.6;padding-bottom:32px;">
+          ${isPreOrder ? 'New pre-order' : 'New sale'}: ${escapeHtml(releaseTitle)}<br>
+          <span style="color:#A1A1AA;font-size:15px;">${escapeHtml(fanLabel)} purchased for ${escapeHtml(saleLabel)}</span>
+        </td></tr>
+        <tr><td style="padding-bottom:48px;">
+          <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#F56D00;color:#FAFAFA;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">
+            View dashboard &rarr;
+          </a>
+        </td></tr>
+        <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
+          You can manage your notification preferences in your account settings.
         </td></tr>
       </table>
     </td></tr>

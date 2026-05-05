@@ -65,13 +65,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   await createNotification({
     supabase: admin,
     userId: order.fan_id,
-    type: 'merch_dispatched',
+    type: 'order_dispatched',
     title: 'Your order has been dispatched',
     body: `${merchName} is on its way. Tracking: ${tracking_number} (${carrier})`,
     link: '/orders',
   })
 
-  if (await shouldSendEmail({ supabase: admin, userId: order.fan_id, type: 'merch_dispatched' })) {
+  if (await shouldSendEmail({ supabase: admin, userId: order.fan_id, type: 'order_dispatched' })) {
     const { data: fanUser } = await admin.auth.admin.getUserById(order.fan_id)
     if (fanUser?.user?.email) {
       await sendEmail(

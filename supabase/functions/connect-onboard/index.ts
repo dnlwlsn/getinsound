@@ -67,9 +67,6 @@ Deno.serve(async (req) => {
 
     // Create the Express account on first call.
     if (!stripeAccountId) {
-      const nameParts = (artist?.name || '').trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
       const profileUrl = artist?.slug
         ? `https://getinsound.com/${artist.slug}`
         : 'https://getinsound.com';
@@ -81,8 +78,6 @@ Deno.serve(async (req) => {
         business_type: 'individual',
         individual: {
           email: account.email,
-          ...(firstName && { first_name: firstName }),
-          ...(lastName && { last_name: lastName }),
         },
         business_profile: {
           url: profileUrl,

@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid preferences' }, { status: 400 })
   }
 
-  const VALID_TYPES = ['new_release', 'new_follower', 'artist_post', 'purchase', 'order_update', 'milestone', 'system']
+  const VALID_TYPES = ['new_release', 'preorder_ready', 'order_dispatched', 'artist_post', 'sale', 'first_sale', 'preorder', 'merch_order', 'code_redeemed', 'zero_fees_unlocked']
 
   const rows = preferences
     .filter(p => VALID_TYPES.includes(p.type))

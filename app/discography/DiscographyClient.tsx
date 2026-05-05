@@ -680,26 +680,43 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-col justify-end">
-                    <label className="flex items-center gap-3 cursor-pointer py-3">
+                  <div>
+                    <div className="h-[20px]" />
+                    <label className="flex items-center gap-3 cursor-pointer h-10">
                       <input type="checkbox" checked={pwyw} onChange={(e) => setPwyw(e.target.checked)} className="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-orange-600 focus:ring-orange-600 focus:ring-offset-0" />
                       <span className="text-sm text-zinc-400 font-bold">Pay what you want</span>
                     </label>
-                    <p className="text-[10px] text-zinc-600">Let fans choose how much to pay.</p>
+                    <p className="text-[10px] text-zinc-600 mt-1.5">Let fans choose how much to pay.</p>
                   </div>
                 </div>
 
                 {pwyw && (
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Minimum price (GBP)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="3.00"
-                      value={pwywMinPounds}
-                      onChange={(e) => setPwywMinPounds(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white focus:border-orange-600 outline-none transition-colors"
-                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPwywMinPounds(p => { const v = Math.max(3, parseFloat(p) - 1); return v.toFixed(2) })}
+                        className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center text-lg font-bold"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="3.00"
+                        value={pwywMinPounds}
+                        onChange={(e) => setPwywMinPounds(e.target.value)}
+                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm text-white text-center focus:border-orange-600 outline-none transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPwywMinPounds(p => { const v = parseFloat(p) + 1; return v.toFixed(2) })}
+                        className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors flex items-center justify-center text-lg font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
                     <p className="text-[10px] text-zinc-600 mt-1.5">The lowest amount a fan can pay. They can always pay more.</p>
                   </div>
                 )}
