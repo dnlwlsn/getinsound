@@ -801,7 +801,7 @@ export function DashboardClient({ artist, account, releases, stats, fans, codesB
           )}
 
           {/* ── Welcome Banner (no releases yet) ──────────────── */}
-          {isAllZero && account.stripe_onboarded && !rels.some(r => r.published) && (
+          {isAllZero && account.stripe_onboarded && rels.length === 0 && (
             <div className="bg-gradient-to-br from-orange-600/10 via-zinc-900 to-zinc-900 border border-orange-600/20 rounded-2xl p-8 mb-10">
               <h2 className="font-display text-2xl font-bold tracking-tight mb-2">Welcome to Insound</h2>
               <p className="text-zinc-400 text-sm leading-relaxed mb-5 max-w-lg">
