@@ -36,7 +36,7 @@ export async function generatePreviewBlob(file: File): Promise<Blob> {
     const rightInt = floatToInt16(rightResampled)
 
     const encoder = new lamejs.Mp3Encoder(channels, OUTPUT_SAMPLE_RATE, BITRATE)
-    const mp3Parts: BlobPart[] = []
+    const mp3Parts: Uint8Array[] = []
     const blockSize = 1152
 
     for (let i = 0; i < leftInt.length; i += blockSize) {
@@ -45,13 +45,21 @@ export async function generatePreviewBlob(file: File): Promise<Blob> {
       const mp3buf = channels === 2
         ? encoder.encodeBuffer(leftChunk, rightChunk)
         : encoder.encodeBuffer(leftChunk)
-      if (mp3buf.length > 0) mp3Parts.push(new Uint8Array(mp3buf.buffer as ArrayBuffer))
+      if (mp3buf.length > 0) mp3Parts.push(Uint8Array.from(mp3buf))
     }
 
     const flush = encoder.flush()
-    if (flush.length > 0) mp3Parts.push(new Uint8Array(flush.buffer as ArrayBuffer))
+    if (flush.length > 0) mp3Parts.push(Uint8Array.from(flush))
 
-    return new Blob(mp3Parts, { type: 'audio/mpeg' })
+    const totalLength = mp3Parts.reduce((sum, p) => sum + p.length, 0)
+    const merged = new Uint8Array(totalLength)
+    let offset = 0
+    for (const part of mp3Parts) {
+      merged.set(part, offset)
+      offset += part.length
+    }
+
+    return new Blob([merged], { type: 'audio/mpeg' })
   } finally {
     await audioCtx.close()
   }
