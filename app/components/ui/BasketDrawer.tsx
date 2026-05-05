@@ -157,7 +157,10 @@ export function BasketDrawer({ onClose }: Props) {
       let data: any
       if (session?.access_token) {
         const res = await supabase.functions.invoke('checkout-basket-create', { body: requestBody })
-        if (res.error) throw res.error
+        if (res.error) {
+          const msg = res.data?.error || res.error.message
+          throw new Error(msg)
+        }
         data = res.data
       } else {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

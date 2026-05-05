@@ -36,7 +36,7 @@ export async function generatePreviewBlob(file: File): Promise<Blob> {
     const rightInt = floatToInt16(rightResampled)
 
     const encoder = new lamejs.Mp3Encoder(channels, OUTPUT_SAMPLE_RATE, BITRATE)
-    const mp3Parts: Int8Array[] = []
+    const mp3Parts: BlobPart[] = []
     const blockSize = 1152
 
     for (let i = 0; i < leftInt.length; i += blockSize) {
@@ -45,11 +45,11 @@ export async function generatePreviewBlob(file: File): Promise<Blob> {
       const mp3buf = channels === 2
         ? encoder.encodeBuffer(leftChunk, rightChunk)
         : encoder.encodeBuffer(leftChunk)
-      if (mp3buf.length > 0) mp3Parts.push(mp3buf)
+      if (mp3buf.length > 0) mp3Parts.push(new Uint8Array(mp3buf.buffer as ArrayBuffer))
     }
 
     const flush = encoder.flush()
-    if (flush.length > 0) mp3Parts.push(flush)
+    if (flush.length > 0) mp3Parts.push(new Uint8Array(flush.buffer as ArrayBuffer))
 
     return new Blob(mp3Parts, { type: 'audio/mpeg' })
   } finally {

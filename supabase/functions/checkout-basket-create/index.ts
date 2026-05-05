@@ -355,28 +355,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Calculate total platform fee across all basket items ──
-    let totalApplicationFee = 0;
-    for (const item of basketItems) {
-      if (item.type === 'release') {
-        totalApplicationFee += Math.round((item.amount_pence * item.fee_bps) / 10000);
-      } else if (item.type === 'merch') {
-        totalApplicationFee += Math.round((item.amount_pence * STANDARD_FEE_BPS) / 10000);
-      }
-    }
-
     // ── Create one consolidated Stripe session ──
-    // Webhook creates separate transfers to each artist; application_fee_amount
-    // ensures Insound's cut is held at the Stripe level before transfers go out.
+    // Webhook creates separate transfers to each artist, deducting the platform
+    // fee from each transfer amount — no application_fee_amount needed here.
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
       ui_mode: 'embedded',
       redirect_on_completion: 'never',
       ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
       line_items: lineItems,
-      payment_intent_data: {
-        application_fee_amount: totalApplicationFee,
-      },
       metadata: {
         type: 'basket',
         basket_session_id: basketRow.id,
