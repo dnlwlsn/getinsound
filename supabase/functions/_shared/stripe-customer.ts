@@ -13,7 +13,16 @@ export async function resolveStripeCustomer(
     .eq('id', userId)
     .maybeSingle();
 
-  if (profile?.stripe_customer_id) return profile.stripe_customer_id;
+  if (profile?.stripe_customer_id) {
+    try {
+      const existing = await stripe.customers.retrieve(profile.stripe_customer_id);
+      if (!(existing as any).deleted) return profile.stripe_customer_id;
+    } catch {}
+    await admin
+      .from('fan_profiles')
+      .update({ stripe_customer_id: null })
+      .eq('id', userId);
+  }
 
   const existing = await stripe.customers.list({ email, limit: 1 });
   let customerId: string;
