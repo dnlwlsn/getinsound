@@ -110,6 +110,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
   const [showModal, setShowModal] = useState(false)
   const [publishError, setPublishError] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   // ── Create release form state ──────────────────────────────
   const [title, setTitle] = useState('')
@@ -148,6 +149,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
     setPendingTracks([])
     setError('')
     setUploadProgress('')
+    setSaving(false)
     setShowModal(true)
   }
 
@@ -341,6 +343,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
       }
 
       setUploadProgress('Done!')
+      setSaving(false)
       setShowModal(false)
 
       // If no cover was uploaded, the Edge Function generates one async.
@@ -541,6 +544,23 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                       <td className="p-5 hidden lg:table-cell text-zinc-500 text-xs">{formatDate(r.created_at)}</td>
                       <td className="p-5 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {r.published && (
+                            <button
+                              onClick={async () => {
+                                await navigator.clipboard.writeText(`${window.location.origin}/release?r=${r.slug}`)
+                                setCopiedId(r.id)
+                                setTimeout(() => setCopiedId(prev => prev === r.id ? null : prev), 2000)
+                              }}
+                              className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-zinc-600 hover:text-orange-400 hover:bg-orange-500/10 transition-colors"
+                              title="Copy share link"
+                            >
+                              {copiedId === r.id ? (
+                                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              ) : (
+                                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                              )}
+                            </button>
+                          )}
                           <button
                             onClick={() => togglePublish(r.id, r.published)}
                             disabled={!r.published && !stripeOnboarded}
