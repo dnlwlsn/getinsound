@@ -142,7 +142,7 @@ export function AppNav() {
   if (isArtistRoute) {
     return (
       <>
-        <nav className="fixed top-0 w-full z-50 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl border-b border-zinc-900">
+        <nav className="fixed top-0 w-full z-50 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl border-b border-zinc-900" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-4">
             <Link href="/" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
@@ -155,7 +155,7 @@ export function AppNav() {
             </div>
           </div>
         </nav>
-        <div className="h-[60px]" />
+        <div className="h-[60px]" style={{ marginTop: 'env(safe-area-inset-top)' }} />
       </>
     )
   }
@@ -165,7 +165,7 @@ export function AppNav() {
   if (!showLoggedIn) {
     return (
       <>
-      <nav className={`fixed top-0 z-50 w-full pt-4 px-4 transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ background: 'transparent' }}>
+      <nav className={`fixed top-0 z-50 w-full px-4 transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ background: 'transparent', paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <div className="mx-auto max-w-7xl rounded-full px-6 py-3 flex items-center justify-between ring-1 ring-white/[0.06]"
           style={{ background: 'rgba(5,5,5,0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
           <InsoundLogo size="sm" />
@@ -219,8 +219,8 @@ export function AppNav() {
 
   return (
     <>
-      <div className="h-[72px]" />
-      <nav className={`fixed top-0 w-full z-50 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+      <div className="h-[72px]" style={{ marginTop: 'env(safe-area-inset-top)' }} />
+      <nav className={`fixed top-0 w-full z-50 border-b border-zinc-900 bg-[rgba(9,9,11,0.88)] backdrop-blur-xl transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-7xl mx-auto flex justify-between items-center px-5 md:px-10 py-4 gap-3">
           <InsoundLogo size="md" className="flex-shrink-0 leading-none" />
 
