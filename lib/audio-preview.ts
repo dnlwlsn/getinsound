@@ -1,4 +1,4 @@
-import lamejs from 'lamejs'
+import lamejs from '@breezystack/lamejs'
 
 const PREVIEW_DURATION = 30
 const FADE_DURATION = 2
