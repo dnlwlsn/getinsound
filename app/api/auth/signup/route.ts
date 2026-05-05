@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   }
 
   const magicLink = `${SITE_URL}/auth/callback?next=${encodeURIComponent(nextPath)}&token_hash=${tokenHash}&type=magiclink`
-  const { subject, html } = buildMagicLinkEmail(magicLink, 'signin')
+  const { subject, html } = buildMagicLinkEmail(magicLink, 'signup')
   const result = await sendEmail(email, subject, html)
 
   if (!result.ok) {

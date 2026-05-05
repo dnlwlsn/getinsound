@@ -1,6 +1,7 @@
 'use client'
 
-export default function ReleaseError({ reset }: { error: Error; reset: () => void }) {
+export default function ReleaseError({ error, reset }: { error: Error; reset: () => void }) {
+  console.error('[release-error]', error)
   return (
     <div className="min-h-screen bg-insound-bg flex items-center justify-center p-6 font-display">
       <div className="text-center">

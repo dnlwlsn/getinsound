@@ -49,12 +49,19 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  const slug = artist_name.toLowerCase().replace(/\s+/g, '-')
-  const { data: artist } = await supabase
+  const slug = artist_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+
+  const { data: bySlug } = await supabase
     .from('artists')
     .select('id, name')
-    .or(`name.ilike.%${artist_name.replace(/[(),."']/g, '')}%,slug.eq.${slug.replace(/[(),."']/g, '')}`)
+    .eq('slug', slug)
     .maybeSingle()
+
+  const artist = bySlug ?? (await supabase
+    .from('artists')
+    .select('id, name')
+    .ilike('name', `%${artist_name.replace(/[^a-zA-Z0-9 -]/g, '')}%`)
+    .maybeSingle()).data
 
   if (!artist) return NextResponse.json({ error: 'Artist not found' }, { status: 404 })
 

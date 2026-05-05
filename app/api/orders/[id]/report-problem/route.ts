@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 import Stripe from 'stripe'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ip = getClientIp(req.headers)
+  const ipHash = await hashIp(ip)
+  const limited = await checkRateLimit(ipHash, 'general', 5, 1)
+  if (limited) return limited
+
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: order } = await supabase
@@ -37,6 +44,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (order.status === 'refunded') {
       return NextResponse.json({ result: 'already_refunded', message: 'This order has already been refunded.' })
     }
+    if (order.status === 'disputed') {
+      return NextResponse.json({ result: 'disputed', message: 'This order is already under review.' })
+    }
 
     await supabase
       .from('orders')
@@ -63,11 +73,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .eq('id', order.artist_id)
       .maybeSingle()
 
+    const rawLinks = artist?.social_links as Record<string, { url?: string }> | null
+    const safeLinks = rawLinks
+      ? Object.fromEntries(Object.entries(rawLinks).map(([k, v]) => [k, { url: v?.url }]))
+      : null
+
     return NextResponse.json({
       result: 'manual_check',
       tracking_number: order.tracking_number,
       carrier: order.carrier,
-      social_links: artist?.social_links ?? null,
+      social_links: safeLinks,
       message: 'Please use your tracking number to check the status with the carrier, or contact the artist directly.',
     })
   }
@@ -76,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let trackingData: Record<string, unknown> | null = null
   try {
     const res = await fetch(
-      `https://api.trackingmore.com/v4/trackings/get?tracking_numbers=${order.tracking_number}&courier_code=${order.carrier}`,
+      `https://api.trackingmore.com/v4/trackings/get?tracking_numbers=${encodeURIComponent(order.tracking_number)}&courier_code=${encodeURIComponent(order.carrier)}`,
       { headers: { 'Trackingmore-Api-Key': trackingApiKey } },
     )
     if (res.ok) {
@@ -109,6 +124,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (deliveryStatus === 'undelivered' || deliveryStatus === 'exception') {
     if (order.status === 'refunded') {
       return NextResponse.json({ result: 'already_refunded', message: 'This order has already been refunded.' })
+    }
+    if (order.status === 'disputed') {
+      return NextResponse.json({ result: 'disputed', message: 'This order is already under review.' })
     }
 
     await supabase

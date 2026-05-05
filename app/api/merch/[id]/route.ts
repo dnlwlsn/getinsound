@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
@@ -40,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   const supabaseStoragePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`
   if ('photos' in updates && Array.isArray(updates.photos)) {
-    if ((updates.photos as string[]).some(url => typeof url !== 'string' || !url.startsWith(supabaseStoragePrefix))) {
+    if ((updates.photos as string[]).some(url => typeof url !== 'string' || !url.startsWith(supabaseStoragePrefix) || !url.includes(`/${user.id}/`))) {
       return NextResponse.json({ error: 'Invalid photo URL' }, { status: 400 })
     }
   }
@@ -58,7 +59,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { error } = await supabase

@@ -16,6 +16,7 @@
   --nav-bg: rgba(9,9,11,0.75);
   --line-color: rgba(255,255,255,0.06);
   --border-subtle: rgba(255,255,255,0.05);
+  --player-bar-height: 0px;
 }
 
 
@@ -241,10 +242,10 @@ footer { border-color: var(--line-color); transition: border-color 0.3s ease; }
 .roadmap-list.active li::before { background: #F56D00; }
 
 /* ── Zinc overrides ──────────────────────────────────────────── */
-.text-zinc-400 { color: rgba(255,255,255,0.7) !important; }
-.text-zinc-500 { color: rgba(255,255,255,0.58) !important; }
-.text-zinc-600 { color: rgba(255,255,255,0.46) !important; }
-.text-zinc-700 { color: rgba(255,255,255,0.32) !important; }
+.text-zinc-400 { color: rgba(255,255,255,0.7); }
+.text-zinc-500 { color: rgba(255,255,255,0.58); }
+.text-zinc-600 { color: rgba(255,255,255,0.46); }
+.text-zinc-700 { color: rgba(255,255,255,0.32); }
 
 /* ── Orange opacity utilities ────────────────────────────────── */
 .bg-orange-600\/10   { background-color: rgba(245,109,0,0.1)  !important; }

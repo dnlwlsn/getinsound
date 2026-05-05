@@ -28,13 +28,15 @@ export function PlayerBar() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const crossfadeRef = useRef<HTMLAudioElement | null>(null)
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const desktopCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const mobileCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const rafRef = useRef<number>(0)
   const fetchingRef = useRef<string | null>(null)
   const playLoggedRef = useRef<string | null>(null)
   const [queueOpen, setQueueOpen] = useState(false)
   const [isBuffering, setIsBuffering] = useState(false)
   const [previewEndedMsg, setPreviewEndedMsg] = useState(false)
+  const [audioError, setAudioError] = useState(false)
 
   // Log play count helper (fires once per track play)
   const logPlay = useCallback((trackId: string, preview: boolean) => {
@@ -57,6 +59,7 @@ export function PlayerBar() {
   useEffect(() => {
     if (!currentTrack) return
     setIsBuffering(true)
+    setAudioError(false)
     const trackId = currentTrack.id
     const ac = new AbortController()
     fetchingRef.current = trackId
@@ -69,7 +72,11 @@ export function PlayerBar() {
         }
       })
       .catch(err => {
-        if (err.name !== 'AbortError') fetchingRef.current = null
+        if (err.name !== 'AbortError') {
+          fetchingRef.current = null
+          setIsBuffering(false)
+          setAudioError(true)
+        }
       })
 
     return () => ac.abort()
@@ -128,11 +135,8 @@ export function PlayerBar() {
   // Effective duration for display — use preview limit when applicable
   const displayDuration = previewDuration && isPreview ? Math.min(previewDuration, duration) : duration
 
-  // Waveform drawing
-  const drawWaveform = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
+  // Waveform drawing — renders on a single canvas
+  const drawWaveformOnCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -163,6 +167,11 @@ export function PlayerBar() {
       ctx.fillRect(x, (h - barH) / 2, 2, barH)
     }
   }, [currentTime, duration, currentTrack, previewDuration, isPreview])
+
+  const drawWaveform = useCallback(() => {
+    if (desktopCanvasRef.current) drawWaveformOnCanvas(desktopCanvasRef.current)
+    if (mobileCanvasRef.current) drawWaveformOnCanvas(mobileCanvasRef.current)
+  }, [drawWaveformOnCanvas])
 
   // Enforce preview duration limit — stop playback and show buy prompt
   const previewEnforcedRef = useRef(false)
@@ -278,7 +287,7 @@ export function PlayerBar() {
   }, [currentTime, duration, isPlaying, isPreview, volume, isMuted])
 
   const handleScrubberClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
+    const canvas = e.currentTarget
     if (!canvas || displayDuration <= 0) return
     const rect = canvas.getBoundingClientRect()
     const ratio = (e.clientX - rect.left) / rect.width
@@ -367,8 +376,25 @@ export function PlayerBar() {
     toggleExpanded()
   }, [toggleExpanded])
 
+  const retryPlayback = useCallback(() => {
+    if (!currentTrack || !audioRef.current) return
+    setAudioError(false)
+    setIsBuffering(true)
+    fetch(`/api/stream?trackId=${currentTrack.id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.url) {
+          setAudioUrl(data.url, data.isPreview, data.previewDuration ?? null)
+        } else {
+          setAudioError(true)
+          setIsBuffering(false)
+        }
+      })
+      .catch(() => { setAudioError(true); setIsBuffering(false) })
+  }, [currentTrack, setAudioUrl])
+
   const pathname = usePathname()
-  const isAuthPage = pathname === '/auth' || pathname === '/signup'
+  const isAuthPage = pathname === '/auth' || pathname === '/signup' || pathname.startsWith('/auth/')
 
   if (!currentTrack || isAuthPage) return null
 
@@ -380,8 +406,12 @@ export function PlayerBar() {
         ref={audioRef}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
+        onError={() => { setIsBuffering(false); setIsPlaying(false); setAudioError(true) }}
         preload="auto"
       />
+
+      {/* Set CSS variable for stacking other elements above the player */}
+      <style>{`:root { --player-bar-height: 80px; }`}</style>
 
       {/* Desktop player bar */}
       <div className="player-bar-active fixed bottom-0 left-0 right-0 z-40 hidden sm:block" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
@@ -414,6 +444,11 @@ export function PlayerBar() {
                     style={{ color: accent }}>
                     Preview
                   </span>
+                )}
+                {audioError && (
+                  <button onClick={retryPlayback} className="text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300 transition-colors">
+                    Tap to retry
+                  </button>
                 )}
               </div>
               <FavouriteButton trackId={currentTrack.id} size={16} />
@@ -493,7 +528,7 @@ export function PlayerBar() {
                   {formatTime(currentTime)}
                 </span>
                 <canvas
-                  ref={canvasRef}
+                  ref={desktopCanvasRef}
                   className="flex-1 h-8 cursor-pointer"
                   onClick={handleScrubberClick}
                   onKeyDown={handleScrubberKeyDown}
@@ -587,9 +622,6 @@ export function PlayerBar() {
       {/* Queue panel */}
       <QueuePanel open={queueOpen} onClose={() => setQueueOpen(false)} />
 
-      {/* Crossfade audio element */}
-      <audio ref={crossfadeRef} preload="auto" />
-
       {/* Mobile player bar */}
       <div className="player-bar-active fixed left-0 right-0 z-[55] sm:hidden" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom))' }}>
         <div
@@ -611,7 +643,7 @@ export function PlayerBar() {
             /* Expanded mobile view */
             <div
               ref={expandedRef}
-              className="px-4 py-4"
+              className="px-4 py-4 max-h-[calc(100dvh-60px-env(safe-area-inset-bottom))] overflow-y-auto"
               style={{ touchAction: 'none', overscrollBehavior: 'contain' }}
               onTouchStart={handleSwipeStart}
               onTouchMove={handleSwipeMove}
@@ -651,6 +683,11 @@ export function PlayerBar() {
                       Preview
                     </span>
                   )}
+                  {audioError && (
+                    <button onClick={retryPlayback} className="text-[10px] font-bold uppercase tracking-wider text-red-400 active:text-red-300 transition-colors">
+                      Playback failed — tap to retry
+                    </button>
+                  )}
                   <div className="mt-2">
                     <FavouriteButton trackId={currentTrack.id} size={20} />
                   </div>
@@ -662,7 +699,7 @@ export function PlayerBar() {
                     {formatTime(currentTime)}
                   </span>
                   <canvas
-                    ref={canvasRef}
+                    ref={mobileCanvasRef}
                     className="flex-1 h-10 cursor-pointer"
                     onClick={handleScrubberClick}
                     onKeyDown={handleScrubberKeyDown}

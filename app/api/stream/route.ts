@@ -27,9 +27,10 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createClient()
+  const admin = getAdminClient()
 
-  // Fetch the track with its release info
-  const { data: track, error: trackErr } = await supabase
+  // Fetch track with admin client — anon RLS may block logged-out reads
+  const { data: track, error: trackErr } = await admin
     .from('tracks')
     .select('id, release_id, audio_path, preview_path')
     .eq('id', trackId)
@@ -40,19 +41,22 @@ export async function GET(request: Request) {
   }
 
   // Check if the user owns this release or has purchased it
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: authData } = await supabase.auth.getUser()
+  const user = authData?.user ?? null
   let hasFullAccess = false
 
   if (user) {
     // Artist owns their own tracks
     const { data: release } = await supabase
       .from('releases')
-      .select('artist_id')
+      .select('artist_id, published')
       .eq('id', track.release_id)
       .single()
 
     if (release?.artist_id === user.id) {
       hasFullAccess = true
+    } else if (!release?.published) {
+      return NextResponse.json({ error: 'Track not found' }, { status: 404 })
     } else {
       const { count } = await supabase
         .from('purchases')
@@ -84,8 +88,24 @@ export async function GET(request: Request) {
     }, { headers: { 'Cache-Control': 'no-store' } })
   }
 
+  // Non-owner accessing unpublished release — block even preview
+  if (!hasFullAccess) {
+    const { data: rel } = await admin
+      .from('releases')
+      .select('published')
+      .eq('id', track.release_id)
+      .single()
+    if (!rel?.published) {
+      return NextResponse.json({ error: 'Track not found' }, { status: 404 })
+    }
+  }
+
   // Preview — public bucket, stable URL so Cloudflare can cache at edge
   if (track.preview_path) {
+    // Per-IP-per-track rate limit to prevent systematic preview downloading
+    const previewLimited = await checkRateLimit(`${ipHash}:stream:${trackId}`, 'general', 10, 1)
+    if (previewLimited) return previewLimited
+
     const { data: publicUrl } = supabase.storage
       .from('previews')
       .getPublicUrl(track.preview_path)
@@ -104,7 +124,6 @@ export async function GET(request: Request) {
 
   // Full-access user but preview_path is missing — serve from masters
   if (track.audio_path) {
-    const admin = getAdminClient()
     const { data: signed, error: signErr } = await admin.storage
       .from('masters')
       .createSignedUrl(track.audio_path, SIGNED_URL_EXPIRY)

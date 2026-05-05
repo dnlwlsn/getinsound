@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendEmail } from '@/lib/email/send'
 import { buildMagicLinkEmail } from '@/lib/email/templates'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 function getAdminClient() {
   return createAdminClient(
@@ -11,12 +12,22 @@ function getAdminClient() {
   )
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers)
+  const ipHash = await hashIp(ip)
+  const limited = await checkRateLimit(ipHash, 'redownload', 2, 10)
+  if (limited) return limited
+
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (!user.email) {
+    return NextResponse.json({ error: 'No email on account' }, { status: 400 })
   }
 
   const { purchase_id } = await request.json()
@@ -28,9 +39,10 @@ export async function POST(request: Request) {
   // Verify user owns this purchase
   const { data: purchase, error: purchaseError } = await getAdminClient()
     .from('purchases')
-    .select('id, buyer_user_id, release_id, releases ( title, artists ( name ) )')
+    .select('id, buyer_user_id, release_id, releases ( title, slug, artists ( name, slug ) )')
     .eq('id', purchase_id)
     .eq('status', 'paid')
+    .or('pre_order.eq.false,pre_order.is.null')
     .single()
 
   if (purchaseError || !purchase) {
@@ -51,6 +63,16 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (existingGrant) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
+    const release = purchase.releases as any
+    const artist = Array.isArray(release?.artists) ? release.artists[0] : release?.artists
+    const downloadLink = `${siteUrl}/download/${existingGrant.token}`
+    const { subject, html } = buildMagicLinkEmail(
+      downloadLink,
+      'purchase',
+      { releaseTitle: release?.title, artistName: artist?.name, userId: user.id },
+    )
+    await sendEmail(user.email!, subject, html)
     return NextResponse.json({ ok: true })
   }
 
@@ -71,13 +93,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create download grant' }, { status: 500 })
   }
 
-  // Send email with link to library
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
   const release = purchase.releases as any
   const artist = Array.isArray(release?.artists) ? release.artists[0] : release?.artists
+  const downloadLink = `${siteUrl}/download/${token}`
 
   const { subject, html } = buildMagicLinkEmail(
-    `${siteUrl}/library`,
+    downloadLink,
     'purchase',
     {
       releaseTitle: release?.title,

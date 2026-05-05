@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
-import { Footer } from '@/app/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'FAQ | Insound',
@@ -247,7 +246,6 @@ export default function FAQPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

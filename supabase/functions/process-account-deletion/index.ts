@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         await markExecuted(admin, request.id);
         continue;
       }
-      const userEmail = user.email!;
+      const userEmail = user.email;
 
       // ── ARTIST DELETION STEPS ────────────────────────────
       if (request.user_type === 'artist') {
@@ -76,13 +76,7 @@ Deno.serve(async (req) => {
         .update({ buyer_user_id: null, buyer_email: 'deleted@anonymised' })
         .eq('buyer_user_id', request.user_id);
 
-      // 3. Delete fan_profiles (cascades: fan_preferences, fan_pinned_releases, fan_badges, fan_hidden_purchases)
-      await admin
-        .from('fan_profiles')
-        .delete()
-        .eq('id', request.user_id);
-
-      // 4. Delete avatar from storage
+      // 3. Delete avatar from storage
       const { data: avatarFiles } = await admin.storage
         .from('avatars')
         .list(request.user_id);
@@ -93,11 +87,19 @@ Deno.serve(async (req) => {
           .remove(avatarFiles.map(f => `${request.user_id}/${f.name}`));
       }
 
-      // 5. Delete auth user
+      // 4. Delete auth user (before fan_profiles so profile still exists if this fails)
       await admin.auth.admin.deleteUser(request.user_id);
 
+      // 5. Delete fan_profiles (cascades: fan_preferences, fan_pinned_releases, fan_badges, fan_hidden_purchases)
+      await admin
+        .from('fan_profiles')
+        .delete()
+        .eq('id', request.user_id);
+
       // 6. Send deletion complete email
-      await sendDeletionCompleteEmail(userEmail, downloadLinks);
+      if (userEmail) {
+        await sendDeletionCompleteEmail(userEmail, downloadLinks);
+      }
 
       // 7. Mark as executed
       await markExecuted(admin, request.id);
@@ -125,19 +127,22 @@ async function processArtistDeletion(
   // 1. Cancel active pre-orders and refund
   const { data: preorderPurchases } = await admin
     .from('purchases')
-    .select('id, stripe_pi_id, buyer_email, amount_pence, releases!inner(id, title, preorder_enabled, cancelled)')
+    .select('id, stripe_pi_id, buyer_email, amount_pence, releases!inner(id, title, preorder_enabled, cancelled, currency)')
     .eq('artist_id', userId)
     .eq('status', 'paid')
     .eq('pre_order', true)
     .eq('releases.preorder_enabled', true)
     .eq('releases.cancelled', false);
 
-  const refundEmails: { to: string; release: string; amount: number }[] = [];
+  const refundEmails: { to: string; release: string; amount: number; currency: string }[] = [];
 
   for (const p of preorderPurchases ?? []) {
     if (p.stripe_pi_id) {
       try {
-        await stripe.refunds.create({ payment_intent: p.stripe_pi_id });
+        await stripe.refunds.create(
+          { payment_intent: p.stripe_pi_id, refund_application_fee: true, reverse_transfer: true },
+          { idempotencyKey: `deletion_refund_${p.id}` },
+        );
         await admin.from('purchases').update({ status: 'refunded' }).eq('id', p.id);
         if (p.buyer_email && p.buyer_email !== 'deleted@anonymised') {
           const release = Array.isArray(p.releases) ? p.releases[0] : p.releases;
@@ -145,6 +150,7 @@ async function processArtistDeletion(
             to: p.buyer_email,
             release: (release as any)?.title ?? 'Unknown',
             amount: p.amount_pence,
+            currency: (release as any)?.currency || 'GBP',
           });
         }
       } catch (e) {
@@ -164,7 +170,7 @@ async function processArtistDeletion(
       from: 'Insound <noreply@getinsound.com>',
       to: [r.to],
       subject: 'Your pre-order has been refunded',
-      html: buildRefundEmail(r.release, r.amount),
+      html: buildRefundEmail(r.release, r.amount, r.currency),
     }));
 
     try {
@@ -343,8 +349,10 @@ async function markExecuted(admin: ReturnType<typeof createClient>, requestId: s
     .eq('id', requestId);
 }
 
-function buildRefundEmail(releaseTitle: string, amountPence: number): string {
-  const amount = `£${(amountPence / 100).toFixed(2)}`;
+function buildRefundEmail(releaseTitle: string, amountPence: number, currency = 'GBP'): string {
+  const symbols: Record<string, string> = { GBP: '£', USD: '$', EUR: '€', CAD: 'C$', AUD: 'A$', JPY: '¥' };
+  const sym = symbols[currency.toUpperCase()] || currency + ' ';
+  const amount = `${sym}${(amountPence / 100).toFixed(currency.toUpperCase() === 'JPY' ? 0 : 2)}`;
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

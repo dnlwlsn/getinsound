@@ -4,7 +4,6 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
-import { Footer } from '@/app/components/ui/Footer'
 import { useCurrency } from '../providers/CurrencyProvider'
 
 /* ── Data ─────────────────────────────────────────────────────── */
@@ -352,7 +351,6 @@ export function ForArtistsClient() {
         </div>
       </section>
 
-      <Footer />
     </main>
   )
 }

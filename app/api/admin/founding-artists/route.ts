@@ -14,12 +14,19 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  const slug = artist_name.toLowerCase().replace(/\s+/g, '-')
-  const { data: artist } = await supabaseAdmin
+  const slug = artist_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+
+  const { data: bySlug } = await supabaseAdmin
     .from('artists')
     .select('id, name, founding_artist')
-    .or(`name.ilike.%${artist_name.replace(/[(),."']/g, '')}%,slug.eq.${slug.replace(/[(),."']/g, '')}`)
+    .eq('slug', slug)
     .maybeSingle()
+
+  const artist = bySlug ?? (await supabaseAdmin
+    .from('artists')
+    .select('id, name, founding_artist')
+    .ilike('name', `%${artist_name.replace(/[^a-zA-Z0-9 -]/g, '')}%`)
+    .maybeSingle()).data
 
   if (!artist) return NextResponse.json({ error: 'Artist not found' }, { status: 404 })
   if (artist.founding_artist) return NextResponse.json({ error: 'Already a founding artist' }, { status: 409 })

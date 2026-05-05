@@ -232,7 +232,7 @@ export function WhyUsClient() {
             <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Open Now</span>
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-black tracking-tighter mb-4">Ready to get started?</h2>
-          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Set up your artist profile in under two minutes. Founding members get a permanent reduced rate — 7.5% instead of 10%.</p>
+          <p className="text-zinc-400 mb-10 max-w-sm mx-auto leading-relaxed">Set up your artist profile in under two minutes. Founding members get a reduced rate for their first 12 months — 7.5% instead of 10%.</p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/become-an-artist" className="w-full sm:w-auto bg-orange-600 hover:bg-orange-500 text-black font-black px-10 py-4 rounded-xl text-sm transition-colors shadow-lg shadow-orange-600/20">

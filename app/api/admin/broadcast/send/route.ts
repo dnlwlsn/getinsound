@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { requireAdminApi } from '@/lib/admin'
 import { sendEmail } from '@/lib/email/send'
 import { buildBroadcastHtml } from '@/lib/email/broadcast'
+import { generateUnsubscribeToken } from '@/app/api/unsubscribe/route'
 
 function getAdminClient() { return createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,12 +32,17 @@ async function getAllUsers() {
   return allUsers
 }
 
-async function getRecipientEmails(audience: string): Promise<string[]> {
+async function getRecipients(audience: string): Promise<Array<{ id: string; email: string }>> {
   const unsubscribed = await getUnsubscribedIds()
 
   if (audience === 'artists') {
-    const { data } = await getAdminClient().from('artist_accounts').select('email')
-    return (data ?? []).map(r => r.email).filter(Boolean)
+    const { data } = await getAdminClient().from('artist_accounts').select('id')
+    const artistIds = (data ?? []).map(r => r.id).filter((id): id is string => !!id && !unsubscribed.has(id))
+    if (artistIds.length === 0) return []
+    const users = await getAllUsers()
+    return users
+      .filter(u => artistIds.includes(u.id) && u.email)
+      .map(u => ({ id: u.id, email: u.email! }))
   }
 
   if (audience === 'fans') {
@@ -46,11 +52,10 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
       .eq('email_unsubscribed', false)
     const fanIds = (data ?? []).map(r => r.id)
     if (fanIds.length === 0) return []
-    const users = { users: await getAllUsers() }
-    return (users?.users ?? [])
-      .filter(u => fanIds.includes(u.id))
-      .map(u => u.email!)
-      .filter(Boolean)
+    const users = await getAllUsers()
+    return users
+      .filter(u => fanIds.includes(u.id) && u.email)
+      .map(u => ({ id: u.id, email: u.email! }))
   }
 
   if (audience === 'purchasers') {
@@ -59,19 +64,17 @@ async function getRecipientEmails(audience: string): Promise<string[]> {
       .select('buyer_user_id')
     const fanIds = [...new Set((data ?? []).map(r => r.buyer_user_id))].filter((id): id is string => !!id && !unsubscribed.has(id))
     if (fanIds.length === 0) return []
-    const users = { users: await getAllUsers() }
-    return (users?.users ?? [])
-      .filter(u => fanIds.includes(u.id))
-      .map(u => u.email!)
-      .filter(Boolean)
+    const users = await getAllUsers()
+    return users
+      .filter(u => fanIds.includes(u.id) && u.email)
+      .map(u => ({ id: u.id, email: u.email! }))
   }
 
   // everyone
-  const users = { users: await getAllUsers() }
-  return (users?.users ?? [])
-    .filter(u => !unsubscribed.has(u.id))
-    .map(u => u.email!)
-    .filter(Boolean)
+  const users = await getAllUsers()
+  return users
+    .filter(u => !unsubscribed.has(u.id) && u.email)
+    .map(u => ({ id: u.id, email: u.email! }))
 }
 
 export async function POST(req: NextRequest) {
@@ -84,17 +87,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
-  const html = buildBroadcastHtml(body_markdown)
-  const emails = await getRecipientEmails(audience)
+  const VALID_AUDIENCES = ['artists', 'fans', 'purchasers', 'everyone']
+  if (!VALID_AUDIENCES.includes(audience)) {
+    return NextResponse.json({ error: 'Invalid audience' }, { status: 400 })
+  }
+
+  if (subject.length > 200 || body_markdown.length > 50_000) {
+    return NextResponse.json({ error: 'Subject or body too long' }, { status: 400 })
+  }
+
+  const baseHtml = buildBroadcastHtml(body_markdown)
+  const recipients = await getRecipients(audience)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
 
   const { data: broadcast, error: insertError } = await getAdminClient()
     .from('broadcast_history')
     .insert({
       subject,
       body_markdown,
-      body_html: html,
+      body_html: baseHtml,
       audience_filter: { audience },
-      recipient_count: emails.length,
+      recipient_count: recipients.length,
       sent_by: user.id,
       status: 'sending',
     })
@@ -109,19 +122,24 @@ export async function POST(req: NextRequest) {
   const BATCH_SIZE = 10
   const BATCH_DELAY = 200
 
-  for (let i = 0; i < emails.length; i += BATCH_SIZE) {
-    const batch = emails.slice(i, i + BATCH_SIZE)
+  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+    const batch = recipients.slice(i, i + BATCH_SIZE)
     const results = await Promise.all(
-      batch.map(email => sendEmail(email, subject, html))
+      batch.map(async (recipient) => {
+        const token = await generateUnsubscribeToken(recipient.id)
+        const unsubUrl = `${siteUrl}/unsubscribe?user_id=${recipient.id}&token=${token}`
+        const html = baseHtml.replace('{{unsubscribe_url}}', unsubUrl)
+        return sendEmail(recipient.email, subject, html)
+      })
     )
     failCount += results.filter(r => !r.ok).length
 
-    if (i + BATCH_SIZE < emails.length) {
+    if (i + BATCH_SIZE < recipients.length) {
       await new Promise(resolve => setTimeout(resolve, BATCH_DELAY))
     }
   }
 
-  const finalStatus = failCount === emails.length ? 'failed' : 'sent'
+  const finalStatus = failCount === recipients.length ? 'failed' : 'sent'
   await getAdminClient()
     .from('broadcast_history')
     .update({ status: finalStatus, completed_at: new Date().toISOString() })
@@ -130,7 +148,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     broadcast_id: broadcast.id,
-    sent: emails.length - failCount,
+    sent: recipients.length - failCount,
     failed: failCount,
   })
 }

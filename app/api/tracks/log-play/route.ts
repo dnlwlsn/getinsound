@@ -20,6 +20,16 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
+    const { data: track } = await supabase
+      .from('tracks')
+      .select('release_id, releases!inner(published)')
+      .eq('id', trackId)
+      .maybeSingle()
+
+    if (!track || !(track.releases as any)?.published) {
+      return NextResponse.json({ error: 'Track not found' }, { status: 404 })
+    }
+
     const { error } = await supabase.rpc('increment_play_count', {
       track_id: trackId,
       is_preview: isPreview,

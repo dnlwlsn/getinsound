@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
     failed: 0,
     errors: [],
   };
+  const refundedIds = new Set<string>();
 
   // Refund each purchase via Stripe
   for (const purchase of purchases ?? []) {
@@ -96,29 +97,38 @@ Deno.serve(async (req) => {
     }
 
     try {
-      await stripe.refunds.create({ payment_intent: purchase.stripe_pi_id, refund_application_fee: true });
+      await stripe.refunds.create(
+        { payment_intent: purchase.stripe_pi_id, refund_application_fee: true, reverse_transfer: true },
+        { idempotencyKey: `cancel_preorder_${purchase.id}` },
+      );
       await admin
         .from('purchases')
         .update({ status: 'refunded' })
         .eq('id', purchase.id);
       results.refunded++;
+      refundedIds.add(purchase.id);
     } catch (e) {
       results.failed++;
       results.errors.push(`Refund failed for ${purchase.id}: ${(e as Error).message}`);
     }
   }
 
-  // Mark release as cancelled
-  await admin
-    .from('releases')
-    .update({ cancelled: true, published: false })
-    .eq('id', release_id);
+  // Only mark release as cancelled if all refunds succeeded
+  if (results.failed === 0) {
+    await admin
+      .from('releases')
+      .update({ cancelled: true, published: false })
+      .eq('id', release_id);
+  } else {
+    // Partial failure — keep release in current state so remaining fans can be retried
+    console.error(`${results.failed} refund(s) failed — release NOT marked as cancelled`);
+  }
 
   // Email affected fans
   const artistObj = Array.isArray(release.artists) ? release.artists[0] : release.artists;
   const artistName = (artistObj as any)?.name ?? 'the artist';
   const emailBatch = (purchases ?? [])
-    .filter((p) => p.buyer_email)
+    .filter((p) => p.buyer_email && refundedIds.has(p.id))
     .map((p) => ({
       from: 'Insound <noreply@getinsound.com>',
       to: [p.buyer_email],
@@ -128,7 +138,7 @@ Deno.serve(async (req) => {
 
   if (emailBatch.length > 0) {
     try {
-      await fetch('https://api.resend.com/emails/batch', {
+      const emailRes = await fetch('https://api.resend.com/emails/batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,6 +146,9 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify(emailBatch),
       });
+      if (!emailRes.ok) {
+        console.error('Cancel notification emails failed:', await emailRes.text());
+      }
     } catch (e) {
       console.error('Cancel notification emails failed:', (e as Error).message);
     }

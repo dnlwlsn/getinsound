@@ -1,15 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+const HIDE_NAV_ROUTES = ['/signup', '/auth', '/welcome', '/become-an-artist']
+const HIDE_NAV_PREFIXES = ['/for-', '/why-us', '/redeem']
+
 export function VerificationBanner() {
+  const pathname = usePathname()
+  const isHiddenRoute = HIDE_NAV_ROUTES.some(r => pathname === r) || HIDE_NAV_PREFIXES.some(p => pathname.startsWith(p))
   const [show, setShow] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState('')
 
   useEffect(() => {
+    if (isHiddenRoute) return
     const dismissed = sessionStorage.getItem('insound_verification_dismissed')
     if (dismissed) return
 
@@ -45,7 +52,7 @@ export function VerificationBanner() {
     setShow(false)
   }
 
-  if (!show) return null
+  if (!show || isHiddenRoute) return null
 
   return (
     <div className="bg-orange-600/10 border-b border-orange-600/20 px-4 py-2.5 flex items-center justify-center gap-3 text-sm relative">

@@ -1,138 +1,131 @@
 # Insound Launch Checklist
 
-Two lists: a **pre-deploy smoke test** (run before every push) and **launch requirements** (must all be true before going live).
+Run through these flows with Stripe test mode before going live. Each section takes 2-3 minutes.
 
 ---
 
-## Pre-Deploy Smoke Test
+## 1. Fan: Browse and discover
+- [ ] Visit `/explore` — releases load, genre filters work
+- [ ] GenreOnboarding appears for new users with no preferences
+- [ ] Visit a release page — cover, tracklist, price, artist name display correctly
+- [ ] Play a preview — audio streams, player bar appears
+- [ ] Recommendations section shows related releases (tag-based or genre fallback)
+- [ ] Footer visible with Privacy + Terms links
 
-Run through this in 5-10 minutes before every push. If anything fails, do not deploy.
+## 2. Fan: Purchase a release
+- [ ] Click Buy on a paid release — consent stage appears (right-to-cancel waiver)
+- [ ] Confirm consent — Stripe embedded checkout loads
+- [ ] Complete payment (test card `4242 4242 4242 4242`) — polling resolves, success shown
+- [ ] Check email — branded receipt arrives with unsubscribe link and price
+- [ ] Release appears in `/library`
 
-### Audio Playback
-- [ ] Click play on a release page — 30-second preview plays
-- [ ] Track advances to next song automatically
-- [ ] Pause, resume, skip forward, skip back all work
-- [ ] Player bar shows correct track title and artist
-- [ ] Volume slider works
-- [ ] Player persists across page navigation
+## 3. Fan: Purchase as guest (no account)
+- [ ] Buy a release without being signed in
+- [ ] After payment, see "Check your email" (not a dead /library link)
+- [ ] Email arrives with magic link — clicking it creates account and grants access
 
-### Auth
-- [ ] Sign up with email (new account)
-- [ ] Sign in with email (existing account)
+## 4. Fan: Download purchased music
+- [ ] In library, click download on a single track — file downloads
+- [ ] For an album, per-track buttons appear — each downloads individually
+- [ ] "Download All" triggers sequential downloads without crashing
+
+## 5. Fan: PWYW (pay what you want)
+- [ ] On a PWYW release, enter a custom amount above minimum — checkout uses that amount
+- [ ] Try entering below minimum — error shown
+- [ ] Complete purchase — receipt shows the custom amount
+
+## 6. Fan: Signup and auth
+- [ ] Sign up with email — magic link arrives (branded, no password needed)
+- [ ] Click link — account created, redirected correctly
 - [ ] Sign in with Google OAuth
 - [ ] Sign out — redirects correctly, player state clears
-- [ ] Protected pages (/dashboard, /library, /settings) redirect to auth when logged out
+- [ ] Protected pages redirect to auth when logged out
 
-### Browse & Search
-- [ ] Home page loads with featured releases
-- [ ] Search returns artists and releases
-- [ ] Clicking a search result navigates to the correct page
-- [ ] Artist page loads with releases listed
-- [ ] Release page loads with tracks, price, and cover art
+## 7. Artist: Signup and onboarding
+- [ ] Register as artist — slug created, dashboard accessible
+- [ ] Reserved slugs rejected (e.g. "admin", "settings")
+- [ ] Connect Stripe — onboarding flow completes
 
-### Purchase Flow (use Stripe test mode)
-- [ ] "Buy" button opens checkout on a release page
-- [ ] PWYW slider works (amount updates, minimum enforced)
-- [ ] Complete checkout with test card (4242 4242 4242 4242)
-- [ ] Download page appears after payment
-- [ ] Downloaded file is a valid audio file
+## 8. Artist: Publish a release
+- [ ] Create release — fill title, upload cover, upload tracks
+- [ ] If upload fails mid-way — release row is cleaned up, can retry without slug conflict
+- [ ] Set price, add tags, publish — release appears on `/explore`
+- [ ] Preview stream works for non-owners
 
-### Basket
-- [ ] Add item to basket — badge count updates
+## 9. Artist: Get paid
+- [ ] After a fan purchases, check Stripe dashboard — Transfer created to connected account
+- [ ] Platform fee deducted correctly (founding artist rate vs standard)
+- [ ] Artist sees the sale in `/sales`
+- [ ] If artist has no Stripe account — clear error shown to buyer, not silent skip
+
+## 10. Merch: Full flow
+- [ ] List a merch item with variants and postage
+- [ ] Fan purchases — order appears in artist dashboard
+- [ ] Artist dispatches — fan gets notification
+- [ ] Fan requests return — artist confirms — refund issued (or logged as refund_failed)
+
+## 11. Pre-orders
+- [ ] Publish a pre-order release — fans can buy but not stream/download
+- [ ] Cancel pre-order — only fans with successful refunds get the email
+- [ ] Release a pre-order — fans gain streaming/download access
+
+## 12. Basket checkout
+- [ ] Add multiple items from different artists — badge count updates
 - [ ] Open basket drawer — items listed with correct prices
 - [ ] Remove item from basket
-- [ ] Basket checkout completes (test card)
+- [ ] "Back to basket" button works after Stripe mounts
+- [ ] Basket checkout completes — all artists receive transfers
 - [ ] Basket clears after successful checkout
 
-### Fan Library
-- [ ] /library shows purchased releases
-- [ ] Can re-download a purchased release
-- [ ] Save/favourite button toggles correctly
-- [ ] Saved items appear in the saved tab
+## 13. Account and settings
+- [ ] Fan edits profile — avatar validates magic bytes (try .txt renamed to .jpg — rejected)
+- [ ] Verification banner appears for unverified users, dismiss works, hidden on auth routes
+- [ ] Settings nav shows Profile and Account only (no Security tab)
+- [ ] Shared browser: log out + log in as different user — play history is separate
 
-### Artist Dashboard (log in as test artist)
-- [ ] Dashboard loads without errors
-- [ ] Can create a new draft release
-- [ ] Can add tracks to a release
-- [ ] Can upload cover art
-- [ ] Can publish a release (shows on artist page)
-- [ ] Can edit an existing release's price
+## 14. Rate limiting and security
+- [ ] Hit stream endpoint rapidly for same track — 429 after 10 requests
+- [ ] Hit general endpoints rapidly — 429 after threshold
+- [ ] Try reserved artist slugs — rejected
 
-### Currency
-- [ ] Prices display in correct currency (based on locale or selection)
+## 15. Mobile
+- [ ] Player bar, install banner, and any other bottom elements don't overlap
+- [ ] Expanded player scrolls on small screens (doesn't overflow)
+- [ ] Artist mobile nav highlights correct active page
+- [ ] Sticky buy bar hides when player is expanded
+
+## 16. Emails
+- [ ] All post-purchase emails include unsubscribe footer
+- [ ] Unsubscribe link works (marks user as unsubscribed)
+- [ ] Magic link emails are branded (not Supabase default)
+
+## 17. Currency
+- [ ] Prices display in correct currency based on locale
 - [ ] Currency switching updates all visible prices
 
 ---
 
-## Launch Requirements
+## Go-Live Steps (after all green above)
 
-Every item must be verified true before going live. Check the box and note the date.
-
-### Stripe
-- [ ] Stripe is in **live mode** (not test mode)
-- [ ] Webhook endpoint points to production URL
-- [ ] All webhook events are registered (checkout.session.completed, charge.refunded, charge.dispute.created)
-- [ ] Platform fee percentage is correct
-- [ ] PWYW minimum enforced server-side (not just client)
-
-### Auth & Security
-- [ ] Google OAuth redirect URIs include both `getinsound.com` and `www.getinsound.com`
-- [ ] CSRF origin check includes production domain
-- [ ] `.env.local` is in `.gitignore` (verify: `git ls-files .env.local` returns nothing)
-- [ ] `UNSUBSCRIBE_SECRET` is set as a dedicated env var (not falling back to service role key)
-- [ ] Rate limiting migration applied to production database
-- [ ] No test/dev API keys in production environment
-
-### Data & Database
-- [ ] All Supabase migrations applied to production
-- [ ] RLS policies active on all public-facing tables
-- [ ] No direct browser-to-Supabase writes for sensitive operations (releases, artist profiles)
-
-### Domain & Infrastructure
-- [ ] DNS resolves correctly for apex and www
-- [ ] HTTPS working on all routes
-- [ ] Cloudflare caching rules configured
-- [ ] Error pages (404, 500) render correctly
-
-### Content & Legal
-- [ ] Privacy policy page exists and is linked
-- [ ] Terms of service page exists and is linked
-- [ ] Cookie consent banner works (if required)
-- [ ] Fan account deletion path exists (GDPR)
-
-### Email
-- [ ] Transactional emails send from correct domain (not localhost)
-- [ ] Unsubscribe links work
-- [ ] Purchase confirmation email includes download link
-
-### Prices & Money
-- [ ] All release prices are in correct currency (pence, not pounds)
-- [ ] No releases priced at 0 that shouldn't be free
-- [ ] Artist payout flow works end-to-end (Stripe Connect)
-- [ ] Platform fee calculated correctly on test purchase
+1. Switch Stripe to live mode (update env vars)
+2. Verify Google OAuth redirect URIs include both `getinsound.com` and `www.getinsound.com`
+3. Verify all Supabase migrations applied (including `recommend_by_tags`)
+4. Publish at least one release so Explore isn't empty
+5. Test one real purchase end-to-end with a real card
+6. Ship it
 
 ---
 
 ## Known Regression Hot Spots
 
-These are the areas that have broken before. Pay extra attention after changes nearby.
+Areas that have broken before. Pay extra attention after changes nearby.
 
-| Area | What breaks | What to check | Root cause |
-|------|------------|---------------|------------|
-| **Track preview** | 30s preview stops working | Play any track on a release page | Stream API auth check, player store hydration, or signed URL generation |
-| **PlayerBar** | Accent color wrong, playback state stale | Play track, navigate, play another | Zustand store + IndexedDB hydration race |
-| **Checkout modal** | Modal doesn't close, or re-open fails | Buy → complete → close → buy again | Stripe embedded checkout refs not cleaned up |
-| **Basket prices** | Wrong amount charged or displayed | Add PWYW item, change currency | CurrencyProvider cache + basket store price sync |
-| **Favourites** | Save button doesn't persist | Save a release, refresh page | Optimistic update rolls back silently on API failure |
-| **Dashboard** | Release edits lost or state mismatch | Edit price, navigate away, come back | 116KB monolith; local state vs server state divergence |
-| **Auth redirect** | Loops or lands on wrong page | Sign in with ?next= parameter | Complex redirect logic in AuthClient |
-| **Download** | "Still finalising" timeout | Complete checkout on slow connection | 12s polling timeout in ReleaseClient |
-
----
-
-## How to Use This
-
-1. **Before every deploy**: Run the smoke test. All boxes must pass.
-2. **Before launch**: Complete all launch requirements. Get a second pair of eyes.
-3. **After any fix in a hot spot area**: Re-test that specific hot spot AND its neighbours in the table above.
-4. **When something breaks twice**: It needs an automated test. Add it to the project's test suite so CI catches it next time.
+| Area | What breaks | What to check |
+|------|------------|---------------|
+| Track preview | Preview stops working | Play any track on a release page |
+| PlayerBar | Accent color wrong, playback state stale | Play track, navigate, play another |
+| Checkout | Modal doesn't close, or re-open fails | Buy → complete → close → buy again |
+| Basket prices | Wrong amount charged or displayed | Add PWYW item, change currency |
+| Auth redirect | Loops or lands on wrong page | Sign in with ?next= parameter |
+| Download | "Still finalising" timeout | Complete checkout on slow connection |
+| Transfers | Artist not paid | Check Stripe for Transfer after purchase |

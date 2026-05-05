@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { redeemTransferCode } from '@/lib/auth-transfer'
 import { createSession, setSessionCookie } from '@/lib/session'
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers)
-  const rateLimited = await checkRateLimit(ip, 'auth_transfer', 5, 0.25)
+  const ipHash = await hashIp(ip)
+  const rateLimited = await checkRateLimit(ipHash, 'auth_transfer', 5, 0.25)
   if (rateLimited) return rateLimited
 
   const transferCode = req.cookies.get('auth_transfer_code')?.value
@@ -20,9 +21,14 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
+  const { data: userData } = await admin.auth.admin.getUserById(userId)
+  if (!userData.user?.email) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'magiclink',
-    email: (await admin.auth.admin.getUserById(userId)).data.user?.email || '',
+    email: userData.user.email,
   })
 
   if (linkErr || !linkData.properties?.hashed_token) {
@@ -35,8 +41,8 @@ export async function POST(req: NextRequest) {
 
   response.cookies.set('auth_transfer_code', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'strict',
     path: '/auth/transfer',
     maxAge: 0,
   })

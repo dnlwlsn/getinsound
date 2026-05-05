@@ -17,7 +17,6 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -60,30 +59,22 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
           setBusy(false)
           return
         }
-        if (password.length < 8) {
-          setError('Password must be at least 8 characters.')
-          setBusy(false)
-          return
-        }
-        if (password !== confirmPassword) {
-          setError('Passwords do not match.')
-          setBusy(false)
-          return
-        }
 
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: trimmed,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-          },
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmed, redirectTo }),
         })
 
-        if (signUpError) {
-          if (signUpError.message?.includes('already registered')) {
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          if (res.status === 429) {
+            throw new Error('Too many requests. Please try again later.')
+          }
+          if (data.error === 'already_registered') {
             throw new Error('This email is already registered. Try signing in instead.')
           }
-          throw signUpError
+          throw new Error(data.error || 'Failed to create account. Please try again.')
         }
 
         setBusy(false)
@@ -174,7 +165,7 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
                 {isSignup && (
                   <>
                     <h2 className="font-display text-xl font-bold text-center mb-2">Join Insound</h2>
-                    <p className="text-zinc-500 text-sm text-center mb-6">Create your free account.</p>
+                    <p className="text-zinc-500 text-sm text-center mb-6">Enter your email and we&apos;ll send you a sign-in link. No password needed.</p>
                   </>
                 )}
 
@@ -195,67 +186,54 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
                     />
                   </div>
 
-                  <div className="relative">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Password</label>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder={isSignup ? 'At least 8 characters' : '••••••••'}
-                      required
-                      autoComplete={isSignup ? 'new-password' : 'current-password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 outline-none transition-colors text-white text-sm pr-12 focus:border-orange-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-[38px] text-zinc-600 hover:text-zinc-400 transition-colors"
-                    >
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        {showPassword ? (
-                          <>
-                            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                            <line x1="1" y1="1" x2="23" y2="23" />
-                          </>
-                        ) : (
-                          <>
-                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </>
-                        )}
-                      </svg>
-                    </button>
-                  </div>
+                  {!isSignup && (
+                    <div className="relative">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Password</label>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        required
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 outline-none transition-colors text-white text-sm pr-12 focus:border-orange-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-[38px] text-zinc-600 hover:text-zinc-400 transition-colors"
+                      >
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          {showPassword ? (
+                            <>
+                              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
+                            </>
+                          ) : (
+                            <>
+                              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </>
+                          )}
+                        </svg>
+                      </button>
+                    </div>
+                  )}
 
                   {isSignup && (
-                    <>
-                      <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block mb-2">Confirm Password</label>
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Confirm your password"
-                          required
-                          autoComplete="new-password"
-                          value={confirmPassword}
-                          onChange={e => setConfirmPassword(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3.5 px-4 outline-none transition-colors text-white text-sm focus:border-orange-600"
-                        />
-                      </div>
-
-                      <label className="flex items-start gap-2.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={ageConfirmed}
-                          onChange={e => setAgeConfirmed(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-950 accent-orange-600 cursor-pointer"
-                        />
-                        <span className="text-xs text-zinc-500 leading-snug">
-                          I confirm I am at least 18 years old.
-                          <br />
-                          <span className="text-[11px] text-zinc-600">Required because we process payments through Stripe.</span>
-                        </span>
-                      </label>
-                    </>
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={ageConfirmed}
+                        onChange={e => setAgeConfirmed(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-950 accent-orange-600 cursor-pointer"
+                      />
+                      <span className="text-xs text-zinc-500 leading-snug">
+                        I confirm I am at least 18 years old.
+                        <br />
+                        <span className="text-[11px] text-zinc-600">Required because we process payments through Stripe.</span>
+                      </span>
+                    </label>
                   )}
 
                   {error && (
@@ -270,8 +248,8 @@ export default function AuthClient({ defaultMode = 'signin' }: { defaultMode?: '
                     className="w-full bg-orange-600 text-black font-black py-4 rounded-xl hover:bg-orange-500 transition-colors text-sm uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {busy
-                      ? (isSignup ? 'Creating account...' : 'Signing in...')
-                      : (isSignup ? 'Create Account' : 'Sign In')
+                      ? (isSignup ? 'Sending link...' : 'Signing in...')
+                      : (isSignup ? 'Send Magic Link' : 'Sign In')
                     }
                   </button>
 

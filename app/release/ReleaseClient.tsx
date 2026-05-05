@@ -14,6 +14,15 @@ import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { resolveAccent } from '@/lib/accent'
 import { extractDominantColor, hexToRgba } from '@/lib/color-extract'
 
+/* ── User-friendly error mapper ──────────────────────────────── */
+function friendlyError(msg: string): string {
+  if (msg.includes('payouts')) return "This artist hasn't finished setting up payments yet. Please try again later."
+  if (msg.includes('rate') || msg.includes('limit')) return 'Too many requests. Please wait a moment and try again.'
+  if (msg.includes('network') || msg.includes('fetch')) return 'Network error. Please check your connection and try again.'
+  if (msg.includes('amount') || msg.includes('price')) return 'There was a problem with the price. Please refresh and try again.'
+  return 'Something went wrong. Please try again.'
+}
+
 /* ── Deterministic gradient fallback ──────────────────────────── */
 function cyrb53(str: string, seed = 0) {
   let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed
@@ -66,7 +75,7 @@ function generateGradientDataUri(artistId: string, releaseId: string) {
 /* ── Types ────────────────────────────────────────────────────── */
 interface Track { id: string; title: string; position: number; duration_sec: number }
 interface Release { id: string; slug: string; title: string; type: string; cover_url: string | null; price_pence: number; currency: string; published: boolean; pwyw_enabled: boolean; pwyw_minimum_pence: number | null; description: string | null; tracks: Track[] }
-interface Artist { id: string; slug: string; name: string; bio: string; avatar_url: string; accent_colour: string | null }
+interface Artist { id: string; slug: string; name: string; bio: string | null; avatar_url: string | null; accent_colour: string | null }
 interface DiscographyItem { id: string; slug: string; title: string; type: string; cover_url: string | null; artistSlug: string }
 interface Supporter { name: string; paidAt: string | null }
 interface Recommendation { id: string; slug: string; title: string; cover_url: string | null; price_pence: number; currency: string; artistName: string; artistSlug: string }
@@ -89,6 +98,7 @@ export default function ReleaseClient({ artist, release, discography, supporters
   const [downloadTitle, setDownloadTitle] = useState('')
   const [digitalConsent, setDigitalConsent] = useState(false)
   const [consentBusy, setConsentBusy] = useState(false)
+  const [isGuest, setIsGuest] = useState(false)
   const sessionIdRef = useRef<string | null>(null)
 
   const stripeMountRef = useRef<HTMLDivElement>(null)
@@ -111,21 +121,22 @@ export default function ReleaseClient({ artist, release, discography, supporters
     return () => document.removeEventListener('keydown', handleEsc)
   }, [modalOpen, closeModal])
 
-  const openCheckout = useCallback(async (customAmountPence?: number) => {
-    if (!release || !artist) return
+  const customAmountRef = useRef<number | undefined>(undefined)
+
+  const startStripeCheckout = useCallback(async () => {
     setStage('checkout')
-    setModalOpen(true)
-    document.body.style.overflow = 'hidden'
 
     try {
       const stripe = await stripePromise as any
       if (!stripe) throw new Error('Failed to load payment system.')
       const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsGuest(!user)
       const { data, error } = await supabase.functions.invoke('checkout-create', {
         body: {
           release_id: release.id,
           origin: window.location.origin,
-          ...(customAmountPence ? { custom_amount: customAmountPence } : {}),
+          ...(customAmountRef.current ? { custom_amount: customAmountRef.current } : {}),
         },
       })
       if (error) {
@@ -140,9 +151,6 @@ export default function ReleaseClient({ artist, release, discography, supporters
       if (!data?.client_secret) throw new Error('No checkout session returned')
 
       sessionIdRef.current = data.session_id
-      supabase.functions.invoke('record-digital-consent', {
-        body: { session_id: data.session_id },
-      }).catch(() => {})
       const embedded = await stripe.createEmbeddedCheckoutPage({
         clientSecret: data.client_secret,
         onComplete: () => {
@@ -158,11 +166,28 @@ export default function ReleaseClient({ artist, release, discography, supporters
       })
     } catch (err: any) {
       setErrorTitle("Couldn't open checkout.")
-      setErrorMsg(err.message || 'Please try again.')
+      setErrorMsg(friendlyError(err.message || ''))
       setStage('error')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [release, artist])
+
+  const openCheckout = useCallback(async (customAmountPence?: number) => {
+    if (!release || !artist) return
+    customAmountRef.current = customAmountPence
+    setModalOpen(true)
+    document.body.style.overflow = 'hidden'
+
+    // Skip consent for free releases — go straight to checkout
+    if (release.price_pence === 0 && !customAmountPence) {
+      setStage('checkout')
+      await startStripeCheckout()
+    } else {
+      setDigitalConsent(false)
+      setStage('consent')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [release, artist, startStripeCheckout])
 
   async function pollForDownload(sessionId: string) {
     const supabase = createClient()
@@ -231,7 +256,13 @@ export default function ReleaseClient({ artist, release, discography, supporters
         <div
           className="fixed inset-0 z-[400] bg-black/70 backdrop-blur-sm"
           role="presentation"
-          onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
+          onClick={(e) => {
+            if (e.target !== e.currentTarget) return
+            if (stage === 'checkout') {
+              if (!window.confirm('Leave checkout? Your payment has not been processed.')) return
+            }
+            closeModal()
+          }}
         >
           <div className="absolute top-0 right-0 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-[slide-in-right_0.3s_ease_both]">
             <button
@@ -245,7 +276,11 @@ export default function ReleaseClient({ artist, release, discography, supporters
             {/* Stage: Stripe checkout */}
             {stage === 'checkout' && (
               <div>
-                <div ref={stripeMountRef} className="min-h-[400px]" />
+                <div ref={stripeMountRef} className="min-h-[400px] relative">
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="inline-block w-10 h-10 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin" />
+                  </div>
+                </div>
                 <p className="text-[10px] text-zinc-600 px-6 pb-4 leading-relaxed">
                   By completing this purchase, you agree to receive immediate access to digital content and waive your 14-day cancellation right once the download begins. See our{' '}
                   <Link href="/terms" className="underline hover:text-zinc-400">Terms</Link>.
@@ -263,11 +298,11 @@ export default function ReleaseClient({ artist, release, discography, supporters
               </div>
             )}
 
-            {/* Stage: Digital content consent */}
+            {/* Stage: Digital content consent (pre-purchase) */}
             {stage === 'consent' && (
               <div className="p-6 md:p-8 mt-8">
-                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
-                <h2 className="text-2xl font-black mb-4 font-display">{downloadTitle}</h2>
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Before you continue</p>
+                <h2 className="text-2xl font-black mb-4 font-display">{release.title}</h2>
                 <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 mb-6">
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input
@@ -277,7 +312,7 @@ export default function ReleaseClient({ artist, release, discography, supporters
                       className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-700 bg-zinc-950 text-orange-600 focus:ring-orange-600 focus:ring-offset-0"
                     />
                     <span className="text-xs text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
-                      I agree to immediate access to this digital content and acknowledge that I lose my 14-day cancellation right once the download starts.
+                      I agree to receive immediate access to this digital content and acknowledge that I waive my 14-day right to cancel once the download begins.
                     </span>
                   </label>
                 </div>
@@ -285,21 +320,13 @@ export default function ReleaseClient({ artist, release, discography, supporters
                   onClick={async () => {
                     if (!digitalConsent) return
                     setConsentBusy(true)
-                    try {
-                      if (sessionIdRef.current) {
-                        const sb = createClient()
-                        await sb.functions.invoke('record-digital-consent', {
-                          body: { session_id: sessionIdRef.current },
-                        })
-                      }
-                    } catch {}
+                    await startStripeCheckout()
                     setConsentBusy(false)
-                    setStage('download')
                   }}
                   disabled={!digitalConsent || consentBusy}
                   className="w-full bg-orange-600 hover:bg-orange-500 text-black font-black py-4 rounded-2xl text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {consentBusy ? 'Processing...' : 'Access my download'}
+                  {consentBusy ? 'Loading checkout...' : 'Continue to payment'}
                 </button>
               </div>
             )}
@@ -358,8 +385,16 @@ export default function ReleaseClient({ artist, release, discography, supporters
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received — thank you</p>
                 <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
-                <p className="text-zinc-400 text-sm font-medium mb-6">{errorMsg}</p>
-                <a href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Go to your library</a>
+                <p className="text-zinc-400 text-sm font-medium mb-6">
+                  {isGuest
+                    ? "Your payment went through. Check your email for a link to access your music."
+                    : errorMsg}
+                </p>
+                {isGuest ? (
+                  <button onClick={closeModal} className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Done</button>
+                ) : (
+                  <a href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Go to your library</a>
+                )}
               </div>
             )}
 
@@ -395,6 +430,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
   const buyRef = useRef<HTMLDivElement>(null)
   const play = usePlayerStore(s => s.play)
   const hasActivePlayer = usePlayerStore(s => !!s.currentTrack)
+  const isPlayerExpanded = usePlayerStore(s => s.isExpanded)
   const currentTrack = usePlayerStore(s => s.currentTrack)
   const isPlaying = usePlayerStore(s => s.isPlaying)
   const pause = usePlayerStore(s => s.pause)
@@ -450,7 +486,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
   }
 
   return (
-    <main className="flex-1 relative pb-40">
+    <div className="flex-1 relative pb-32 sm:pb-6">
       <div
         className="absolute inset-0 pointer-events-none album-color-wash"
         style={{ background: `radial-gradient(ellipse at top, ${hexToRgba(albumColor || accent, 0.12)}, transparent 60%)` }}
@@ -644,7 +680,8 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
                     {r.cover_url ? (
                       <Image src={r.cover_url} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(min-width: 768px) 25vw, 50vw" alt={r.title} />
                     ) : (
-                      <div className="w-full h-full bg-zinc-800" />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={generateGradientDataUri(r.artistSlug, r.id)} className="w-full h-full object-cover" alt={r.title} />
                     )}
                   </div>
                   <p className="text-sm font-bold text-zinc-300 truncate">{r.title}</p>
@@ -656,8 +693,8 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
         </section>
       )}
 
-      {showStickyBuy && !isOwned && (
-        <div className="fixed left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between gap-3 md:hidden" style={{ bottom: hasActivePlayer ? 'calc(124px + env(safe-area-inset-bottom))' : 'calc(60px + env(safe-area-inset-bottom))' }}>
+      {showStickyBuy && !isOwned && !isPlayerExpanded && (
+        <div className="fixed left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between gap-3 md:hidden" style={{ bottom: hasActivePlayer ? 'calc(130px + env(safe-area-inset-bottom))' : 'calc(60px + env(safe-area-inset-bottom))' }}>
           <div className="min-w-0">
             <p className="text-sm font-bold truncate">{release.title}</p>
             <p className="text-xs text-orange-500 font-bold">{formatPrice(convertPrice(release.price_pence / 100, release.currency || 'GBP', currency))}</p>
@@ -671,7 +708,7 @@ function ReleasePageContent({ artist, release, tracks, typeLabel, coverSrc, acce
           </button>
         </div>
       )}
-    </main>
+    </div>
   )
 }
 
@@ -778,7 +815,7 @@ function PriceSection({ release, accent, onBuy, onAmountChange }: { release: Rel
         style={{ background: accent, color: '#000' }}
       >
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4-5M7 13l-2 6h12" /><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /></svg>
-        <span>{release.price_pence === 0 && !release.pwyw_enabled ? 'Get for free' : `Buy for ${release.pwyw_enabled ? displayCustom : displayPrice}`}</span>
+        <span>{`Buy for ${release.pwyw_enabled ? displayCustom : displayPrice}`}</span>
       </button>
 
       <p className="text-[10px] text-zinc-600 mt-3">

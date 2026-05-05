@@ -24,12 +24,9 @@ export function WelcomeClient({ hasProfile }: { hasProfile: boolean }) {
       if (user) {
         await supabase.from('fan_profiles').update({ has_seen_welcome: true }).eq('id', user.id)
       }
-      if (hasProfile) {
-        router.push('/explore')
-      }
     }
     markSeen()
-  }, [step, supabase, hasProfile, router])
+  }, [step, supabase])
 
   if (step === 'profile') {
     return <StepProfile onNext={() => setStep('genres')} onSkip={() => setStep('done')} />
@@ -53,7 +50,7 @@ export function WelcomeClient({ hasProfile }: { hasProfile: boolean }) {
         </p>
 
         <Link
-          href="/discover"
+          href="/explore"
 
           className="block max-w-sm mx-auto bg-zinc-900 ring-1 ring-white/[0.06] rounded-3xl p-8 text-center hover:ring-white/[0.15] transition-all group"
         >
@@ -242,6 +239,12 @@ function StepGenres({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ genres: selected }),
       })
+      if (res.status === 401) {
+        setError('Session expired. Skipping this step...')
+        setBusy(false)
+        setTimeout(() => onNext(), 1500)
+        return
+      }
       if (!res.ok) throw new Error('Failed to save')
     } catch {
       setError('Something went wrong. Please try again.')
@@ -277,6 +280,7 @@ function StepGenres({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
                   key={genre}
                   type="button"
                   disabled={atMax}
+                  aria-label={atMax ? `${genre} — max genres selected` : genre}
                   onClick={() => toggle(genre)}
                   className={`
                     relative px-3 py-3 rounded-xl font-display font-bold text-sm

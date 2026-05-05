@@ -102,9 +102,9 @@ Deno.serve(async (req) => {
           .eq('id', merchId)
           .single();
 
-        const itemPrice = merchItem?.price ?? 0;
         const postagePaid = merchItem?.postage ?? 0;
-        const platformPence = Math.round(itemPrice * STANDARD_FEE_BPS / 10000);
+        const itemAmount = amountPaid - postagePaid;
+        const platformPence = Math.round(itemAmount * STANDARD_FEE_BPS / 10000);
 
         // Stripe fee
         let stripeFeePence = 0;
@@ -231,40 +231,9 @@ Deno.serve(async (req) => {
           return new Response('ok', { status: 200 });
         }
 
-        // Transfer artist's share to their Connect account
-        if (artistReceived > 0 && piId) {
-          const { data: artistAccount } = await admin
-            .from('artist_accounts')
-            .select('stripe_account_id')
-            .eq('id', artistId)
-            .maybeSingle();
-
-          if (artistAccount?.stripe_account_id) {
-            try {
-              const pi = await stripe.paymentIntents.retrieve(piId, { expand: ['latest_charge'] });
-              const chargeId = (pi.latest_charge as Stripe.Charge)?.id;
-              if (chargeId) {
-                await stripe.transfers.create({
-                  amount: artistReceived,
-                  currency: merchItem?.currency?.toLowerCase() || 'gbp',
-                  destination: artistAccount.stripe_account_id,
-                  source_transaction: chargeId,
-                  metadata: { merch_id: merchId, artist_id: artistId, order_type: 'standalone_merch' },
-                }, {
-                  idempotencyKey: `merch_transfer_${session.id}_${artistId}`,
-                });
-              } else {
-                await logWebhookError(admin, event.type, event.id, 'No charge ID for merch transfer', { merchId, artistId, piId });
-              }
-            } catch (e) {
-              console.error('Merch transfer to artist failed:', (e as Error).message);
-              await logWebhookError(admin, event.type, event.id, `Merch transfer failed: ${(e as Error).message}`, {
-                merchId, artistId, amount: artistReceived,
-                stripe_checkout_id: session.id,
-              });
-            }
-          }
-        }
+        // Standalone merch uses destination charges (transfer_data.destination)
+        // in checkout-merch-create, so Stripe automatically transfers
+        // (amount - application_fee) to the artist. No manual transfer needed.
 
         // Check if stock hit 0
         const { data: currentMerch } = await admin
@@ -361,7 +330,21 @@ Deno.serve(async (req) => {
           admin.from('purchases').select('id').eq('stripe_checkout_id', session.id).maybeSingle(),
           admin.from('orders').select('id').eq('stripe_checkout_id', session.id).maybeSingle(),
         ]);
-        if (existingBasketPurchase || existingBasketOrder) return new Response('ok', { status: 200 });
+        const basketAlreadyProcessed = !!(existingBasketPurchase || existingBasketOrder);
+        // If transfers already succeeded previously, we're fully idempotent
+        if (basketAlreadyProcessed) {
+          const { data: pendingErrors } = await admin
+            .from('webhook_errors')
+            .select('id')
+            .filter('payload->>basket_session_id', 'eq', basketSessionId)
+            .or('error.ilike.%transfer failed%,error.ilike.%No chargeId%')
+            .not('error', 'ilike', '%RESOLVED%')
+            .limit(1);
+          if (!pendingErrors || pendingErrors.length === 0) {
+            return new Response('ok', { status: 200 });
+          }
+          // Transfers still pending — fall through to retry them
+        }
 
         const { data: basketSession } = await admin
           .from('basket_sessions')
@@ -409,9 +392,22 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Progressive fan account creation
+        // Skip purchase/order creation on retry — only need to redo transfers
+        const refundedItemIndices = new Set<number>();
         let userId: string | null = null;
         let isNewAccount = false;
+        let purchasedTitles: string[] = [];
+
+        if (basketAlreadyProcessed) {
+          // On retry, we just need userId for email and chargeId for transfers
+          const { data: existingUserId } = await admin.rpc('get_user_id_by_email', {
+            lookup_email: buyerEmail,
+          });
+          userId = existingUserId;
+        }
+
+        if (!basketAlreadyProcessed) {
+        // Progressive fan account creation
 
         const { data: existingUserId } = await admin.rpc('get_user_id_by_email', {
           lookup_email: buyerEmail,
@@ -452,8 +448,6 @@ Deno.serve(async (req) => {
           return s + i.amount_pence;
         }, 0);
         // Process each item
-        const purchasedTitles: string[] = [];
-        const refundedItemIndices = new Set<number>();
         for (let idx = 0; idx < basketItems.length; idx++) {
           const item = basketItems[idx];
           const itemAmount = item.type === 'merch' ? item.amount_pence + item.postage_pence : item.amount_pence;
@@ -721,6 +715,7 @@ Deno.serve(async (req) => {
             console.error('Founding fan badge failed:', (e as Error).message);
           }
         }
+        } // end if (!basketAlreadyProcessed)
 
         // ── Create transfers to each artist's Connect account ──
         // Group earnings by artist, then create one transfer per artist.
@@ -822,13 +817,13 @@ Deno.serve(async (req) => {
           });
           const magicLink = linkData?.properties?.action_link;
           if (magicLink) {
-            await sendEmail(buyerEmail, 'Your music is ready', buildNewAccountEmail(magicLink));
+            await sendEmail(buyerEmail, 'Your music is ready', buildNewAccountEmail(magicLink, userId));
           }
         } else {
           await sendEmail(
             buyerEmail,
             'New music in your library',
-            buildBasketReceiptEmail(purchasedTitles, session.amount_total ?? 0, basketSession.fan_currency || session.currency || 'GBP'),
+            buildBasketReceiptEmail(purchasedTitles, session.amount_total ?? 0, basketSession.fan_currency || session.currency || 'GBP', userId),
           );
         }
 
@@ -1142,23 +1137,16 @@ Deno.serve(async (req) => {
         } else {
           const magicLink = linkData.properties?.action_link;
           if (magicLink) {
-            await sendEmail(buyerEmail, 'Your music is ready', buildNewAccountEmail(magicLink));
+            await sendEmail(buyerEmail, 'Your music is ready', buildNewAccountEmail(magicLink, userId));
           }
         }
       } else {
         await sendEmail(
           buyerEmail,
-          'New music in your library',
-          buildExistingAccountEmail(releaseTitle, artistName),
+          'Purchase receipt — ' + releaseTitle,
+          buildPurchaseReceiptEmail(releaseTitle, artistName, amountPence, session.metadata?.fan_currency || session.currency || 'GBP', userId),
         );
       }
-
-      // ── Purchase receipt email (sent to ALL buyers) ──
-      await sendEmail(
-        buyerEmail,
-        `Receipt: ${releaseTitle} by ${artistName}`,
-        buildPurchaseReceiptEmail(releaseTitle, artistName, amountPence, session.metadata?.fan_currency || session.currency || 'GBP'),
-      );
     } else if (event.type === 'account.updated') {
       const account = event.data.object as Stripe.Account;
 
@@ -1196,6 +1184,36 @@ Deno.serve(async (req) => {
           }
         }
       }
+    } else if (event.type === 'account.application.deauthorized') {
+      const account = event.data.object as Stripe.Account;
+      const { data: artistAccount } = await admin
+        .from('artist_accounts')
+        .select('id')
+        .eq('stripe_account_id', account.id)
+        .maybeSingle();
+
+      if (artistAccount) {
+        await admin
+          .from('artist_accounts')
+          .update({ stripe_onboarded: false })
+          .eq('id', artistAccount.id);
+        console.log(`Artist ${artistAccount.id} deauthorized — stripe_onboarded set to false`);
+        await logWebhookError(admin, event.type, event.id, `Artist ${artistAccount.id} deauthorized their Stripe Connect account`, { stripe_account_id: account.id });
+
+        // Check for pending basket sessions referencing this account
+        const { data: pendingSessions } = await admin
+          .from('basket_sessions')
+          .select('id')
+          .eq('status', 'pending')
+          .filter('items', 'cs', JSON.stringify([{ stripe_account_id: account.id }]));
+
+        if (pendingSessions && pendingSessions.length > 0) {
+          await logWebhookError(admin, event.type, event.id,
+            `${pendingSessions.length} pending basket session(s) reference deauthorized account`,
+            { stripe_account_id: account.id, basket_session_ids: pendingSessions.map(s => s.id) });
+        }
+      }
+
     } else if (event.type === 'charge.dispute.created') {
       const dispute = event.data.object;
       const paymentIntent = typeof dispute.payment_intent === 'string'
@@ -1214,6 +1232,17 @@ Deno.serve(async (req) => {
           .from('purchases')
           .update({ status: 'disputed' })
           .eq('stripe_pi_id', paymentIntent)
+
+        const { data: order } = await admin
+          .from('orders')
+          .select('artist_id')
+          .eq('stripe_payment_intent_id', paymentIntent)
+          .maybeSingle();
+
+        const disputeArtistId = purchase?.artist_id || order?.artist_id;
+        if (disputeArtistId) {
+          await logWebhookError(admin, event.type, event.id, `Dispute opened for artist ${disputeArtistId} — transfer reversal deferred until outcome`, { paymentIntent, artistId: disputeArtistId, dispute_id: dispute.id });
+        }
 
         if (purchase?.artist_id) {
           const artistId = purchase.artist_id
@@ -1252,6 +1281,70 @@ Deno.serve(async (req) => {
             })
           }
         }
+      }
+
+    } else if (event.type === 'charge.dispute.closed') {
+      const dispute = event.data.object;
+      const status = dispute.status; // 'won', 'lost', 'warning_closed'
+      const paymentIntent = typeof dispute.payment_intent === 'string'
+        ? dispute.payment_intent
+        : dispute.payment_intent?.id;
+
+      if (paymentIntent && status === 'lost') {
+        // Dispute lost — reverse the artist transfer to recover funds
+        const { data: purchase } = await admin
+          .from('purchases')
+          .select('artist_id')
+          .eq('stripe_pi_id', paymentIntent)
+          .maybeSingle();
+
+        const { data: order } = await admin
+          .from('orders')
+          .select('artist_id')
+          .eq('stripe_payment_intent_id', paymentIntent)
+          .maybeSingle();
+
+        const artistId = purchase?.artist_id || order?.artist_id;
+        if (artistId) {
+          const { data: account } = await admin
+            .from('artist_accounts')
+            .select('stripe_account_id')
+            .eq('id', artistId)
+            .maybeSingle();
+
+          if (account?.stripe_account_id) {
+            try {
+              const charge = await stripe.charges.list({ payment_intent: paymentIntent, limit: 1 });
+              const chargeId = charge.data[0]?.id;
+              if (chargeId) {
+                const transfers = await stripe.transfers.list({ destination: account.stripe_account_id, limit: 100 });
+                const matchingTransfers = transfers.data.filter((t: Stripe.Transfer) => t.source_transaction === chargeId);
+                for (const transfer of matchingTransfers) {
+                  await stripe.transfers.createReversal(transfer.id, {
+                    metadata: { reason: 'dispute_lost', dispute_id: dispute.id },
+                  }, { idempotencyKey: `dispute_reversal_${transfer.id}_${event.id}` });
+                  console.log(`Reversed transfer ${transfer.id} for lost dispute ${dispute.id}`);
+                }
+              }
+            } catch (e) {
+              console.error(`Dispute transfer reversal failed:`, (e as Error).message);
+              await logWebhookError(admin, event.type, event.id, `Dispute transfer reversal failed: ${(e as Error).message}`, { paymentIntent, artistId });
+            }
+          }
+
+          // Update purchase status
+          await admin
+            .from('purchases')
+            .update({ status: 'refunded' })
+            .eq('stripe_pi_id', paymentIntent);
+        }
+      } else if (paymentIntent && status === 'won') {
+        // Dispute won — restore purchase status
+        await admin
+          .from('purchases')
+          .update({ status: 'paid' })
+          .eq('stripe_pi_id', paymentIntent)
+          .eq('status', 'disputed');
       }
 
     } else if (event.type === 'payout.paid' || event.type === 'payout.failed') {
@@ -1315,7 +1408,7 @@ Deno.serve(async (req) => {
         const latestCharge = pi.latest_charge as Stripe.Charge | null;
         const appFee = (latestCharge as any)?.application_fee as { id: string } | null;
         if (appFee?.id) {
-          await stripe.applicationFees.createRefund(appFee.id);
+          await stripe.applicationFees.createRefund(appFee.id, {}, { idempotencyKey: `app_fee_refund_${event.id}` });
         }
       } catch (e) {
         console.error('Application fee refund failed:', (e as Error).message);
@@ -1378,16 +1471,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Reverse basket transfers (separate charges + transfers model)
+      // Reverse transfers for both basket purchases AND merch orders
       // For single-release destination charges, Stripe auto-reverses via refund_application_fee.
-      // For basket purchases, transfers were created manually and must be reversed manually.
-      if (isFullRefund && refundedPurchases && refundedPurchases.length >= 1) {
+      // For basket purchases and merch, transfers were created manually and must be reversed manually.
+      const allArtistIds = new Set<string>();
+      if (refundedPurchases) refundedPurchases.forEach((p: any) => { if (p.artist_id) allArtistIds.add(p.artist_id) });
+      if (refundedOrders) refundedOrders.forEach((o: any) => { if (o.artist_id) allArtistIds.add(o.artist_id) });
+
+      if (isFullRefund && allArtistIds.size > 0) {
         try {
-          const artistIds = [...new Set(refundedPurchases.map((p: any) => p.artist_id).filter(Boolean))];
           const { data: accounts } = await admin
             .from('artist_accounts')
             .select('id, stripe_account_id')
-            .in('id', artistIds);
+            .in('id', [...allArtistIds]);
 
           for (const account of (accounts || [])) {
             if (!account.stripe_account_id) continue;
@@ -1402,7 +1498,7 @@ Deno.serve(async (req) => {
               for (const transfer of matchingTransfers) {
                 await stripe.transfers.createReversal(transfer.id, {
                   metadata: { reason: 'refund', payment_intent: paymentIntent },
-                });
+                }, { idempotencyKey: `reversal_${transfer.id}_${event.id}` });
                 console.log(`Reversed transfer ${transfer.id} (${transfer.amount} ${transfer.currency}) for artist ${account.id}`);
               }
             } catch (e) {
@@ -1415,8 +1511,8 @@ Deno.serve(async (req) => {
             }
           }
         } catch (e) {
-          console.error('Basket transfer reversal lookup failed:', (e as Error).message);
-          await logWebhookError(admin, event.type, event.id, `Basket transfer reversal failed: ${(e as Error).message}`, { paymentIntent });
+          console.error('Transfer reversal lookup failed:', (e as Error).message);
+          await logWebhookError(admin, event.type, event.id, `Transfer reversal failed: ${(e as Error).message}`, { paymentIntent });
         }
       }
     }
@@ -1474,7 +1570,10 @@ async function sendEmail(to: string, subject: string, html: string) {
   }
 }
 
-function buildNewAccountEmail(magicLink: string): string {
+function buildNewAccountEmail(magicLink: string, userId?: string | null): string {
+  const unsubFooter = userId
+    ? `<tr><td style="padding-top:32px;"><a href="${SITE_URL}/unsubscribe?user_id=${userId}" style="color:#71717A;font-size:11px;text-decoration:underline;">Unsubscribe</a></td></tr>`
+    : '';
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1496,6 +1595,7 @@ function buildNewAccountEmail(magicLink: string): string {
         <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
           If you didn't request this, you can ignore this email.
         </td></tr>
+        ${unsubFooter}
       </table>
     </td></tr>
   </table>
@@ -1503,7 +1603,10 @@ function buildNewAccountEmail(magicLink: string): string {
 </html>`;
 }
 
-function buildExistingAccountEmail(releaseTitle: string, artistName: string): string {
+function buildExistingAccountEmail(releaseTitle: string, artistName: string, userId?: string | null): string {
+  const unsubFooter = userId
+    ? `<tr><td style="padding-top:32px;"><a href="${SITE_URL}/unsubscribe?user_id=${userId}" style="color:#71717A;font-size:11px;text-decoration:underline;">Unsubscribe</a></td></tr>`
+    : '';
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1525,6 +1628,7 @@ function buildExistingAccountEmail(releaseTitle: string, artistName: string): st
         <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
           If you didn't request this, you can ignore this email.
         </td></tr>
+        ${unsubFooter}
       </table>
     </td></tr>
   </table>
@@ -1656,8 +1760,11 @@ function buildMerchOrderArtistEmail(itemName: string, fanLabel: string, variantL
 </html>`;
 }
 
-function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amountPence: number, currency = 'GBP'): string {
+function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amountPence: number, currency = 'GBP', userId?: string | null): string {
   const amountLabel = formatPrice(amountPence, currency);
+  const unsubFooter = userId
+    ? `<tr><td style="padding-top:32px;"><a href="${SITE_URL}/unsubscribe?user_id=${userId}" style="color:#71717A;font-size:11px;text-decoration:underline;">Unsubscribe</a></td></tr>`
+    : '';
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1685,6 +1792,7 @@ function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amo
         <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
           If you have any questions about your purchase, please contact us.
         </td></tr>
+        ${unsubFooter}
       </table>
     </td></tr>
   </table>
@@ -1692,9 +1800,12 @@ function buildPurchaseReceiptEmail(releaseTitle: string, artistName: string, amo
 </html>`;
 }
 
-function buildBasketReceiptEmail(titles: string[], amountPence: number, currency = 'GBP'): string {
+function buildBasketReceiptEmail(titles: string[], amountPence: number, currency = 'GBP', userId?: string | null): string {
   const amountLabel = formatPrice(amountPence, currency);
   const itemsList = titles.map(t => `<li style="color:#FAFAFA;font-size:14px;line-height:1.8;">${escapeHtml(t)}</li>`).join('');
+  const unsubFooter = userId
+    ? `<tr><td style="padding-top:32px;"><a href="${SITE_URL}/unsubscribe?user_id=${userId}" style="color:#71717A;font-size:11px;text-decoration:underline;">Unsubscribe</a></td></tr>`
+    : '';
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1722,6 +1833,7 @@ function buildBasketReceiptEmail(titles: string[], amountPence: number, currency
         <tr><td style="color:#A1A1AA;font-size:13px;line-height:1.5;">
           If you have any questions about your purchase, please contact us.
         </td></tr>
+        ${unsubFooter}
       </table>
     </td></tr>
   </table>

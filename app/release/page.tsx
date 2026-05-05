@@ -51,7 +51,7 @@ export async function generateMetadata({
 
   const ogImages: { url: string; width: number; height: number; alt: string }[] = []
 
-  const ogUrl = new URL('/api/og', 'https://getinsound.com')
+  const ogUrl = new URL('/api/og', process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com')
   ogUrl.searchParams.set('title', release.title)
   ogUrl.searchParams.set('artist', artist.name)
   ogUrl.searchParams.set('type', 'release')
@@ -62,9 +62,14 @@ export async function generateMetadata({
     ogImages.push({ url: release.cover_url, width: 1200, height: 1200, alt: `${release.title} cover art` })
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://getinsound.com'
+
   return {
     title,
     description,
+    alternates: {
+      canonical: `${siteUrl}/release?a=${artistSlug}&r=${releaseSlug}`,
+    },
     openGraph: {
       title,
       description,
@@ -108,7 +113,8 @@ async function ReleasePageInner({
 
   if (!release) notFound()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   const isOwned = user
     ? await supabase
         .from('purchases')
@@ -116,6 +122,7 @@ async function ReleasePageInner({
         .eq('buyer_user_id', user.id)
         .eq('release_id', release.id)
         .eq('status', 'paid')
+        .or('pre_order.eq.false,pre_order.is.null')
         .limit(1)
         .maybeSingle()
         .then(r => !!r.data)
@@ -142,13 +149,12 @@ async function ReleasePageInner({
     (() => {
       const tags = (release.release_tags ?? []).map((t: { tag: string }) => t.tag)
       if (tags.length > 0) {
-        return supabase
-          .from('releases')
-          .select('id, slug, title, cover_url, price_pence, currency, artists!inner(name, slug)')
-          .eq('published', true)
-          .neq('id', release.id)
-          .neq('artist_id', artist.id)
-          .limit(8)
+        return supabase.rpc('recommend_by_tags', {
+          p_tags: tags,
+          p_exclude_release_id: release.id,
+          p_exclude_artist_id: artist.id,
+          p_limit: 8,
+        })
       }
       if (release.genre) {
         return supabase
@@ -202,7 +208,9 @@ async function ReleasePageInner({
     .filter((s: any): s is { name: string; paidAt: string | null } => s !== null)
 
   const recommendations = (recommendationsRes.data ?? []).map((r: any) => {
-    const a = Array.isArray(r.artists) ? r.artists[0] : r.artists
+    // RPC returns flat artist_name/artist_slug; genre fallback returns nested artists
+    const artistName = r.artist_name ?? (Array.isArray(r.artists) ? r.artists[0]?.name : r.artists?.name)
+    const artistSlug = r.artist_slug ?? (Array.isArray(r.artists) ? r.artists[0]?.slug : r.artists?.slug)
     return {
       id: r.id,
       slug: r.slug,
@@ -210,8 +218,8 @@ async function ReleasePageInner({
       cover_url: r.cover_url,
       price_pence: r.price_pence,
       currency: r.currency,
-      artistName: a.name,
-      artistSlug: a.slug,
+      artistName,
+      artistSlug,
     }
   })
 
@@ -220,10 +228,10 @@ async function ReleasePageInner({
     '@type': 'MusicRelease',
     name: release.title,
     byArtist: { '@type': 'MusicGroup', name: artist.name },
-    image: release.cover_url,
+    ...(release.cover_url ? { image: release.cover_url } : {}),
     offers: {
       '@type': 'Offer',
-      price: (release.price_pence / 100).toFixed(2),
+      price: ((release.price_pence ?? 0) / 100).toFixed(2),
       priceCurrency: release.currency || 'GBP',
     },
   }

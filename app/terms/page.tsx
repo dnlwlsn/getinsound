@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Footer } from '@/app/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'Terms of Service | Insound',
@@ -311,11 +310,10 @@ export default function TermsPage() {
           <p>The Platform processes personal data in accordance with UK GDPR and the Data Protection Act 2018. Full details are in the <Link href="/privacy">Privacy Policy</Link>.</p>
 
           <h2>23. Contact</h2>
-          <p>Insound Music Ltd<br />Company Number: 17179694<br />Registered in England and Wales<br />Registered office: 1 Sandhill Close, Beds, MK45 2JD<br />Email: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a></p>
+          <p>Insound Music Ltd<br />Company Number: 17179694<br />ICO Registration: ZC133088<br />Registered in England and Wales<br />Registered office: 1 Sandhill Close, Beds, MK45 2JD<br />Email: <a href="mailto:dan@getinsound.com">dan@getinsound.com</a></p>
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

@@ -12,9 +12,10 @@ import { BasketButton } from './BasketButton'
 import { InsoundLogo } from './InsoundLogo'
 
 const NAV_LINKS = [
+  { href: '/', label: 'Home' },
   { href: '/explore', label: 'Explore' },
   { href: '/discover', label: 'For You' },
-  { href: '/library', label: 'My Collection' },
+  { href: '/library', label: 'Library' },
 ]
 
 const LOGGED_OUT_MENU_LINKS = [
@@ -200,7 +201,7 @@ export function AppNav() {
           <span className="text-[10px] font-black uppercase tracking-wider">Home</span>
         </Link>
         <Link href="/explore" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/explore' ? 'text-orange-500' : 'text-zinc-500'}`}>
-          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
           <span className="text-[10px] font-black uppercase tracking-wider">Explore</span>
         </Link>
         <Link href="/search" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/search' ? 'text-orange-500' : 'text-zinc-500'}`}>
@@ -232,7 +233,7 @@ export function AppNav() {
           </Link>
 
           <div className="flex gap-4 items-center text-xs font-black uppercase tracking-widest">
-            {NAV_LINKS.map(link => (
+            {NAV_LINKS.filter(link => link.href !== '/').map(link => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -258,11 +259,14 @@ export function AppNav() {
             key={link.href}
             href={link.href}
             className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
-              pathname === link.href ? 'text-orange-500' : 'text-zinc-500'
+              (link.href === '/' ? pathname === '/' : pathname === link.href) ? 'text-orange-500' : 'text-zinc-500'
             }`}
           >
+            {link.href === '/' && (
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            )}
             {link.href === '/explore' && (
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
             )}
             {link.href === '/discover' && (
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>

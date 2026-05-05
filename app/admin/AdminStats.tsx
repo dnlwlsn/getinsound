@@ -240,6 +240,7 @@ export function AdminStats() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [detail, setDetail] = useState<DetailType | null>(null)
   const [activity, setActivity] = useState<ActivityEvent[]>([])
+  const [activityFilter, setActivityFilter] = useState<string>('all')
   const [topArtists, setTopArtists] = useState<TopArtist[]>([])
   const [revenueDays, setRevenueDays] = useState<RevenueDay[]>([])
 
@@ -425,16 +426,32 @@ export function AdminStats() {
 
       {/* Activity Feed */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mt-4">
-        <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Recent Activity</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500">Recent Activity</h3>
+          <div className="flex gap-1">
+            {[{ value: 'all', label: 'All' }, { value: 'signup', label: '👤' }, { value: 'purchase', label: '💷' }, { value: 'release', label: '💿' }].map(f => (
+              <button
+                key={f.value}
+                onClick={() => setActivityFilter(f.value)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${activityFilter === f.value ? 'bg-orange-600/20 text-orange-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {activity.length > 0 ? (
           <div className="space-y-1">
-            {activity.map(e => (
+            {activity.filter(e => activityFilter === 'all' || e.type === activityFilter).map(e => (
               <div key={e.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/40 transition-colors">
                 <span className="text-base shrink-0">{EVENT_ICONS[e.type] ?? '•'}</span>
                 <p className="text-sm text-zinc-300 flex-1 min-w-0 truncate">{e.text}</p>
                 <p className="text-[10px] text-zinc-600 shrink-0">{timeAgo(e.time)}</p>
               </div>
             ))}
+            {activity.filter(e => activityFilter === 'all' || e.type === activityFilter).length === 0 && (
+              <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">No {activityFilter} activity yet</div>
+            )}
           </div>
         ) : (
           <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading…</div>

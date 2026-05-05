@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Footer } from '@/app/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'AI Content Policy | Insound',
@@ -86,7 +85,6 @@ export default function AiPolicyPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

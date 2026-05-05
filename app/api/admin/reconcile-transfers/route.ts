@@ -20,18 +20,38 @@ export async function GET(req: NextRequest) {
   const admin = getAdminClient()
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-  // 1. Find all basket sessions in the window that completed checkout
-  const { data: sessions, error: sessionsErr } = await admin
-    .from('basket_sessions')
-    .select('id, items, created_at, stripe_checkout_session_id')
+  // 1. Find all basket checkout sessions in the window via purchases
+  //    Basket purchases share a stripe_checkout_id — group by checkout to identify baskets
+  const { data: recentPurchases, error: purchasesErr } = await admin
+    .from('purchases')
+    .select('stripe_checkout_id, artist_id, created_at')
     .gte('created_at', cutoff)
-    .not('stripe_checkout_session_id', 'is', null)
+    .not('stripe_checkout_id', 'is', null)
 
-  if (sessionsErr) {
-    return NextResponse.json({ error: sessionsErr.message }, { status: 500 })
+  if (purchasesErr) {
+    return NextResponse.json({ error: purchasesErr.message }, { status: 500 })
   }
 
-  if (!sessions || sessions.length === 0) {
+  // Group by checkout ID — baskets have multiple purchases per checkout
+  const checkoutMap = new Map<string, { artists: string[]; created_at: string }>()
+  for (const p of recentPurchases ?? []) {
+    const existing = checkoutMap.get(p.stripe_checkout_id!)
+    if (existing) {
+      if (p.artist_id && !existing.artists.includes(p.artist_id)) existing.artists.push(p.artist_id)
+    } else {
+      checkoutMap.set(p.stripe_checkout_id!, { artists: p.artist_id ? [p.artist_id] : [], created_at: p.created_at })
+    }
+  }
+
+  // Only consider basket checkouts (multiple items) or include all for safety
+  const sessions = [...checkoutMap.entries()].map(([checkoutId, data]) => ({
+    id: checkoutId,
+    checkout_session_id: checkoutId,
+    created_at: data.created_at,
+    artists: data.artists,
+  }))
+
+  if (sessions.length === 0) {
     return NextResponse.json({ checked: 0, issues: [], hours_back: hoursBack })
   }
 
@@ -40,7 +60,7 @@ export async function GET(req: NextRequest) {
     .from('webhook_errors')
     .select('event_id, error, payload')
     .gte('created_at', cutoff)
-    .like('error', 'Transfer failed%')
+    .ilike('error', '%transfer failed%')
 
   const errorsByBasket = new Map<string, Array<{ artist_id: string; error: string }>>()
   for (const err of transferErrors || []) {
@@ -78,54 +98,44 @@ export async function GET(req: NextRequest) {
     stripe_payment_status?: string
   }> = []
 
-  for (const session of sessions) {
-    const basketId = session.id
-    const checkoutId = session.stripe_checkout_session_id as string
-
-    // Entire basket had no charge ID
-    if (chargeErrorBaskets.has(basketId)) {
-      const items = session.items as Array<{ artist_id: string }> | null
-      issues.push({
-        basket_session_id: basketId,
-        checkout_session_id: checkoutId,
-        created_at: session.created_at,
-        type: 'charge_missing',
-        affected_artists: [...new Set((items || []).map(i => i.artist_id))].map(id => ({ artist_id: id })),
-      })
-      continue
-    }
-
-    // Individual artist transfer failures
-    const errors = errorsByBasket.get(basketId)
-    if (errors && errors.length > 0) {
-      issues.push({
-        basket_session_id: basketId,
-        checkout_session_id: checkoutId,
-        created_at: session.created_at,
-        type: 'transfer_failed',
-        affected_artists: errors,
-      })
-    }
+  // Also check chargeErrorBaskets and transfer errors by basket
+  for (const [basketId, errors] of errorsByBasket) {
+    issues.push({
+      basket_session_id: basketId,
+      checkout_session_id: '',
+      created_at: '',
+      type: 'transfer_failed',
+      affected_artists: errors,
+    })
   }
 
-  // 5. Spot-check: for any basket session without errors, verify Stripe payment was actually captured
-  //    (sample up to 10 recent ones to avoid API rate limits)
+  for (const basketId of chargeErrorBaskets) {
+    if (errorsByBasket.has(basketId)) continue
+    issues.push({
+      basket_session_id: basketId,
+      checkout_session_id: '',
+      created_at: '',
+      type: 'charge_missing',
+      affected_artists: [{ artist_id: 'unknown', error: 'No charge ID available' }],
+    })
+  }
+
+  // 5. Spot-check: sample up to 10 recent checkouts, verify Stripe payment was captured
+  const checkedBasketIds = new Set([...errorsByBasket.keys(), ...chargeErrorBaskets])
   const cleanSessions = sessions
-    .filter(s => !chargeErrorBaskets.has(s.id) && !errorsByBasket.has(s.id))
+    .filter(s => !checkedBasketIds.has(s.id))
     .slice(-10)
 
   for (const session of cleanSessions) {
-    const checkoutId = session.stripe_checkout_session_id as string
     try {
-      const stripeSession = await stripe.checkout.sessions.retrieve(checkoutId)
+      const stripeSession = await stripe.checkout.sessions.retrieve(session.checkout_session_id)
       if (stripeSession.payment_status !== 'paid') {
-        const items = session.items as Array<{ artist_id: string }> | null
         issues.push({
           basket_session_id: session.id,
-          checkout_session_id: checkoutId,
+          checkout_session_id: session.checkout_session_id,
           created_at: session.created_at,
           type: 'payment_unconfirmed',
-          affected_artists: [...new Set((items || []).map(i => i.artist_id))].map(id => ({ artist_id: id })),
+          affected_artists: session.artists.map(id => ({ artist_id: id })),
           stripe_payment_status: stripeSession.payment_status,
         })
       }
@@ -178,7 +188,7 @@ export async function POST(req: NextRequest) {
   const { data: errors, error: fetchErr } = await admin
     .from('webhook_errors')
     .select('id, error, payload')
-    .like('error', 'Transfer failed%')
+    .ilike('error', '%transfer failed%')
     .filter('payload->>basket_session_id', 'eq', basketSessionId)
     .filter('payload->>retries_exhausted', 'eq', 'true')
 
@@ -221,7 +231,7 @@ export async function POST(req: NextRequest) {
       .from('webhook_errors')
       .update({ error: `[RESOLVING] ${err.error}` })
       .eq('id', err.id)
-      .like('error', 'Transfer failed%')
+      .ilike('error', '%transfer failed%')
       .select('id')
       .maybeSingle()
 
@@ -246,7 +256,7 @@ export async function POST(req: NextRequest) {
           retried: 'true',
         },
       }, {
-        idempotencyKey: `basket_${payload.basket_session_id}_${payload.artist_id}_retry_${Date.now()}`,
+        idempotencyKey: `basket_${payload.basket_session_id}_${payload.artist_id}`,
       })
 
       await admin

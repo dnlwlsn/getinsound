@@ -9,7 +9,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (limited) return limited
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const { id: releaseId } = await params
@@ -35,10 +36,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (price_pence < 300 || price_pence > 10_000_000) {
       return NextResponse.json({ error: 'PWYW suggested price must be at least £3.00' }, { status: 400 })
     }
-    if (pwyw_minimum_pence != null) {
-      if (!Number.isInteger(pwyw_minimum_pence) || pwyw_minimum_pence < 300 || pwyw_minimum_pence > 10_000_000) {
-        return NextResponse.json({ error: 'PWYW minimum must be at least £3.00' }, { status: 400 })
-      }
+    if (pwyw_minimum_pence == null) {
+      return NextResponse.json({ error: 'PWYW minimum is required when PWYW is enabled' }, { status: 400 })
+    }
+    if (!Number.isInteger(pwyw_minimum_pence) || pwyw_minimum_pence < 300 || pwyw_minimum_pence > 10_000_000) {
+      return NextResponse.json({ error: 'PWYW minimum must be at least £3.00' }, { status: 400 })
     }
   } else {
     if (price_pence < 300 || price_pence > 10_000_000) {
@@ -54,6 +56,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .from('releases')
     .update(updateFields)
     .eq('id', releaseId)
+    .eq('artist_id', user.id)
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 

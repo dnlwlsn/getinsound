@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
 import { createClient } from '@/lib/supabase/client'
@@ -29,6 +29,7 @@ interface PayoutData {
 export function SalesClient() {
   const supabase = createClient()
   const router = useRouter()
+  const pathname = usePathname()
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut()
     router.push('/')
@@ -36,12 +37,13 @@ export function SalesClient() {
 
   const [data, setData] = useState<PayoutData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/dashboard/payouts')
       .then(r => r.json())
-      .then(d => { setData(d); setLoading(false) })
-      .catch(() => setLoading(false))
+      .then(d => { if (d.error) { setFetchError(d.error) } else { setData(d) } setLoading(false) })
+      .catch(() => { setFetchError('Unable to load sales data. Please try again.'); setLoading(false) })
   }, [])
 
   return (
@@ -87,7 +89,17 @@ export function SalesClient() {
             <p className="text-zinc-500 text-sm mt-1">Track your earnings and manage payouts via Stripe.</p>
           </header>
 
-          {loading ? (
+          {!loading && fetchError ? (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-12 text-center">
+              <p className="text-sm font-bold text-red-400 mb-4">{fetchError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-orange-600 text-sm font-bold hover:text-orange-500 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : loading ? (
             <div className="space-y-4">
               <div className="h-32 bg-zinc-900 rounded-2xl animate-pulse" />
               <div className="h-32 bg-zinc-900 rounded-2xl animate-pulse" />
@@ -166,20 +178,20 @@ export function SalesClient() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-md z-50 flex">
-        <Link href="/dashboard" className="flex-1 flex flex-col items-center gap-1 py-3 text-zinc-500 hover:text-white transition-colors">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-md z-50 flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <Link href="/dashboard" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/dashboard' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}>
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           <span className="text-[9px] font-black uppercase tracking-wider">Home</span>
         </Link>
-        <Link href="/discography" className="flex-1 flex flex-col items-center gap-1 py-3 text-zinc-500 hover:text-white transition-colors">
+        <Link href="/discography" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/discography' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}>
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z"/></svg>
           <span className="text-[9px] font-black uppercase tracking-wider">Music</span>
         </Link>
-        <Link href="/sales" className="flex-1 flex flex-col items-center gap-1 py-3 text-orange-500 hover:text-white transition-colors">
+        <Link href="/sales" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/sales' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}>
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           <span className="text-[9px] font-black uppercase tracking-wider">Sales</span>
         </Link>
-        <Link href="/explore" className="flex-1 flex flex-col items-center gap-1 py-3 text-zinc-500 hover:text-white transition-colors">
+        <Link href="/explore" className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${pathname === '/explore' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}>
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <span className="text-[9px] font-black uppercase tracking-wider">Store</span>
         </Link>

@@ -7,7 +7,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: artist } = await supabase
@@ -35,6 +36,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'No payment intent on order' }, { status: 400 })
   }
 
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+
   let refund: Stripe.Refund
   try {
     refund = await stripe.refunds.create(
@@ -42,10 +48,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       { idempotencyKey: `refund_order_${id}` },
     )
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    const message = (err as Error).message
+    console.error(`Refund failed for order ${id}:`, message)
+
+    await admin.from('webhook_errors').insert({
+      event_type: 'confirm_return_refund_failed',
+      event_id: id,
+      message,
+      payload: { order_id: id },
+    })
+
+    await admin
+      .from('orders')
+      .update({ status: 'refund_failed' })
+      .eq('id', id)
+
+    return NextResponse.json({ ok: false, error: 'Refund failed — logged for manual review' })
   }
 
-  const { error } = await supabase
+  const { error } = await admin
     .from('orders')
     .update({
       status: 'returned',
@@ -54,11 +75,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
 
   await admin.from('platform_costs').insert({
     related_order_id: id,
@@ -70,7 +86,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const merchName = (order.merch as unknown as { name: string } | null)?.name ?? 'your order'
 
-  await supabase.from('notifications').insert({
+  await admin.from('notifications').insert({
     user_id: order.fan_id,
     type: 'merch_return',
     title: 'Return confirmed — refund issued',

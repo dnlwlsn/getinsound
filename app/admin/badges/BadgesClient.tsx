@@ -12,13 +12,28 @@ interface BadgeEntry {
   fan_profiles: { username: string; avatar_url: string | null } | null
 }
 
+const BADGE_TYPES = [
+  { value: 'founder', label: 'Founder' },
+  { value: 'beta_tester', label: 'Beta Tester' },
+  { value: 'founding_fan', label: 'Founding Fan' },
+  { value: 'founding_artist', label: 'Founding Artist' },
+  { value: 'first_sale', label: 'First Sale' },
+  { value: 'early_supporter', label: 'Early Supporter' },
+  { value: 'limited_edition', label: 'Limited Edition' },
+]
+
+function badgeLabel(type: string): string {
+  return BADGE_TYPES.find(b => b.value === type)?.label ?? type
+}
+
 export function BadgesClient() {
   const [badges, setBadges] = useState<BadgeEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState('')
-  const [badgeType, setBadgeType] = useState<'beta_tester' | 'founder'>('beta_tester')
+  const [badgeType, setBadgeType] = useState(BADGE_TYPES[0].value)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
+  const [filter, setFilter] = useState('all')
 
   const load = useCallback(async () => {
     const res = await fetch('/api/admin/badges')
@@ -42,7 +57,7 @@ export function BadgesClient() {
     })
     const data = await res.json()
     if (res.ok) {
-      setMessage(`Awarded ${badgeType === 'beta_tester' ? 'Beta Tester' : 'Founder'} badge to @${username.trim()}`)
+      setMessage(`Awarded ${badgeLabel(badgeType)} badge to @${username.trim()}`)
       setUsername('')
       load()
     } else {
@@ -60,8 +75,11 @@ export function BadgesClient() {
     if (res.ok) load()
   }
 
-  const betaTesters = badges.filter(b => b.badge_type === 'beta_tester')
-  const founders = badges.filter(b => b.badge_type === 'founder')
+  const filtered = filter === 'all' ? badges : badges.filter(b => b.badge_type === filter)
+  const typeCounts = badges.reduce<Record<string, number>>((acc, b) => {
+    acc[b.badge_type] = (acc[b.badge_type] || 0) + 1
+    return acc
+  }, {})
 
   return (
     <div className="min-h-screen bg-insound-bg text-zinc-100 p-8">
@@ -69,7 +87,7 @@ export function BadgesClient() {
         <div>
           <Link href="/admin" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors">&larr; Admin</Link>
           <h1 className="text-3xl font-display font-bold tracking-tight mt-4">Badges</h1>
-          <p className="text-zinc-500 text-sm mt-1">Award Beta Tester and Founder badges to fan profiles.</p>
+          <p className="text-zinc-500 text-sm mt-1">View, award, and revoke badges for artists and fans.</p>
         </div>
 
         {/* Award form */}
@@ -78,7 +96,7 @@ export function BadgesClient() {
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
-              placeholder="Fan username"
+              placeholder="Username"
               value={username}
               onChange={e => setUsername(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') award() }}
@@ -86,11 +104,12 @@ export function BadgesClient() {
             />
             <select
               value={badgeType}
-              onChange={e => setBadgeType(e.target.value as 'beta_tester' | 'founder')}
+              onChange={e => setBadgeType(e.target.value)}
               className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-orange-600 transition-colors cursor-pointer"
             >
-              <option value="beta_tester">Beta Tester</option>
-              <option value="founder">Founder</option>
+              {BADGE_TYPES.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
             </select>
             <button
               onClick={award}
@@ -107,34 +126,33 @@ export function BadgesClient() {
           )}
         </section>
 
-        {/* Founders */}
+        {/* Filter + list */}
         <section>
-          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">
-            Founders ({founders.length})
-          </h2>
-          {founders.length === 0 ? (
-            <p className="text-zinc-600 text-sm">No founder badges awarded yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {founders.map(b => (
-                <BadgeRow key={b.id} badge={b} onRevoke={revoke} />
-              ))}
-            </div>
-          )}
-        </section>
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'all' ? 'bg-orange-600/20 text-orange-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              All ({badges.length})
+            </button>
+            {BADGE_TYPES.filter(t => typeCounts[t.value]).map(t => (
+              <button
+                key={t.value}
+                onClick={() => setFilter(t.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === t.value ? 'bg-orange-600/20 text-orange-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                {t.label} ({typeCounts[t.value]})
+              </button>
+            ))}
+          </div>
 
-        {/* Beta Testers */}
-        <section>
-          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">
-            Beta Testers ({betaTesters.length})
-          </h2>
           {loading ? (
             <p className="text-zinc-600 text-sm">Loading...</p>
-          ) : betaTesters.length === 0 ? (
-            <p className="text-zinc-600 text-sm">No beta tester badges awarded yet.</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-zinc-600 text-sm">No {filter === 'all' ? '' : badgeLabel(filter) + ' '}badges awarded yet.</p>
           ) : (
             <div className="space-y-2">
-              {betaTesters.map(b => (
+              {filtered.map(b => (
                 <BadgeRow key={b.id} badge={b} onRevoke={revoke} />
               ))}
             </div>
@@ -164,7 +182,7 @@ function BadgeRow({ badge, onRevoke }: { badge: BadgeEntry; onRevoke: (id: strin
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold text-white">@{username}</p>
-        <p className="text-[11px] text-zinc-500">Awarded {date}</p>
+        <p className="text-[11px] text-zinc-500">{badgeLabel(badge.badge_type)} · Awarded {date}</p>
       </div>
       <button
         onClick={() => onRevoke(badge.id)}

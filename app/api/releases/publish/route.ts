@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const { release_id, published } = await req.json().catch(() => ({} as any))
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const { data: release, error: relErr } = await supabase
     .from('releases')
-    .select('id, title, artist_id')
+    .select('id, title, slug, artist_id')
     .eq('id', release_id)
     .eq('artist_id', user.id)
     .maybeSingle()
@@ -50,9 +51,13 @@ export async function POST(req: NextRequest) {
 
     const { data: releaseData } = await supabase
       .from('releases')
-      .select('price_pence, pwyw_enabled, pwyw_minimum_pence')
+      .select('price_pence, pwyw_enabled, pwyw_minimum_pence, cover_url')
       .eq('id', release_id)
       .single()
+
+    if (!releaseData?.cover_url) {
+      return NextResponse.json({ error: 'Release must have cover art' }, { status: 400 })
+    }
 
     const MINIMUM_PRICE_PENCE = 300
     if (releaseData && !releaseData.pwyw_enabled && (releaseData.price_pence == null || releaseData.price_pence < MINIMUM_PRICE_PENCE)) {
@@ -66,6 +71,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Check current published state to avoid duplicate notifications on republish
+  const { data: currentState } = await supabase
+    .from('releases')
+    .select('published')
+    .eq('id', release_id)
+    .single()
+  const wasAlreadyPublished = currentState?.published === true
+
   const { error: updateErr } = await supabase
     .from('releases')
     .update({ published })
@@ -74,7 +87,7 @@ export async function POST(req: NextRequest) {
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 
-  if (published) {
+  if (published && !wasAlreadyPublished) {
     // Check Founding Artist eligibility: Stripe verified + no existing badge
     try {
       const { data: account } = await supabase
@@ -130,7 +143,7 @@ export async function POST(req: NextRequest) {
           userIds: [...allIds],
           type: 'new_release',
           title: `${artist.name} released "${release.title}"`,
-          link: `/${artist.slug}`,
+          link: `/release?a=${artist.slug}&r=${release.slug}`,
         })
       }
     }

@@ -206,6 +206,13 @@ Deno.serve(async (req) => {
       accountMap.set(acc.id, acc.stripe_account_id);
     }
 
+    // Verify all artists have an account row — missing row means no payout setup
+    for (const artistId of allArtistIds) {
+      if (!accountMap.has(artistId)) {
+        return json({ error: 'An artist has not finished setting up payouts yet.' }, 400);
+      }
+    }
+
     // ── Founding Artist fee check (releases only) ──
     const releaseArtistIds = [...new Set(releases.map((r: any) => r.artist_id))];
     const foundingArtistMap = new Map<string, boolean>();

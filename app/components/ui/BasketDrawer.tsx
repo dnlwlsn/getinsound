@@ -34,6 +34,7 @@ export function BasketDrawer({ onClose }: Props) {
   const embeddedCheckoutRef = useRef<any>(null)
   const drawerRef = useRef<HTMLDivElement>(null)
   const previouslyFocusedRef = useRef<HTMLElement | null>(null)
+  const handleCloseRef = useRef<() => void>(() => onClose())
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -76,10 +77,9 @@ export function BasketDrawer({ onClose }: Props) {
   }, [])
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') handleCloseRef.current() }
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleClose = useCallback(() => {
@@ -91,6 +91,8 @@ export function BasketDrawer({ onClose }: Props) {
     if (stripeMountRef.current) stripeMountRef.current.innerHTML = ''
     onClose()
   }, [onClose])
+
+  handleCloseRef.current = handleClose
 
   const mountSession = useCallback(async (stripe: any, clientSecret: string, sessionId: string) => {
     if (embeddedCheckoutRef.current) {
@@ -199,14 +201,14 @@ export function BasketDrawer({ onClose }: Props) {
         if (data && data.releases) {
           setDownloadTracks(data.releases)
           setDigitalConsent(false)
-          setStage('consent')
+          setStage('confirmed')
           clear()
           return
         }
         if (data && data.release) {
           setDownloadTracks([{ releaseTitle: data.release.title, tracks: data.tracks }])
           setDigitalConsent(false)
-          setStage('consent')
+          setStage('confirmed')
           clear()
           return
         }
@@ -380,7 +382,29 @@ export function BasketDrawer({ onClose }: Props) {
         {/* Stage: Stripe checkout */}
         {stage === 'checkout' && (
           <div>
-            <div ref={stripeMountRef} className="min-h-[400px]" />
+            <div className="px-6 pt-14 pb-3">
+              <button
+                onClick={() => {
+                  if (embeddedCheckoutRef.current) {
+                    try { embeddedCheckoutRef.current.destroy() } catch {}
+                    embeddedCheckoutRef.current = null
+                  }
+                  if (stripeMountRef.current) stripeMountRef.current.innerHTML = ''
+                  setStage('review')
+                }}
+                className="inline-flex items-center gap-1.5 text-sm font-bold text-zinc-400 hover:text-white transition-colors"
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to basket
+              </button>
+            </div>
+            <div ref={stripeMountRef} className="min-h-[400px] relative">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="inline-block w-10 h-10 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin" />
+              </div>
+            </div>
             <p className="text-[10px] text-zinc-600 px-6 pb-4 leading-relaxed">
               By completing this purchase, you agree to receive immediate access to digital content and waive your 14-day cancellation right once the download begins. See our{' '}
               <Link href="/terms" className="underline hover:text-zinc-400">Terms</Link>.
@@ -506,8 +530,16 @@ export function BasketDrawer({ onClose }: Props) {
             </div>
             <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Payment received</p>
             <h2 className="text-xl font-black mb-2 font-display">{errorTitle}</h2>
-            <p className="text-zinc-400 text-sm font-medium mb-6">{errorMsg}</p>
-            <a href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Go to your library</a>
+            <p className="text-zinc-400 text-sm font-medium mb-6">
+              {wasGuest
+                ? "Your payment went through. Check your email for a link to access your music."
+                : errorMsg}
+            </p>
+            {wasGuest ? (
+              <button onClick={handleClose} className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Done</button>
+            ) : (
+              <a href="/library" className="inline-block bg-orange-600 hover:bg-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm transition-colors">Go to your library</a>
+            )}
           </div>
         )}
 

@@ -3,10 +3,14 @@
 import { useGlobalKeys } from '@/lib/hooks/useGlobalKeys'
 import { useEffect } from 'react'
 import { usePlayerStore } from '@/lib/stores/player'
-import { addToHistory } from '@/lib/stores/history'
+import { addToHistory, initHistory } from '@/lib/stores/history'
 
 export function GlobalShortcuts() {
   useGlobalKeys()
+
+  useEffect(() => {
+    initHistory()
+  }, [])
 
   useEffect(() => {
     return usePlayerStore.subscribe((state, prev) => {

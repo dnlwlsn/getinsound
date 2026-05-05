@@ -9,15 +9,13 @@ function getAdminClient() {
   )
 }
 
+import { timingSafeEqual as cryptoTimingSafeEqual } from 'crypto'
+
 function timingSafeEqual(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length)
-  const paddedA = a.padEnd(maxLen, '\0')
-  const paddedB = b.padEnd(maxLen, '\0')
-  let result = a.length ^ b.length
-  for (let i = 0; i < maxLen; i++) {
-    result |= paddedA.charCodeAt(i) ^ paddedB.charCodeAt(i)
-  }
-  return result === 0
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return cryptoTimingSafeEqual(bufA, bufB)
 }
 
 function monthBucket(offsetMonths = 0): string {
@@ -67,15 +65,20 @@ export async function POST(req: NextRequest) {
 
   if (!authorised) {
     const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: authData } = await supabase.auth.getUser()
+    const user = authData?.user ?? null
     if (user) {
-      // Ignore the body's user_id — use the authenticated user
       return updatePreference(user.id, unsubscribe)
     }
   }
 
   if (!authorised) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Token-based path only allows unsubscribing, not re-subscribing
+  if (!unsubscribe) {
+    return NextResponse.json({ error: 'Re-subscribing requires an active session' }, { status: 403 })
   }
 
   const { error } = await getAdminClient()

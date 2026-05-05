@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { formatPrice } from '@/app/lib/currency'
 import { getTrackingUrl } from '@/lib/carriers'
-import { Footer } from '@/app/components/ui/Footer'
 
 interface OrderItem {
   id: string
@@ -134,7 +133,6 @@ export default function OrdersClient({ orders }: Props) {
           </div>
         )}
       </div>
-      <Footer />
     </main>
   )
 }

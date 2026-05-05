@@ -8,15 +8,18 @@ const AUTH_EXCLUDED = ['/auth', '/signup', '/auth/callback', '/welcome', '/becom
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30
 
-function constantTimeEqual(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length)
-  const paddedA = a.padEnd(maxLen, '\0')
-  const paddedB = b.padEnd(maxLen, '\0')
-  let result = a.length ^ b.length
-  for (let i = 0; i < maxLen; i++) {
-    result |= paddedA.charCodeAt(i) ^ paddedB.charCodeAt(i)
-  }
-  return result === 0
+async function constantTimeEqual(a: string, b: string): Promise<boolean> {
+  if (a.length !== b.length) return false
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(a),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(a))
+  return crypto.subtle.verify('HMAC', key, sig, encoder.encode(b))
 }
 
 function detectCountry(request: NextRequest): string | null {
@@ -107,7 +110,7 @@ export async function middleware(request: NextRequest) {
     return clearResponse
   }
 
-  if (previewParam && previewToken && constantTimeEqual(previewParam, previewToken)) {
+  if (previewParam && previewToken && await constantTimeEqual(previewParam, previewToken)) {
     const url = request.nextUrl.clone()
     url.searchParams.delete('preview')
     const previewResponse = NextResponse.redirect(url)

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     type: 'recovery',
     email,
     options: {
-      redirectTo: `${SITE_URL}/auth/callback?next=/settings/security`,
+      redirectTo: `${SITE_URL}/auth/callback?next=/settings/profile`,
     },
   })
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   const tokenHash = linkData.properties.hashed_token
-  const resetLink = `${SITE_URL}/auth/callback?next=/settings/security&token_hash=${tokenHash}&type=recovery`
+  const resetLink = `${SITE_URL}/auth/callback?next=/settings/profile&token_hash=${tokenHash}&type=recovery`
 
   await sendEmail(email, 'Reset your Insound password', `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0A0A0A;padding:40px 20px">

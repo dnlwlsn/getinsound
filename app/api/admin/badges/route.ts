@@ -14,7 +14,6 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from('fan_badges')
     .select('id, user_id, badge_type, awarded_at, metadata, fan_profiles (username, avatar_url)')
-    .in('badge_type', ['beta_tester', 'founder'])
     .order('awarded_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -29,8 +28,9 @@ export async function POST(req: NextRequest) {
   if (!username || !badge_type) {
     return NextResponse.json({ error: 'username and badge_type required' }, { status: 400 })
   }
-  if (!['beta_tester', 'founder'].includes(badge_type)) {
-    return NextResponse.json({ error: 'Invalid badge type' }, { status: 400 })
+  const VALID_TYPES = ['founding_fan', 'founding_artist', 'first_sale', 'limited_edition', 'early_supporter', 'founder', 'beta_tester']
+  if (!VALID_TYPES.includes(badge_type)) {
+    return NextResponse.json({ error: `Invalid badge type. Valid: ${VALID_TYPES.join(', ')}` }, { status: 400 })
   }
 
   const supabaseAdmin = createClient(

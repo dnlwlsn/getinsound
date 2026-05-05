@@ -10,6 +10,7 @@ import { ServiceWorkerRegistration } from './components/pwa/ServiceWorkerRegistr
 import { InstallBanner } from './components/pwa/InstallBanner'
 import { CookieBanner } from './components/ui/CookieBanner'
 import { FeedbackButton } from './components/ui/FeedbackButton'
+import { Footer } from './components/ui/Footer'
 import { GlobalShortcuts } from './components/GlobalShortcuts'
 import { PwaSplash } from './components/pwa/PwaSplash'
 import { GenreOnboarding } from './components/GenreOnboarding'
@@ -69,7 +70,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ToastProvider>
             <AppNav />
             <VerificationBanner />
-            <main id="main-content" className="pb-40 sm:pb-6">{children}</main>
+            <main id="main-content">{children}</main>
+            <Footer />
           </ToastProvider>
         </CurrencyProvider>
         <PlayerBar />

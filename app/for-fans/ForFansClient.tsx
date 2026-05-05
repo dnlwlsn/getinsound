@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
-import { Footer } from '@/app/components/ui/Footer'
 import { useCurrency } from '../providers/CurrencyProvider'
 
 const WHY_HERE = [
@@ -151,7 +150,6 @@ export function ForFansClient() {
         </div>
       </section>
 
-      <Footer />
     </main>
   )
 }

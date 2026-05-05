@@ -61,15 +61,31 @@ export function ProfileSettingsClient({ profile, purchases, hiddenPurchaseIds, u
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
+    // Validate magic bytes before uploading
+    const buffer = await file.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    if (bytes.length < 12) throw new Error('Invalid image file')
+
+    const isJpeg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF
+    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47
+    const isWebp = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+
+    if (!isJpeg && !isPng && !isWebp) {
+      throw new Error('Only JPEG, PNG, and WebP images are allowed')
+    }
+
+    const detectedExt = isJpeg ? 'jpg' : isPng ? 'png' : 'webp'
+    const detectedMime = isJpeg ? 'image/jpeg' : isPng ? 'image/png' : 'image/webp'
+
     // Delete previous avatar files
     const { data: existing } = await supabase.storage.from('avatars').list(user.id)
     if (existing?.length) {
       await supabase.storage.from('avatars').remove(existing.map(f => `${user.id}/${f.name}`))
     }
 
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const path = `${user.id}/avatar.${ext}`
-    const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    const path = `${user.id}/avatar.${detectedExt}`
+    const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, buffer, { upsert: true, contentType: detectedMime })
     if (uploadErr) throw new Error(uploadErr.message)
 
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)

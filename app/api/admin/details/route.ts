@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
     case 'sales': {
       const { data } = await supabase
         .from('purchases')
-        .select('id, amount_pence, currency, buyer_email, created_at, releases(title, slug), artists(name, slug)')
+        .select('id, amount_pence, currency, buyer_email, created_at, releases!release_id(title, slug), artists!artist_id(name, slug)')
         .eq('status', 'paid')
         .order('created_at', { ascending: false })
         .limit(200)

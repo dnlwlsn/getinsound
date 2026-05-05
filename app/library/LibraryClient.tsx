@@ -13,7 +13,6 @@ import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { getTrackingUrl } from '@/lib/carriers'
-import { zipSync } from 'fflate'
 import { NotificationOptIn } from '@/app/components/pwa/NotificationOptIn'
 import { useToast } from '@/app/providers/ToastProvider'
 
@@ -200,7 +199,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
   }
 
   const buildFullQueue = useCallback((startIndex: number = 0): PlayerTrack[] => {
-    return allTracks.map((t) => ({
+    const mapped = allTracks.map((t) => ({
       id: t.id,
       title: t.title,
       artistName: t.artistName,
@@ -214,6 +213,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
       accentColour: t.accentColour,
       purchased: true,
     }))
+    return [...mapped.slice(startIndex), ...mapped.slice(0, startIndex)]
   }, [allTracks])
 
   const handlePlayAll = useCallback(() => {
@@ -315,27 +315,10 @@ export default function LibraryClient({ releases, error, userId, favourites = []
     )
   }
 
-  if (releases.length === 0 && favourites.length === 0 && merchOrders.length === 0) {
-    return (
-      <div className="min-h-screen font-display">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center px-8">
-            <h2 className="text-lg font-bold text-zinc-300 mb-2">Nothing here yet.</h2>
-            <p className="text-zinc-500 text-sm mb-5">Find something you love.</p>
-            <Link
-              href="/explore"
-              className="text-orange-600 text-sm font-bold hover:text-orange-500 transition-colors"
-            >
-              Explore music &rarr;
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const isEmpty = releases.length === 0 && favourites.length === 0 && merchOrders.length === 0
 
   return (
-    <div className="min-h-screen font-display pb-6">
+    <div className="min-h-screen font-display pb-32 sm:pb-6">
 
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
         {/* Header + Stats */}
@@ -465,7 +448,20 @@ export default function LibraryClient({ releases, error, userId, favourites = []
           </div>
         )}
 
-        {tab === 'collection' && <>
+        {tab === 'collection' && releases.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-zinc-400 font-medium mb-2">No releases in your collection yet.</p>
+            <p className="text-zinc-600 text-sm mb-5">When you buy music, it will appear here.</p>
+            <Link
+              href="/explore"
+              className="text-orange-600 text-sm font-bold hover:text-orange-500 transition-colors"
+            >
+              Explore music &rarr;
+            </Link>
+          </div>
+        )}
+
+        {tab === 'collection' && releases.length > 0 && <>
         {/* Filter / Sort bar */}
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div className="flex gap-2 flex-wrap">
@@ -520,18 +516,18 @@ export default function LibraryClient({ releases, error, userId, favourites = []
                   {allTracks.length} {allTracks.length === 1 ? 'track' : 'tracks'} · {formatTotalDuration(totalDurationSec)}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <input
                   type="text"
                   value={trackSearch}
                   onChange={e => setTrackSearch(e.target.value)}
                   placeholder="Search tracks..."
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-300 text-xs font-medium placeholder:text-zinc-600 focus:border-orange-600 transition-colors w-44"
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-300 text-xs font-medium placeholder:text-zinc-600 focus:border-orange-600 transition-colors w-full sm:w-44"
                 />
                 <select
                   value={trackSort}
                   onChange={e => setTrackSort(e.target.value as TrackSortOption)}
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors"
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-4 outline-none text-zinc-400 text-xs font-bold focus:border-orange-600 transition-colors flex-1 sm:flex-none"
                 >
                   <option value="purchased">Recently Purchased</option>
                   <option value="artist">A-Z by Artist</option>
@@ -543,7 +539,8 @@ export default function LibraryClient({ releases, error, userId, favourites = []
                   className="bg-orange-600 text-black font-black px-5 py-2 rounded-full text-xs uppercase tracking-wider hover:bg-orange-500 transition-colors disabled:opacity-40 flex items-center gap-1.5 shrink-0"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                  Play All
+                  <span className="hidden sm:inline">Play All</span>
+                  <span className="sm:hidden">Play</span>
                 </button>
                 <button
                   onClick={handleShuffleAll}
@@ -551,7 +548,7 @@ export default function LibraryClient({ releases, error, userId, favourites = []
                   className="bg-white/10 border border-white/20 text-white font-black px-5 py-2 rounded-full text-xs uppercase tracking-wider hover:bg-white/20 transition-colors disabled:opacity-40 flex items-center gap-1.5 shrink-0"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
-                  Shuffle
+                  <span className="hidden sm:inline">Shuffle</span>
                 </button>
               </div>
             </div>
@@ -587,10 +584,10 @@ export default function LibraryClient({ releases, error, userId, favourites = []
                         </span>
                       ) : (
                         <>
-                          <span className={`text-[13px] font-medium group-hover:hidden ${playing ? 'text-orange-500' : 'text-zinc-600'}`}>
+                          <span className={`text-[13px] font-medium hidden sm:inline group-hover:hidden ${playing ? 'text-orange-500' : 'text-zinc-600'}`}>
                             {idx + 1}
                           </span>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="hidden group-hover:inline text-white ml-auto">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="sm:hidden inline text-white ml-auto sm:group-hover:inline">
                             <path d="M8 5v14l11-7z" />
                           </svg>
                         </>
@@ -981,50 +978,46 @@ function FormatSelectorModal({
   showToast: (msg: string) => void
 }) {
   const [downloading, setDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState('')
+  const [trackDownloading, setTrackDownloading] = useState<string | null>(null)
   const isAlbum = release.tracks.length > 1
 
-  const handleDownload = async () => {
-    setDownloading(true)
+  const downloadSingleTrack = async (track: LibraryRelease['tracks'][number]) => {
+    const res = await fetch(`/api/stream?trackId=${track.id}`)
+    if (!res.ok) throw new Error('Failed to get stream URL')
+    const { url, format: ext } = await res.json()
+    if (!url) throw new Error('No URL returned')
 
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${String(track.position).padStart(2, '0')} - ${track.title}.${ext || 'wav'}`
+    a.target = '_blank'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  const handleTrackDownload = async (track: LibraryRelease['tracks'][number]) => {
+    setTrackDownloading(track.id)
     try {
-      if (isAlbum) {
-        const files: Record<string, Uint8Array> = {}
-        for (const track of release.tracks) {
-          const streamRes = await fetch(`/api/stream?trackId=${track.id}`)
-          if (!streamRes.ok) continue
-          const { url, format: ext } = await streamRes.json()
-          if (!url) continue
-          const audioRes = await fetch(url)
-          if (!audioRes.ok) continue
-          const buf = await audioRes.arrayBuffer()
-          const filename = `${String(track.position).padStart(2, '0')} - ${track.title}.${ext || 'wav'}`
-          files[filename] = new Uint8Array(buf)
-        }
-        const zipped = zipSync(files)
-        const blob = new Blob([zipped.buffer as ArrayBuffer], { type: 'application/zip' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${release.artistName} - ${release.releaseTitle}.zip`
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        URL.revokeObjectURL(url)
-      } else {
-        for (const track of release.tracks) {
-          const res = await fetch(`/api/stream?trackId=${track.id}`)
-          if (!res.ok) continue
-          const { url, format: ext } = await res.json()
-          if (!url) continue
+      await downloadSingleTrack(track)
+    } catch {
+      showToast('Download failed — try again')
+    } finally {
+      setTrackDownloading(null)
+    }
+  }
 
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `${String(track.position).padStart(2, '0')} - ${track.title}.${ext || 'wav'}`
-          a.target = '_blank'
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-        }
+  const handleDownloadAll = async () => {
+    setDownloading(true)
+    try {
+      const total = release.tracks.length
+      for (let i = 0; i < total; i++) {
+        const track = release.tracks[i]
+        setDownloadProgress(`Downloading ${i + 1} of ${total}...`)
+        await downloadSingleTrack(track)
+        // Small delay between downloads to avoid browser blocking
+        if (i < total - 1) await new Promise(r => setTimeout(r, 800))
       }
 
       fetch('/api/library/download-log', {
@@ -1038,11 +1031,12 @@ function FormatSelectorModal({
       }).catch(() => {})
 
       showToast(`Downloaded ${release.releaseTitle}`)
+      onClose()
     } catch {
-      showToast('Download failed - check your connection and try again')
+      showToast('Download failed — check your connection and try again')
     } finally {
       setDownloading(false)
-      onClose()
+      setDownloadProgress('')
     }
   }
 
@@ -1060,22 +1054,42 @@ function FormatSelectorModal({
       onClick={onClose}
     >
       <div
-        className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6"
+        className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="format-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-bold text-lg mb-1">{release.releaseTitle}</h3>
-        <p className="text-zinc-500 text-xs mb-5">
+        <h3 id="format-modal-title" className="font-bold text-lg mb-1">{release.releaseTitle}</h3>
+        <p className="text-zinc-500 text-xs mb-4">
           {release.tracks.length} {release.tracks.length === 1 ? 'track' : 'tracks'} &middot; {release.artistName}
-          {isAlbum && <span className="text-zinc-600"> &middot; Downloads as ZIP</span>}
         </p>
 
-        <p className="text-sm text-zinc-400 mb-6">
+        <p className="text-sm text-zinc-400 mb-5">
           Files are served in the original format uploaded by the artist.
         </p>
 
-        <div className="flex gap-3">
+        {isAlbum && (
+          <div className="mb-4 space-y-2">
+            <p className="text-xs text-zinc-500 font-bold uppercase tracking-wide mb-2">Tracks</p>
+            {release.tracks.map(track => (
+              <div key={track.id} className="flex items-center justify-between py-1.5">
+                <span className="text-sm text-zinc-300 truncate mr-3">
+                  {String(track.position).padStart(2, '0')}. {track.title}
+                </span>
+                <button
+                  onClick={() => handleTrackDownload(track)}
+                  disabled={trackDownloading === track.id || downloading}
+                  className="text-xs text-orange-500 hover:text-orange-400 font-bold shrink-0 disabled:opacity-50"
+                >
+                  {trackDownloading === track.id ? '...' : 'Download'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-2 border-t border-zinc-800">
           <button
             onClick={onClose}
             className="flex-1 text-zinc-400 font-bold text-sm py-3 rounded-full border border-zinc-800 hover:border-zinc-700 transition-colors"
@@ -1083,11 +1097,11 @@ function FormatSelectorModal({
             Cancel
           </button>
           <button
-            onClick={handleDownload}
+            onClick={handleDownloadAll}
             disabled={downloading}
             className="flex-1 bg-orange-600 text-white font-bold text-sm py-3 rounded-full hover:bg-orange-500 transition-colors disabled:opacity-50"
           >
-            {downloading ? (isAlbum ? 'Zipping...' : 'Downloading...') : 'Download'}
+            {downloading ? (downloadProgress || 'Downloading...') : (isAlbum ? 'Download All' : 'Download')}
           </button>
         </div>
       </div>

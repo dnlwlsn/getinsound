@@ -11,6 +11,7 @@ import { ContextMenu } from '@/app/components/ui/ContextMenu'
 import { ReleaseCardSkeleton, ListItemSkeleton } from '@/app/components/ui/ReleaseSkeleton'
 import { usePlayerStore } from '@/lib/stores/player'
 import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
+import { GenreOnboarding } from '@/app/components/GenreOnboarding'
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -173,6 +174,9 @@ export default function ExploreClient({ releases, initialTag }: ExploreClientPro
   /* ── Render ───────────────────────────────────────────────── */
   return (
     <div className="pb-6 font-display">
+
+      {/* Genre onboarding — self-hides when not applicable */}
+      <GenreOnboarding redirectTo="/explore" />
 
       {/* FEATURED HERO — hide when filtering by genre/tag */}
       {featured.length > 0 && currentGenre === 'All' && (

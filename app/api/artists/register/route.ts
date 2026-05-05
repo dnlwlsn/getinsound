@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { RESERVED_SLUGS } from '@/lib/reserved-slugs'
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp, hashIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers)
-  const rateLimited = await checkRateLimit(ip, 'artist_register', 3, 1)
+  const ipHash = await hashIp(ip)
+  const rateLimited = await checkRateLimit(ipHash, 'artist_register', 3, 1)
   if (rateLimited) return rateLimited
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.auth.getUser()
+  const user = data?.user ?? null
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   if (!user.email_confirmed_at) {

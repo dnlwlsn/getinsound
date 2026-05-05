@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { SoundTagSelector } from '@/app/components/ui/SoundTagSelector'
@@ -108,6 +108,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
   const [releases, setReleases] = useState(initialReleases)
   const [showModal, setShowModal] = useState(false)
   const [publishError, setPublishError] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   // ── Create release form state ──────────────────────────────
   const [title, setTitle] = useState('')
@@ -235,6 +236,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
     }
 
     setSaving(true)
+    let release: { id: string } | null = null
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -247,7 +249,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
       // 1. Create the release row
       setUploadProgress('Creating release...')
       const pwywMinPence = pwyw ? Math.round(parseFloat(pwywMinPounds) * 100) : null
-      const { data: release, error: relErr } = await supabase
+      const { data: releaseData, error: relErr } = await supabase
         .from('releases')
         .insert({
           artist_id: artist.id,
@@ -264,13 +266,14 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
         .single()
 
       if (relErr) throw new Error(relErr.message)
+      release = releaseData
 
       // 1b. Save sound tags
       if (soundTags.length > 0) {
         const { error: tagErr } = await supabase
           .from('release_tags')
           .insert(soundTags.map(tag => ({
-            release_id: release.id,
+            release_id: release!.id,
             tag: tag.toLowerCase().trim(),
             is_custom: !SOUNDS_SET.has(tag),
           })))
@@ -281,13 +284,13 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
       if (coverFile) {
         setUploadProgress('Uploading cover art...')
         const ext = coverFile.name.split('.').pop() || 'jpg'
-        const coverPath = `${artist.id}/${release.id}.${ext}`
+        const coverPath = `${artist.id}/${release!.id}.${ext}`
         const { error: coverErr } = await supabase.storage
           .from('covers')
           .upload(coverPath, coverFile, { contentType: coverFile.type, upsert: true })
         if (!coverErr) {
           const { data: publicUrl } = supabase.storage.from('covers').getPublicUrl(coverPath)
-          await supabase.from('releases').update({ cover_url: publicUrl.publicUrl }).eq('id', release.id)
+          await supabase.from('releases').update({ cover_url: publicUrl.publicUrl }).eq('id', release!.id)
         }
       }
 
@@ -297,7 +300,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
         setUploadProgress(`Uploading track ${i + 1} of ${pendingTracks.length}...`)
 
         const ext = pt.file.name.split('.').pop() || 'mp3'
-        const audioPath = `${artist.id}/${release.id}-${pt.position}.${ext}`
+        const audioPath = `${artist.id}/${release!.id}-${pt.position}.${ext}`
 
         const { error: uploadErr } = await supabase.storage
           .from('masters')
@@ -308,7 +311,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
         const { error: trackErr } = await supabase
           .from('tracks')
           .insert({
-            release_id: release.id,
+            release_id: release!.id,
             position: pt.position,
             title: pt.title.trim(),
             audio_path: audioPath,
@@ -341,6 +344,12 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
         })))
       }
     } catch (err) {
+      // Clean up orphaned release row if it was created before the failure
+      if (release?.id) {
+        await supabase.from('tracks').delete().eq('release_id', release.id)
+        await supabase.from('release_tags').delete().eq('release_id', release.id)
+        await supabase.from('releases').delete().eq('id', release.id)
+      }
       setError(err instanceof Error ? err.message : 'We couldn\'t save your release - please try again.')
       setSaving(false)
     }
@@ -364,13 +373,12 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
 
   // ── Delete release ─────────────────────────────────────────
   async function deleteRelease(release: Release) {
-    if (!confirm(`Delete "${release.title}"? This cannot be undone.`)) return
     setPublishError(null)
 
     const { error } = await supabase.from('releases').delete().eq('id', release.id)
     if (error) {
       if (error.message.includes('violates foreign key') || error.code === '23503') {
-        setPublishError(`Cannot delete "${release.title}" — it has existing purchases.`)
+        setPublishError(`Cannot delete "${release.title}" — it has existing purchases. You can unpublish it instead to hide it from the store.`)
       } else {
         setPublishError(`Failed to delete "${release.title}": ${error.message}`)
       }
@@ -522,13 +530,30 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                           >
                             {r.published ? 'Unpublish' : 'Publish'}
                           </button>
-                          <button
-                            onClick={() => deleteRelease(r)}
-                            className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                            title="Delete release"
-                          >
-                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
-                          </button>
+                          {confirmDeleteId === r.id ? (
+                            <>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => { deleteRelease(r); setConfirmDeleteId(null) }}
+                                className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteId(r.id)}
+                              className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Delete release"
+                            >
+                              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -541,26 +566,24 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-md z-50 flex">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 border-t border-zinc-900 backdrop-blur-md z-50 flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <MobileNavLink href="/dashboard" label="Home" icon="grid" />
-        <MobileNavLink href="/discography" label="Music" icon="music" active />
+        <MobileNavLink href="/discography" label="Music" icon="music" />
         <MobileNavLink href="/sales" label="Sales" icon="dollar" />
         <MobileNavLink href="/explore" label="Store" icon="search" />
       </nav>
 
       {/* ── Create Release Modal ───────────────────────────────── */}
       {showModal && (
-        <div className="fixed inset-0 z-[400] bg-black/85 backdrop-blur-md overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget && !saving) setShowModal(false) }}>
+        <div className="fixed inset-0 z-[400] bg-black/85 backdrop-blur-md overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false) }}>
           <div className="min-h-screen flex items-start md:items-center justify-center p-4">
             <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg shadow-2xl relative my-8 overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-zinc-800">
                 <h2 className="text-xl font-black font-display">New Release</h2>
-                {!saving && (
-                  <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                  </button>
-                )}
+                <button onClick={() => setShowModal(false)} className="w-11 h-11 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                </button>
               </div>
 
               <form onSubmit={handleSave} className="p-6 space-y-5">
@@ -725,7 +748,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
                       <p className="text-xs text-zinc-600">Square image recommended</p>
                     </div>
                   </button>
-                  <p className="text-[10px] text-zinc-600 mt-1.5">If you skip this, we&apos;ll generate unique gradient artwork automatically.</p>
+                  <p className="text-[10px] text-zinc-600 mt-1.5">If you skip this, we&apos;ll generate gradient artwork automatically. We prefer uploaded art — AI-generated is fine.</p>
                 </div>
 
                 {/* Tracks */}
@@ -844,7 +867,9 @@ function SidebarLink({ href, label, icon, active }: { href: string; label: strin
   )
 }
 
-function MobileNavLink({ href, label, icon, active }: { href: string; label: string; icon: string; active?: boolean }) {
+function MobileNavLink({ href, label, icon }: { href: string; label: string; icon: string }) {
+  const pathname = usePathname()
+  const active = pathname === href
   return (
     <Link href={href} className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${active ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}>
       {ICONS[icon] && <span className="[&>svg]:w-5 [&>svg]:h-5">{ICONS[icon]}</span>}

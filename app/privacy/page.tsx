@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { InsoundLogo } from '@/app/components/ui/InsoundLogo'
-import { Footer } from '@/app/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Insound',
@@ -30,6 +29,7 @@ export default function PrivacyPage() {
           <table><tbody>
             <tr><td><strong>Registered name</strong></td><td>Insound Music Ltd</td></tr>
             <tr><td><strong>Company number</strong></td><td>17179694</td></tr>
+            <tr><td><strong>ICO registration</strong></td><td>ZC133088</td></tr>
             <tr><td><strong>Contact email</strong></td><td><a href="mailto:privacy@getinsound.com">privacy@getinsound.com</a></td></tr>
             <tr><td><strong>Website</strong></td><td><a href="https://getinsound.com">getinsound.com</a></td></tr>
           </tbody></table>
@@ -115,6 +115,22 @@ export default function PrivacyPage() {
           <h3>8.1 localStorage (browser)</h3>
           <table><thead><tr><th>Key</th><th>Purpose</th><th>Duration</th></tr></thead><tbody>
             <tr><td><code>insound_view_mode</code></td><td>Remembers your compact/expanded view preference</td><td>Persistent until cleared</td></tr>
+            <tr><td><code>insound_exchange_rates</code></td><td>Caches currency exchange rates to reduce API calls</td><td>Persistent until cleared</td></tr>
+            <tr><td><code>insound_genre_done</code></td><td>Records that genre onboarding has been completed</td><td>Persistent until cleared</td></tr>
+            <tr><td><code>insound-visit-count</code></td><td>Counts site visits for PWA install prompt timing</td><td>Persistent until cleared</td></tr>
+            <tr><td><code>insound-install-dismissed</code></td><td>Records when you dismissed the app install banner</td><td>30 days (auto-expires)</td></tr>
+            <tr><td><code>insound-notif-optin-dismissed</code></td><td>Records that you dismissed the notification opt-in</td><td>Persistent until cleared</td></tr>
+            <tr><td><code>insound-recently-played</code></td><td>Stores your recently played tracks (up to 20)</td><td>Persistent until cleared</td></tr>
+            <tr><td><code>insound-basket</code></td><td>Stores your shopping basket contents</td><td>Persistent until cleared</td></tr>
+          </tbody></table>
+
+          <h3>8.1.1 sessionStorage (browser)</h3>
+          <table><thead><tr><th>Key</th><th>Purpose</th><th>Duration</th></tr></thead><tbody>
+            <tr><td><code>insound_verification_dismissed</code></td><td>Hides the email verification banner for this session</td><td>Current session only</td></tr>
+            <tr><td><code>insound_genre_dismissed</code></td><td>Hides genre onboarding for this session</td><td>Current session only</td></tr>
+            <tr><td><code>insound_genre_prompt_dismissed</code></td><td>Hides the genre prompt card for this session</td><td>Current session only</td></tr>
+            <tr><td><code>newsletter-subscribed</code></td><td>Records newsletter signup to avoid repeat prompts</td><td>Current session only</td></tr>
+            <tr><td><code>insound_splash</code></td><td>Records that the PWA splash screen was shown</td><td>Current session only</td></tr>
           </tbody></table>
           <p>localStorage values are stored entirely in your browser. They are not sent to our servers, not shared with third parties, and can be cleared at any time via your browser settings.</p>
           <h3>8.2 Supabase authentication</h3>
@@ -148,7 +164,6 @@ export default function PrivacyPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

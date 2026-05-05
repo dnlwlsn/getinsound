@@ -39,6 +39,11 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     buttonLabel: 'Verify identity &rarr;',
     footer: "If you didn't request this, you can ignore this email.",
   },
+  signup: {
+    heading: 'Welcome to Insound. Confirm your account to get started.',
+    buttonLabel: 'Confirm account &rarr;',
+    footer: "If you didn't create an account, you can ignore this email.",
+  },
 };
 
 export type EmailTemplate = keyof typeof TEMPLATES;
@@ -58,11 +63,13 @@ export function buildMagicLinkEmail(
   const subject =
     template === 'signin'
       ? 'Sign in to Insound'
-      : template === 'purchase'
-        ? 'Your music is ready'
-        : template === 'reverify'
-          ? 'Verify your identity'
-          : 'Your music is waiting';
+      : template === 'signup'
+        ? 'Confirm your Insound account'
+        : template === 'purchase'
+          ? 'Your music is ready'
+          : template === 'reverify'
+            ? 'Verify your identity'
+            : 'Your music is waiting';
 
   const html = `<!DOCTYPE html>
 <html>
@@ -144,8 +151,11 @@ export function buildPurchaseReceiptEmail(
   artistName: string,
   amountPence: number,
   siteUrl: string,
+  currency: string = 'GBP',
 ): string {
-  const amountLabel = `£${(amountPence / 100).toFixed(2)}`;
+  const symbols: Record<string, string> = { GBP: '£', USD: '$', EUR: '€' }
+  const symbol = symbols[currency.toUpperCase()] || currency.toUpperCase() + ' '
+  const amountLabel = `${symbol}${(amountPence / 100).toFixed(2)}`;
   return wrapEmail(`
         <tr><td style="color:${TEXT_WHITE};font-size:20px;font-weight:700;line-height:1.4;padding-bottom:24px;">
           Thank you for your purchase!
