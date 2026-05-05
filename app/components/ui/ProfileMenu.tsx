@@ -15,6 +15,7 @@ export function ProfileMenu() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -34,7 +35,7 @@ export function ProfileMenu() {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target as Node) && menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false)
     }
     function handleCloseAll() { setOpen(false) }
     function handleEscape(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
@@ -80,7 +81,7 @@ export function ProfileMenu() {
       </button>
 
       {open && createPortal(
-        <div className="fixed right-4 top-[72px] w-56 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl py-1.5 z-[60]">
+        <div ref={menuRef} className="fixed right-4 top-[72px] w-56 rounded-xl bg-zinc-900 border border-zinc-800 shadow-2xl py-1.5 z-[60]">
           {profile.isArtist ? (
             <>
               {profile.fanUsername && (
