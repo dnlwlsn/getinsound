@@ -22,7 +22,7 @@ export function Footer() {
         <span className="text-zinc-700">&middot;</span>
         <Link href="/terms" className="hover:text-zinc-300 transition-colors">Terms</Link>
         <span className="text-zinc-700">&middot;</span>
-        <span>&copy; 2025 Insound</span>
+        <span>&copy; {new Date().getFullYear()} Insound</span>
       </div>
     </footer>
   )
