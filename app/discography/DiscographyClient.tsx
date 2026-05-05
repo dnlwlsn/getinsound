@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { SoundTagSelector } from '@/app/components/ui/SoundTagSelector'
 import { SOUNDS_SET } from '@/lib/sounds'
+import { generatePreviewBlob } from '@/lib/audio-preview'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -308,6 +309,23 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
 
         if (uploadErr) throw new Error(`Failed to upload "${pt.title}": ${uploadErr.message}`)
 
+        // Generate and upload 30s MP3 preview
+        let previewPath: string | null = null
+        try {
+          setUploadProgress(`Generating preview for track ${i + 1}...`)
+          const previewBlob = await generatePreviewBlob(pt.file)
+          previewPath = `${artist.id}/${release!.id}-${pt.position}.mp3`
+          const { error: previewErr } = await supabase.storage
+            .from('previews')
+            .upload(previewPath, previewBlob, { contentType: 'audio/mpeg', upsert: true })
+          if (previewErr) {
+            console.error('Preview upload failed:', previewErr.message)
+            previewPath = null
+          }
+        } catch (e) {
+          console.error('Preview generation failed:', (e as Error).message)
+        }
+
         const { error: trackErr } = await supabase
           .from('tracks')
           .insert({
@@ -315,6 +333,7 @@ export function DiscographyClient({ artist, stripeOnboarded, releases: initialRe
             position: pt.position,
             title: pt.title.trim(),
             audio_path: audioPath,
+            preview_path: previewPath,
             duration_sec: pt.durationSec,
           })
 

@@ -13,6 +13,7 @@ import { AddToBasketButton } from '@/app/components/ui/AddToBasketButton'
 import { usePlayerStore, type Track as PlayerTrack } from '@/lib/stores/player'
 import { resolveAccent } from '@/lib/accent'
 import { extractDominantColor, hexToRgba } from '@/lib/color-extract'
+import HowToListen from '@/app/components/ui/HowToListen'
 
 /* ── User-friendly error mapper ──────────────────────────────── */
 function friendlyError(msg: string): string {
@@ -357,6 +358,7 @@ export default function ReleaseClient({ artist, release, discography, supporters
                     Go to My Collection →
                   </a>
                   <p className="text-[11px] text-zinc-600 font-medium mt-3">You can always re-download from your collection.</p>
+                  <HowToListen />
                 </div>
               </div>
             )}

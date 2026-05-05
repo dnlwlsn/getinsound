@@ -13,6 +13,7 @@ import { VerifiedTick } from '@/app/components/ui/VerifiedTick'
 import type { LibraryRelease } from './page'
 import { formatPrice as formatPriceUtil } from '@/app/lib/currency'
 import { getTrackingUrl } from '@/lib/carriers'
+import HowToListen from '@/app/components/ui/HowToListen'
 import { NotificationOptIn } from '@/app/components/pwa/NotificationOptIn'
 import { useToast } from '@/app/providers/ToastProvider'
 
@@ -1104,6 +1105,7 @@ function FormatSelectorModal({
             {downloading ? (downloadProgress || 'Downloading...') : (isAlbum ? 'Download All' : 'Download')}
           </button>
         </div>
+        <HowToListen />
       </div>
     </div>
   )

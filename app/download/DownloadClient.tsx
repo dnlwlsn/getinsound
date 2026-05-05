@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import HowToListen from '@/app/components/ui/HowToListen'
 
 interface DownloadTrack { title: string; url?: string }
 interface DownloadData {
@@ -143,6 +144,7 @@ export default function DownloadClient() {
       <p className="text-center text-[11px] text-zinc-600 font-medium mt-2">
         Bookmark this page — you can come back to it from the same link.
       </p>
+      <HowToListen />
       <div className="flex flex-col items-center gap-3 mt-8">
         <Link href="/library" className="inline-block bg-zinc-800 hover:bg-zinc-700 text-white font-black px-6 py-3 rounded-xl text-sm transition-colors">
           Go to My Collection
