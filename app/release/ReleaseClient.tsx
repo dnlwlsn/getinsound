@@ -277,10 +277,13 @@ export default function ReleaseClient({ artist, release, discography, supporters
             {/* Stage: Stripe checkout */}
             {stage === 'checkout' && (
               <div>
-                <div ref={stripeMountRef} className="min-h-[400px] relative">
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="inline-block w-10 h-10 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin" />
-                  </div>
+                <div className="min-h-[400px] relative">
+                  <div ref={stripeMountRef} className="min-h-[400px]" />
+                  {!embeddedCheckoutRef.current && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="inline-block w-10 h-10 border-4 border-zinc-800 border-t-orange-600 rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
                 <p className="text-[10px] text-zinc-600 px-6 pb-4 leading-relaxed">
                   By completing this purchase, you agree to receive immediate access to digital content and waive your 14-day cancellation right once the download begins. See our{' '}
